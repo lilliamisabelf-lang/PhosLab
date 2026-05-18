@@ -1,0 +1,9 @@
+venv/
+*.pyc
+__pycache__/
+*.log
+
+# Datos de experimentos
+logs/
+mapping_experiments/
+learning_results/

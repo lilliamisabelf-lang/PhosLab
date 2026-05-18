@@ -1,0 +1,146 @@
+experiment:
+  name: Cortical_Prosthesis_Test
+  version: '1.0'
+  researcher: Lily
+experiment_mode: mapping
+phosphene_mapping:
+  electrodes_by_implant:
+  - implant_id: 3a10244ec859
+    electrode_index:
+    - 30
+    - 95
+    - 70
+  num_repetitions: 5
+  experiment_name: mapeo_multiples_electrodos
+  interstimulation_between_reps: true
+  enabled: true
+  directory: mapping_experiments
+  save_metadata: true
+  save_drawing: true
+  save_eyetracking_data: true
+  save_stimulation_metadata: true
+  save_stimulation_currents_uA: true
+input_mode: mouse
+screen:
+  width: 1920
+  height: 1080
+  fullscreen: true
+  background_color:
+  - 0
+  - 0
+  - 0
+  screen_diagonal_inches: 13.3
+  dist_to_screen_cm: 60
+  vf_scope_deg: 15
+  anchor_circle:
+    radius: 50
+    color:
+    - 255
+    - 0
+    - 0
+    thickness: 3
+    tolerance_radius: 50
+timing:
+  prestimulation: 200
+  stimulation: 400
+  poststimulation: 100
+  interstimulation: 500
+  max_fixation_wait: 100000
+stimulation:
+  pulse_width: 200
+  frequency: 50
+  default_current_uA: 90
+  stimulation_currents_uA:
+  - 90
+  - 90
+  - 90
+  stimulation_currents_standard_uA:
+  - 150
+  - 30
+  - 90
+  - 40
+eye_tracker:
+  enabled: true
+  camera_index: 0
+  resolution:
+  - 640
+  - 480
+  detection_confidence: 0.5
+  tracking_confidence: 0.5
+  smoothing_buffer: 5
+  gaze_trace:
+    enabled: true
+    trace_duration_ms: 300
+    filter: one_euro
+    ema:
+      alpha: 0.15
+    dema:
+      alpha: 0.15
+    one_euro:
+      min_cutoff: 1.0
+      beta: 0.007
+      d_cutoff: 1.0
+    kalman:
+      process_noise: 1.0
+      measurement_noise: 900.0
+    sma:
+      window: 10
+drawing_tablet:
+  width: 800
+  height: 800
+  background_color:
+  - 0
+  - 0
+  - 0
+  brush:
+    size: 2
+    color:
+    - 255
+    - 255
+    - 0
+  instructions:
+    text: Dibuja el punto de luz que viste y presiona ENTER
+    color:
+    - 255
+    - 255
+    - 255
+    font_size: 24
+logging:
+  enabled: true
+  directory: logs
+  save_metadata: true
+  save_drawing: true
+  filename_format: experiment_{timestamp}
+retinotopic_mapping:
+  array_type: shanks_10x32
+  implant_id_filter: all
+  coordinate_source: phoslab_csv
+  coords_csv_path: C:/Users/lilli/OneDrive - Universidad Politécnica de Cartagena/AÑO
+    4 2025-2026/phoslab/percept_mapper/config/trial5.csv
+  coordinate_files:
+    shanks_10x16: config/coords_shanks_10x16.yaml
+    shanks_10x32: config/coords_shanks_10x32.yaml
+    squares_utah: config/coords_squares_utah.yaml
+  dropout: 0.0
+  electrode_selection:
+    mode: range
+    start: 11
+    end: 15
+    step: 1
+  cortical_magnification:
+    k: 17.0
+    a: 0.75
+    pixels_per_degree: 60
+learning:
+  mapping_dir: mapping_experiments
+  logs_dir: logs
+  output_dir: learning_results
+  bayesian:
+    prior_mean: 0.0
+    prior_std: 5.0
+    noise_std: 0.5
+  neural:
+    hidden_size: 32
+    num_epochs: 500
+    learning_rate: 0.01
+    train_split: 0.8
