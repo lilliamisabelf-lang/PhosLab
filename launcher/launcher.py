@@ -230,45 +230,53 @@ class PolarMapWidget(QWidget):
         p.fillRect(0, 0, w, h, QColor("#000000"))
 
         # Círculos y etiquetas de excentricidad
-        p.setPen(QPen(QColor("#444466"), 1))
+        p.setPen(QPen(QColor("#ffffff"), 1))
         step = 2 if self.max_ecc <= 10 else (5 if self.max_ecc <= 30 else 10)
         font_small = QFont("Segoe UI", 8)
         p.setFont(font_small)
         r_val = step
         while r_val <= self.max_ecc:
             r_px = (r_val / self.max_ecc) * radius
-            p.setPen(QPen(QColor("#333355"), 1))
+            p.setPen(QPen(QColor("#ffffff"), 1))
             p.drawEllipse(QPointF(cx, cy), r_px, r_px)
-            p.setPen(QColor("#6b7280"))
+            p.setPen(QColor("#e2e8f0"))
             p.drawText(QPointF(cx + r_px + 2, cy - 2), f"{r_val} deg")
             r_val += step
 
         # Ejes radiales y etiquetas de ángulo
-        p.setPen(QPen(QColor("#333355"), 1))
+        p.setPen(QPen(QColor("#ffffff"), 1))
         font_ang = QFont("Segoe UI", 9, QFont.Weight.Bold)
         p.setFont(font_ang)
-        labels = {0: "0", 45: "45", 90: "90", 135: "135",
-                  180: "180", 225: "225", 270: "270", 315: "315"}
+        labels = {
+            0: "0",
+            45: "45",
+            90: "90",
+            135: "135",
+            180: "180",
+            225: "225",
+            270: "270",
+            315: "315",
+        }
         for ang_deg, lbl in labels.items():
             ang_rad = math.radians(ang_deg)
             x1 = cx + radius * math.cos(ang_rad)
             y1 = cy - radius * math.sin(ang_rad)
-            p.setPen(QPen(QColor("#333355"), 1))
+            p.setPen(QPen(QColor("#ffffff"), 1))
             p.drawLine(int(cx), int(cy), int(x1), int(y1))
             lx = cx + (radius + 18) * math.cos(ang_rad)
             ly = cy - (radius + 18) * math.sin(ang_rad)
-            p.setPen(QColor("#9ca3af"))
+            p.setPen(QColor("#e2e8f0"))
             p.drawText(QPointF(lx - 14, ly + 5), lbl)
 
         # Puntos de cada serie
         dot_r = max(3.5, radius * 0.025)
-        for (xs, ys, color_hex, _label) in self._series:
+        for xs, ys, color_hex, _label in self._series:
             col = QColor(color_hex)
             col.setAlphaF(0.82)
             p.setPen(Qt.PenStyle.NoPen)
             p.setBrush(QBrush(col))
             for x_deg, y_deg in zip(xs, ys):
-                ecc = math.sqrt(x_deg ** 2 + y_deg ** 2)
+                ecc = math.sqrt(x_deg**2 + y_deg**2)
                 if ecc > self.max_ecc:
                     continue
                 px = cx + (x_deg / self.max_ecc) * radius
@@ -285,7 +293,7 @@ class PolarMapWidget(QWidget):
                 p.setPen(Qt.PenStyle.NoPen)
                 p.setBrush(QBrush(col))
                 p.drawEllipse(QPointF(lx + 6, ly + i * 20 + 6), 5, 5)
-                p.setPen(QColor("#c9d1e0"))
+                p.setPen(QColor("#ffffff"))
                 p.drawText(QPointF(lx + 18, ly + i * 20 + 11), label)
 
         p.end()
@@ -300,20 +308,20 @@ class PipelineLauncher(QMainWindow):
 
     STYLE = """
     QMainWindow, QWidget {
-        background-color: #0f1623;
-        color: #c9d1e0;
+        background-color: #0a0a0a;
+        color: #e9ecf5;
         font-family: "Segoe UI", Arial, sans-serif;
         font-size: 13px;
     }
     QGroupBox {
-        border: 0.5px solid rgba(100,120,200,0.25);
+        border: 0.5px solid rgba(123,108,252,0.35);
         border-radius: 8px;
         margin-top: 14px;
         padding-top: 12px;
-        color: #4a5568;
+        color: rgba(123,108,252,0.7);
         font-size: 10px;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.1em;
     }
     QGroupBox::title {
         subcontrol-origin: margin;
@@ -321,113 +329,113 @@ class PipelineLauncher(QMainWindow):
         padding: 0 6px;
     }
     QPushButton {
-        background-color: rgba(99,102,241,0.12);
-        border: 0.5px solid rgba(99,102,241,0.4);
+        background-color: rgba(123,108,252,0.12);
+        border: 0.5px solid rgba(123,108,252,0.55);
         border-radius: 6px;
-        color: #818cf8;
+        color: #d7d2ff;
         padding: 7px 16px;
         font-size: 12px;
     }
-    QPushButton:hover  { background-color: rgba(99,102,241,0.22); }
-    QPushButton:pressed{ background-color: rgba(99,102,241,0.35); }
+    QPushButton:hover  { background-color: rgba(0,212,255,0.14); color: #e6fbff; }
+    QPushButton:pressed{ background-color: rgba(123,108,252,0.3); }
     QPushButton:disabled{
-        background-color: rgba(74,85,104,0.1);
-        border-color: rgba(74,85,104,0.25);
-        color: #374151;
+        background-color: rgba(60,60,60,0.1);
+        border-color: rgba(80,80,80,0.25);
+        color: #343446;
     }
     QPushButton#btn_green {
-        background-color: rgba(39,174,96,0.12);
-        border-color: rgba(39,174,96,0.4);
-        color: #27ae60;
+        background-color: rgba(0,255,160,0.08);
+        border-color: rgba(0,255,160,0.35);
+        color: #00ffa0;
     }
-    QPushButton#btn_green:hover { background-color: rgba(39,174,96,0.22); }
+    QPushButton#btn_green:hover { background-color: rgba(0,255,160,0.18); }
     QPushButton#btn_amber {
-        background-color: rgba(243,156,18,0.12);
-        border-color: rgba(243,156,18,0.4);
-        color: #f39c12;
+        background-color: rgba(255,200,0,0.08);
+        border-color: rgba(255,200,0,0.35);
+        color: #ffc800;
     }
-    QPushButton#btn_amber:hover { background-color: rgba(243,156,18,0.22); }
+    QPushButton#btn_amber:hover { background-color: rgba(255,200,0,0.18); }
     QPushButton#btn_red {
-        background-color: rgba(231,76,60,0.12);
-        border-color: rgba(231,76,60,0.4);
-        color: #e74c3c;
+        background-color: rgba(255,60,60,0.08);
+        border-color: rgba(255,60,60,0.35);
+        color: #ff3c3c;
     }
     QSlider::groove:horizontal {
-        background: #1e3a5f; height: 4px; border-radius: 2px;
+        background: #231a44; height: 4px; border-radius: 2px;
     }
     QSlider::handle:horizontal {
-        background: #818cf8; width: 14px; height: 14px;
+        background: #00d4ff; width: 14px; height: 14px;
         margin: -5px 0; border-radius: 7px;
     }
-    QSlider::sub-page:horizontal { background: #818cf8; border-radius: 2px; }
+    QSlider::sub-page:horizontal { background: #00d4ff; border-radius: 2px; }
     QSpinBox, QDoubleSpinBox, QComboBox, QListWidget {
-        background-color: #16213e;
-        border: 0.5px solid rgba(100,120,200,0.25);
+        background-color: #111111;
+        border: 0.5px solid rgba(123,108,252,0.35);
         border-radius: 5px;
-        color: #c9d1e0;
+        color: #e9ecf5;
         padding: 3px 6px;
     }
     QComboBox::drop-down { border: none; }
     QComboBox QAbstractItemView {
-        background-color: #16213e;
-        color: #c9d1e0;
-        selection-background-color: rgba(99,102,241,0.3);
+        background-color: #111111;
+        color: #e2e8f0;
+        selection-background-color: rgba(0,212,255,0.25);
     }
     QListWidget::item { padding: 4px 6px; border-radius: 4px; }
     QListWidget::item:selected {
-        background: rgba(99,102,241,0.2);
-        color: #818cf8;
+        background: rgba(0,212,255,0.18);
+        color: #00d4ff;
     }
-    QListWidget::item:hover { background: rgba(99,102,241,0.1); }
-    QCheckBox { color: #c9d1e0; spacing: 6px; }
+    QListWidget::item:hover { background: rgba(123,108,252,0.12); }
+    QCheckBox { color: #e9ecf5; spacing: 6px; }
     QCheckBox::indicator {
         width: 14px; height: 14px;
-        border: 1px solid rgba(100,120,200,0.4);
+        border: 1px solid rgba(123,108,252,0.5);
         border-radius: 3px;
-        background: #16213e;
+        background: #111111;
     }
     QCheckBox::indicator:checked {
-        background: #818cf8;
-        border-color: #818cf8;
+        background: #00d4ff;
+        border-color: #00d4ff;
     }
     QTextEdit {
-        background-color: #0a0f1a;
-        border: 0.5px solid rgba(100,120,200,0.15);
+        background-color: #050505;
+        border: 0.5px solid rgba(123,108,252,0.28);
         border-radius: 6px;
-        color: #6b8cba;
+        color: #7fe8ff;
         font-family: "Cascadia Code", "Consolas", monospace;
         font-size: 11px;
     }
     QTabWidget::pane {
-        border: 0.5px solid rgba(100,120,200,0.2);
+        border: 0.5px solid rgba(123,108,252,0.25);
         border-radius: 6px;
-        background: #0f1623;
+        background: #0a0a0a;
     }
     QTabBar::tab {
         background: transparent;
-        color: #4a5568;
+        color: #3a3b52;
         padding: 6px 16px;
         border: none;
         font-size: 12px;
     }
-    QTabBar::tab:selected { color: #818cf8; border-bottom: 2px solid #818cf8; }
-    QTabBar::tab:hover { color: #c9d1e0; }
+    QTabBar::tab:selected { color: #00d4ff; border-bottom: 2px solid #00d4ff; }
+    QTabBar::tab:hover { color: #e9ecf5; }
     QScrollBar:vertical {
-        background: #0f1623; width: 6px; border-radius: 3px;
+        background: #0a0a0a; width: 6px; border-radius: 3px;
     }
-    QScrollBar::handle:vertical { background: #16213e; border-radius: 3px; }
+    QScrollBar::handle:vertical { background: #231a44; border-radius: 3px; }
     QScrollBar:horizontal {
-        background: #0f1623; height: 6px; border-radius: 3px;
+        background: #0a0a0a; height: 6px; border-radius: 3px;
     }
-    QScrollBar::handle:horizontal { background: #16213e; border-radius: 3px; }
+    QScrollBar::handle:horizontal { background: #231a44; border-radius: 3px; }
     QLabel#title {
-        font-size: 18px; font-weight: 500; color: #c9d1e0; padding: 4px 0;
+        font-size: 18px; font-weight: 500; color: #e9ecf5; padding: 4px 0;
     }
-    QLabel#subtitle { font-size: 11px; color: #4a5568; }
-    QFrame#divider { background: rgba(100,120,200,0.15); max-height: 1px; }
+    QLabel#subtitle { font-size: 11px; color: #3d3f5a; }
+    QFrame#divider { background: rgba(123,108,252,0.2); max-height: 1px; }
     QFrame#card {
-        background: #16213e;
-        border: 0.5px solid rgba(100,120,200,0.2);
+        background: #0f0f0f;
+        border: 0.5px solid rgba(123,108,252,0.25);
         border-radius: 10px;
     }
     """
@@ -469,28 +477,28 @@ class PipelineLauncher(QMainWindow):
 
         div = QFrame()
         div.setFixedWidth(1)
-        div.setStyleSheet("background: rgba(100,120,200,0.2);")
+        div.setStyleSheet("background: rgba(123,108,252,0.25);")
         root.addWidget(div)
 
         self._stack = QStackedWidget()
-        self._stack.addWidget(self._build_page_launcher())       # 0
-        self._stack.addWidget(self._build_page_params())         # 1
-        self._stack.addWidget(self._build_page_analysis())       # 2
-        self._stack.addWidget(self._build_page_learning())       # 3
+        self._stack.addWidget(self._build_page_launcher())  # 0
+        self._stack.addWidget(self._build_page_params())  # 1
+        self._stack.addWidget(self._build_page_analysis())  # 2
+        self._stack.addWidget(self._build_page_learning())  # 3
         self._stack.addWidget(self._build_page_optimized_map())  # 4
         root.addWidget(self._stack, stretch=1)
 
     def _build_sidebar(self):
         w = QWidget()
         w.setFixedWidth(210)
-        w.setStyleSheet("background: #16213e;")
+        w.setStyleSheet("background: #0a0a0a;")
         lay = QVBoxLayout(w)
         lay.setContentsMargins(14, 22, 14, 22)
         lay.setSpacing(4)
 
         logo = QLabel("PhosLab")
-        logo.setFont(QFont("Segoe UI", 16, QFont.Weight.Medium))
-        logo.setStyleSheet("color: #818cf8; padding-bottom: 2px;")
+        logo.setFont(QFont("Segoe UI", 18, QFont.Weight.Medium))
+        logo.setStyleSheet("color: #7b6cff; padding-bottom: 2px;")
         lay.addWidget(logo)
 
         sub = QLabel("Visual Prosthesis Pipeline")
@@ -500,15 +508,15 @@ class PipelineLauncher(QMainWindow):
 
         div = QFrame()
         div.setFixedHeight(1)
-        div.setStyleSheet("background: rgba(100,120,200,0.2); margin: 10px 0;")
+        div.setStyleSheet("background: rgba(123,108,252,0.25); margin: 10px 0;")
         lay.addWidget(div)
 
         nav_items = [
-            ("▶  Lanzador",        0),
-            ("⚙  Parámetros",      1),
-            ("📊  Análisis",        2),
-            ("🧠  Aprendizaje",     3),
-            ("🗺  Mapa optimizado", 4),
+            ("▶  Lanzador", 0),
+            ("  Parámetros", 1),
+            ("  Análisis", 2),
+            ("  Aprendizaje", 3),
+            ("  Mapa optimizado", 4),
         ]
         self._nav_btns = []
         for label, idx in nav_items:
@@ -517,13 +525,14 @@ class PipelineLauncher(QMainWindow):
             btn.setStyleSheet("""
                 QPushButton {
                     background: transparent; border: none;
-                    color: #8892a4; text-align: left;
+                    color: #3d3f5a; text-align: left;
                     padding: 8px 10px; border-radius: 6px; font-size: 13px;
                 }
-                QPushButton:hover   { background: rgba(99,102,241,0.08); color: #c9d1e0; }
-                QPushButton:checked { background: rgba(99,102,241,0.15); color: #818cf8;
-                                      border-left: 2px solid #818cf8; }
+                QPushButton:hover   { background: rgba(0,212,255,0.08); color: #e9ecf5; }
+                QPushButton:checked { background: rgba(123,108,252,0.18); color: #00d4ff;
+                                    border-left: 2px solid #00d4ff; }
             """)
+
             btn.clicked.connect(lambda _, i=idx: self._show_page(i))
             lay.addWidget(btn)
             self._nav_btns.append(btn)
@@ -542,9 +551,9 @@ class PipelineLauncher(QMainWindow):
             row = QHBoxLayout()
             dot = QLabel("●")
             dot.setFixedWidth(14)
-            dot.setStyleSheet("color: #374151; font-size: 10px;")
+            dot.setStyleSheet("color: #1a1a1a; font-size: 10px;")
             txt = QLabel(label)
-            txt.setStyleSheet("color: #4a5568; font-size: 11px;")
+            txt.setStyleSheet("color: #2d3748; font-size: 11px;")
             row.addWidget(dot)
             row.addWidget(txt)
             row.addStretch()
@@ -578,7 +587,7 @@ class PipelineLauncher(QMainWindow):
         steps = [
             (
                 "1",
-                "phosLab — Colocación del implante",
+                "Implant Explorer — Colocación del implante",
                 "Coloca el implante y exporta el CSV de campos receptivos",
                 self._launch_phoslab,
                 "Abrir phosLab",
@@ -586,27 +595,27 @@ class PipelineLauncher(QMainWindow):
             (
                 "2",
                 "CSV — Selección de coordenadas",
-                "Exporta desde phosLab o selecciona un CSV existente",
+                "Exporta desde Implant Explorer o selecciona un CSV existente",
                 self._select_csv_manual,
                 "Seleccionar CSV",
             ),
             (
                 "3",
-                "Simulador — Experimento ICMS",
+                "Percept Mapper — Simulación ICMS",
                 "Lanza el experimento con los parámetros configurados",
                 self._launch_simulator,
                 "Lanzar simulador",
             ),
             (
                 "4",
-                "Análisis — Centroides y métricas",
+                "Analysis — Centroides y métricas",
                 "Ver resultados del experimento completado",
                 lambda: self._show_page(2),
                 "Ver análisis",
             ),
             (
                 "5",
-                "Aprendizaje — Corrección del mapa",
+                "Learning — Corrección del mapa",
                 "Entrena el modelo bayesiano o red neuronal",
                 self._run_learning,
                 "Entrenar modelo",
@@ -620,9 +629,9 @@ class PipelineLauncher(QMainWindow):
         # CSV watcher status
         wb_row = QHBoxLayout()
         self._watcher_icon = QLabel("●")
-        self._watcher_icon.setStyleSheet("color: #f39c12; font-size: 14px;")
-        self._watcher_path = QLabel("Vigilando exportaciones de phosLab...")
-        self._watcher_path.setStyleSheet("color: #4a5568; font-size: 11px;")
+        self._watcher_icon.setStyleSheet("color: #ffc800; font-size: 14px;")
+        self._watcher_path = QLabel("Vigilando exportaciones de Implant Explorer...")
+        self._watcher_path.setStyleSheet("color: #2d3748; font-size: 11px;")
         wb_row.addWidget(self._watcher_icon)
         wb_row.addWidget(self._watcher_path)
         wb_row.addStretch()
@@ -631,7 +640,7 @@ class PipelineLauncher(QMainWindow):
         # CSV seleccionado
         self._csv_label = QLabel("Sin CSV seleccionado")
         self._csv_label.setStyleSheet(
-            "color: #4a5568; font-size: 11px; padding-left: 4px;"
+            "color: #2d3748; font-size: 11px; padding-left: 4px;"
         )
         lay.addWidget(self._csv_label)
 
@@ -703,7 +712,7 @@ class PipelineLauncher(QMainWindow):
         csv_grp = QGroupBox("CSV activo")
         cg = QVBoxLayout(csv_grp)
         self._params_csv_label = QLabel("Sin CSV cargado")
-        self._params_csv_label.setStyleSheet("color: #f39c12; font-size: 11px;")
+        self._params_csv_label.setStyleSheet("color: #ffc800; font-size: 11px;")
         cg.addWidget(self._params_csv_label)
         ilay.addWidget(csv_grp)
 
@@ -821,7 +830,6 @@ class PipelineLauncher(QMainWindow):
         map_stim_params = [
             ("Pulse width (µs)", "pulse_width", 50, 1000, " µs"),
             ("Frecuencia (Hz)", "frequency", 1, 300, " Hz"),
-            ("Corriente (µA)", "stimulation_ua", 0, 1000, " µA"),
         ]
         for ri, (lbl, key, lo, hi, sfx) in enumerate(map_stim_params):
             sm_lay.addWidget(QLabel(lbl), ri, 0)
@@ -831,6 +839,18 @@ class PipelineLauncher(QMainWindow):
             spin.setFixedWidth(110)
             sm_lay.addWidget(spin, ri, 1)
             self._map_stim_spins[key] = spin
+        sm_lay.addWidget(
+            QLabel("Corrientes mapping (uA, lista o dict):"), len(map_stim_params), 0
+        )
+        self._map_currents_edit = QLineEdit()
+        self._map_currents_edit.setPlaceholderText(
+            "30:90,45:120 o {default_uA: 90, overrides: {5: 120}}"
+        )
+        self._map_currents_edit.setStyleSheet(
+            "background:#111111; border:0.5px solid rgba(123,108,252,0.35); "
+            "border-radius:5px; color:#e9ecf5; padding:3px 6px;"
+        )
+        sm_lay.addWidget(self._map_currents_edit, len(map_stim_params), 1)
         stim_map_grp.setLayout(sm_lay)
         map_lay.addWidget(stim_map_grp)
         ilay.addWidget(self._mapping_grp)
@@ -905,10 +925,12 @@ class PipelineLauncher(QMainWindow):
             ss_lay.addWidget(spin, ri, 1)
             self._std_stim_spins[key] = spin
 
-        # stimulation_currents_standard_uA (lista)
-        ss_lay.addWidget(QLabel("Corrientes standard (µA, separadas por coma):"), 2, 0)
+        # stimulation_currents_standard_uA (lista o dict)
+        ss_lay.addWidget(QLabel("Corrientes standard (uA, lista o dict):"), 2, 0)
         self._std_currents_edit = QLineEdit()
-        self._std_currents_edit.setPlaceholderText("150,30,90,40")
+        self._std_currents_edit.setPlaceholderText(
+            "150,30,90,40 o {default_uA: 90, overrides: {5: 120}}"
+        )
         self._std_currents_edit.setStyleSheet(
             "background:#16213e; border:0.5px solid rgba(100,120,200,0.25); "
             "border-radius:5px; color:#c9d1e0; padding:3px 6px;"
@@ -919,7 +941,7 @@ class PipelineLauncher(QMainWindow):
         ilay.addWidget(self._standard_grp)
 
         # ── 7. Guardar ─────────────────────────────────────────────────
-        save_btn = QPushButton("💾  Guardar parámetros")
+        save_btn = QPushButton("Guardar parámetros")
         save_btn.setObjectName("btn_green")
         save_btn.clicked.connect(self._save_params)
         ilay.addWidget(save_btn)
@@ -1245,8 +1267,8 @@ class PipelineLauncher(QMainWindow):
         lg = QVBoxLayout(leg_grp)
         for color, label in [
             ("#9ca3af", "Original (CSV phosLab)"),
-            ("#60a5fa", "Corregido — Bayesiano"),
-            ("#34d399", "Corregido — Neural"),
+            ("#00b4ff", "Corregido — Bayesiano"),
+            ("#00ffa0", "Corregido — Neural"),
         ]:
             row = QHBoxLayout()
             dot = QLabel("●")
@@ -1338,7 +1360,7 @@ class PipelineLauncher(QMainWindow):
         # Actualizar UI
         self._csv_label.setText(f"CSV: {src.name}")
         self._params_csv_label.setText(src.name)
-        self._params_csv_label.setStyleSheet("color: #27ae60; font-size: 11px;")
+        self._params_csv_label.setStyleSheet("color: #00ffa0; font-size: 11px;")
 
         # Rellenar lista de implant IDs
         self._implant_list.clear()
@@ -1358,7 +1380,7 @@ class PipelineLauncher(QMainWindow):
         self._log_msg(f"CSV cargado: {src.name} — {len(self._implant_data)} implant(s)")
         self._mark_step(1, True)
         self._update_step_states()
-        self._watcher_icon.setStyleSheet("color: #27ae60; font-size: 14px;")
+        self._watcher_icon.setStyleSheet("color: #00ffa0; font-size: 14px;")
 
     def _launch_simulator(self):
         if not self._current_csv:
@@ -1502,7 +1524,9 @@ class PipelineLauncher(QMainWindow):
         self._csv_watcher.csv_detected.connect(self._handle_csv)
         self._csv_watcher.start()
         self._set_status("watcher", True)
-        self._watcher_path.setText(f"Vigilando {watch_dir.name}/ → percept_mapper/config/")
+        self._watcher_path.setText(
+            f"Vigilando {watch_dir.name}/ → percept_mapper/config/"
+        )
         self._log_msg("Vigilante CSV activo")
 
     # ──────────────────────────────────────────────────────────────────────
@@ -1543,7 +1567,13 @@ class PipelineLauncher(QMainWindow):
         stim = self._params.get("stimulation", {})
         self._map_stim_spins["pulse_width"].setValue(int(stim.get("pulse_width", 200)))
         self._map_stim_spins["frequency"].setValue(int(stim.get("frequency", 50)))
-        self._map_stim_spins["stimulation_ua"].setValue(int(dc))
+        map_currents = stim.get("stimulation_currents_uA")
+        if isinstance(map_currents, list):
+            self._map_currents_edit.setText(",".join(str(c) for c in map_currents))
+        elif isinstance(map_currents, dict):
+            self._map_currents_edit.setText(json.dumps(map_currents, ensure_ascii=True))
+        else:
+            self._map_currents_edit.setText("")
 
         # Standard params
         esel = self._params.get("retinotopic_mapping", {}).get(
@@ -1557,12 +1587,23 @@ class PipelineLauncher(QMainWindow):
             self._esel_start_spin.setValue(int(esel.get("start", 0)))
             self._esel_end_spin.setValue(int(esel.get("end", 10)))
             self._esel_step_spin.setValue(int(esel.get("step", 1)))
+            if esel_mode == "manual":
+                indices = esel.get("indices", [])
+                if isinstance(indices, list):
+                    self._esel_manual_edit.setText(",".join(str(x) for x in indices))
+                elif indices is not None:
+                    self._esel_manual_edit.setText(str(indices))
 
         self._std_stim_spins["pulse_width"].setValue(int(stim.get("pulse_width", 200)))
         self._std_stim_spins["frequency"].setValue(int(stim.get("frequency", 50)))
 
         currents_std = stim.get("stimulation_currents_standard_uA", [150, 30, 90, 40])
-        self._std_currents_edit.setText(",".join(str(c) for c in currents_std))
+        if isinstance(currents_std, list):
+            self._std_currents_edit.setText(",".join(str(c) for c in currents_std))
+        elif isinstance(currents_std, dict):
+            self._std_currents_edit.setText(json.dumps(currents_std, ensure_ascii=True))
+        else:
+            self._std_currents_edit.setText("")
 
         # CSV actual en params
         csv_path = self._params.get("retinotopic_mapping", {}).get(
@@ -1573,7 +1614,7 @@ class PipelineLauncher(QMainWindow):
             self._implant_data = read_implant_ids_from_csv(csv_path)
             self._csv_label.setText(f"CSV: {Path(csv_path).name}")
             self._params_csv_label.setText(Path(csv_path).name)
-            self._params_csv_label.setStyleSheet("color: #27ae60; font-size: 11px;")
+            self._params_csv_label.setStyleSheet("color: #00ffa0; font-size: 11px;")
             self._implant_list.clear()
             for iid, indices in self._implant_data.items():
                 item = QListWidgetItem(
@@ -1649,6 +1690,23 @@ class PipelineLauncher(QMainWindow):
             updates["stimulation"]["frequency"] = self._map_stim_spins[
                 "frequency"
             ].value()
+            map_currents_text = self._map_currents_edit.text().strip()
+            if map_currents_text:
+                try:
+                    parsed = self._parse_currents_text(map_currents_text)
+                    if isinstance(parsed, (list, dict)):
+                        updates["stimulation"]["stimulation_currents_uA"] = parsed
+                    elif isinstance(parsed, (int, float)):
+                        updates["stimulation"]["stimulation_currents_uA"] = [
+                            float(parsed)
+                        ]
+                    else:
+                        self._log_msg(
+                            "WARN: Corrientes mapping invalidas (usa lista o dict)",
+                            "warn",
+                        )
+                except Exception:
+                    self._log_msg("WARN: No se pudo parsear corrientes mapping", "warn")
 
         else:  # standard
             esel_mode = self._esel_combo.currentText()
@@ -1661,7 +1719,7 @@ class PipelineLauncher(QMainWindow):
                 try:
                     indices = [
                         int(x.strip())
-                        for x in self._std_currents_edit.text().split(",")
+                        for x in self._esel_manual_edit.text().split(",")
                         if x.strip()
                     ]
                     esel["indices"] = indices
@@ -1677,15 +1735,27 @@ class PipelineLauncher(QMainWindow):
                 "frequency"
             ].value()
 
-            try:
-                currents = [
-                    float(x.strip())
-                    for x in self._std_currents_edit.text().split(",")
-                    if x.strip()
-                ]
-                updates["stimulation"]["stimulation_currents_standard_uA"] = currents
-            except ValueError:
-                pass
+            std_currents_text = self._std_currents_edit.text().strip()
+            if std_currents_text:
+                try:
+                    parsed = self._parse_currents_text(std_currents_text)
+                    if isinstance(parsed, (list, dict)):
+                        updates["stimulation"][
+                            "stimulation_currents_standard_uA"
+                        ] = parsed
+                    elif isinstance(parsed, (int, float)):
+                        updates["stimulation"]["stimulation_currents_standard_uA"] = [
+                            float(parsed)
+                        ]
+                    else:
+                        self._log_msg(
+                            "WARN: Corrientes standard invalidas (usa lista o dict)",
+                            "warn",
+                        )
+                except Exception:
+                    self._log_msg(
+                        "WARN: No se pudo parsear corrientes standard", "warn"
+                    )
 
         try:
             save_yaml_partial(PARAMS_YAML, updates)
@@ -1705,6 +1775,27 @@ class PipelineLauncher(QMainWindow):
             self._log_msg("params.yaml actualizado con ruta del CSV")
         except Exception as e:
             self._log_msg(f"Error actualizando CSV path: {e}", "error")
+
+    def _parse_currents_text(self, text: str):
+        cleaned = text.strip()
+        if not cleaned:
+            return None
+        if "{" in cleaned or "[" in cleaned or "\n" in cleaned:
+            return yaml.safe_load(cleaned)
+        if ":" in cleaned:
+            pairs = {}
+            for part in cleaned.split(","):
+                part = part.strip()
+                if not part:
+                    continue
+                if ":" not in part:
+                    raise ValueError("formato de par invalido")
+                k, v = part.split(":", 1)
+                pairs[int(k.strip())] = float(v.strip())
+            return pairs
+        if "," in cleaned:
+            return [float(x.strip()) for x in cleaned.split(",") if x.strip()]
+        return float(cleaned)
 
     def _rebuild_implant_electrode_blocks(self):
         """Reconstruye los bloques de entrada de electrodos por implant_id."""
@@ -1989,7 +2080,7 @@ class PipelineLauncher(QMainWindow):
     def _opt_browse_csv(self):
         start = str(CSV_DEST_DIR) if CSV_DEST_DIR.exists() else str(SIMULADOR_DIR)
         path, _ = QFileDialog.getOpenFileName(
-            self, "Seleccionar CSV de phosLab", start, "CSV Files (*.csv)"
+            self, "Seleccionar CSV de Implant Explorer", start, "CSV Files (*.csv)"
         )
         if path:
             self._opt_csv_path = path
@@ -2049,7 +2140,7 @@ class PipelineLauncher(QMainWindow):
                 str(bayes_csv), "x_deg_corrected", "y_deg_corrected"
             )
             if xs:
-                series.append((xs, ys, "#60a5fa", "Bayesiano"))
+                series.append((xs, ys, "#00b4ff", "Bayesiano"))
 
         neural_csv = LEARNING_DIR / "corrected_map_neural.csv"
         if neural_csv.exists():
@@ -2057,7 +2148,7 @@ class PipelineLauncher(QMainWindow):
                 str(neural_csv), "x_deg_corrected", "y_deg_corrected"
             )
             if xs:
-                series.append((xs, ys, "#34d399", "Neural"))
+                series.append((xs, ys, "#00ffa0", "Neural"))
 
         self._polar_map_widget.set_series(series)
 
@@ -2149,23 +2240,23 @@ class PipelineLauncher(QMainWindow):
         if done:
             card.setStyleSheet("""
                 QFrame#card {
-                    background: rgba(39,174,96,0.05);
-                    border: 0.5px solid rgba(39,174,96,0.4);
+                    background: rgba(0,255,160,0.04);
+                    border: 0.5px solid rgba(0,255,160,0.35);
                     border-radius: 10px;
                 }
             """)
             card._num_label.setStyleSheet("""
-                border: 1.5px solid #27ae60; border-radius: 15px;
-                color: #27ae60; font-size: 12px;
-                background: rgba(39,174,96,0.15);
+                border: 1.5px solid #00ffa0; border-radius: 15px;
+                color: #00ffa0; font-size: 12px;
+                background: rgba(0,255,160,0.12);
             """)
             card._num_label.setText("✓")
         else:
             card.setStyleSheet(
-                "QFrame#card { background: #16213e; border: 0.5px solid rgba(100,120,200,0.2); border-radius: 10px; }"
+                "QFrame#card { background: #0f0f0f; border: 0.5px solid rgba(0,200,255,0.15); border-radius: 10px; }"
             )
             card._num_label.setStyleSheet(
-                "border: 1.5px solid #374151; border-radius: 15px; color: #6b7280; font-size: 12px;"
+                "border: 1.5px solid #1a1a2e; border-radius: 15px; color: #2d3748; font-size: 12px;"
             )
             card._num_label.setText(str(idx + 1))
         self._step_states[idx] = done
@@ -2183,7 +2274,7 @@ class PipelineLauncher(QMainWindow):
             return
         dot, _ = self._status_labels[key]
         dot.setStyleSheet(
-            f"color: {'#27ae60' if active else '#374151'}; font-size: 10px;"
+            f"color: {'#00ffa0' if active else '#1a1a1a'}; font-size: 10px;"
         )
 
     # ──────────────────────────────────────────────────────────────────────
