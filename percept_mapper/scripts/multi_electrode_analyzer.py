@@ -40,7 +40,7 @@ class MultiElectrodeAnalyzer:
 
         Args:
             experiment_dir: Ruta a la carpeta principal del experimento
-                           (e.g., 'mapping_experiments/mapping_mapeo_multiples_...')
+                           (e.g., 'mapping_experiments/_multiples_...')
         """
         self.experiment_dir = Path(experiment_dir)
 

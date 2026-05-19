@@ -964,6 +964,10 @@ class PipelineLauncher(QMainWindow):
         title.setObjectName("title")
         hdr.addWidget(title)
         hdr.addStretch()
+        delete_btn = QPushButton("Eliminar")
+        delete_btn.setObjectName("btn_red")
+        delete_btn.clicked.connect(self._delete_selected_analysis)
+        hdr.addWidget(delete_btn)
         refresh_btn = QPushButton("↻ Actualizar")
         refresh_btn.clicked.connect(self._refresh_analysis)
         hdr.addWidget(refresh_btn)
@@ -1940,6 +1944,71 @@ class PipelineLauncher(QMainWindow):
                 lines.append(f"   {f.relative_to(path)}")
 
         self._exp_detail.setPlainText("\n".join(lines))
+
+    def _delete_selected_analysis(self):
+        item = self._exp_tree.currentItem()
+        if not item:
+            QMessageBox.information(
+                self, "Eliminar", "Selecciona un experimento para eliminar."
+            )
+            return
+
+        path_str = item.data(0, Qt.ItemDataRole.UserRole)
+        if not path_str:
+            QMessageBox.information(
+                self, "Eliminar", "Selecciona un experimento para eliminar."
+            )
+            return
+
+        path = Path(path_str)
+        if not path.exists():
+            QMessageBox.warning(self, "Eliminar", "El elemento ya no existe.")
+            self._exp_detail.clear()
+            self._refresh_analysis()
+            return
+
+        path_res = path.resolve()
+        allowed = False
+        for root in (MAPPING_DIR, LOGS_DIR):
+            root_res = root.resolve()
+            if path_res == root_res:
+                QMessageBox.information(
+                    self,
+                    "Eliminar",
+                    "No se puede eliminar la raiz de analisis.",
+                )
+                return
+            if root_res in path_res.parents:
+                allowed = True
+                break
+
+        if not allowed:
+            QMessageBox.warning(
+                self, "Eliminar", "La ruta seleccionada no esta en analisis."
+            )
+            return
+
+        reply = QMessageBox.question(
+            self,
+            "Eliminar",
+            f"Se eliminara '{path.name}' y todo su contenido. Continuar?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        try:
+            if path.is_dir():
+                shutil.rmtree(path)
+            else:
+                path.unlink()
+        except Exception as exc:
+            QMessageBox.critical(self, "Eliminar", f"No se pudo eliminar: {exc}")
+            return
+
+        self._exp_detail.clear()
+        self._refresh_analysis()
 
     def _populate_tree(self, parent_item, root_path: Path):
         for child in sorted(root_path.iterdir()):

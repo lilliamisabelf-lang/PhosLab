@@ -102,7 +102,35 @@ def _resolve_currents_uA(currents_cfg, total_electrodes, default_uA_fallback=90.
     return [float(default_uA_fallback)] * int(total_electrodes)
 
 
-def _resolve_mapping_electrode_indices(mapping_config, cli_electrode, total_electrodes, electrode_index_map =None):
+def _select_current_uA(
+    currents_uA, electrode_index, order_index, total_electrodes, default_current_uA
+):
+    """Resuelve la corriente final para un electrodo.
+
+    Reglas:
+    - Lista vacia/None: default_current_uA
+    - Lista len == total_electrodes: se indexa por electrode_index
+    - Lista len != total_electrodes: se interpreta por orden (order_index),
+      y los restantes usan default_current_uA
+    - Fuera de rango: default_current_uA
+    """
+    if not currents_uA:
+        return float(default_current_uA)
+
+    if len(currents_uA) == total_electrodes:
+        if 0 <= electrode_index < len(currents_uA):
+            return float(currents_uA[electrode_index])
+        return float(default_current_uA)
+
+    if 0 <= order_index < len(currents_uA):
+        return float(currents_uA[order_index])
+
+    return float(default_current_uA)
+
+
+def _resolve_mapping_electrode_indices(
+    mapping_config, cli_electrode, total_electrodes, electrode_index_map=None
+):
     """Resuelve qué electrodos se van a mapear en modo 'mapping'.
 
     Compatibilidad:
@@ -122,21 +150,29 @@ def _resolve_mapping_electrode_indices(mapping_config, cli_electrode, total_elec
     mapping_config = mapping_config or {}
     print(f"DEBUG electrodes_by_implant: {mapping_config.get('electrodes_by_implant')}")
     print(f"DEBUG electrode_index_map es None: {electrode_index_map is None}")
-    
+
     electrodes_by_implant = mapping_config.get("electrodes_by_implant", None)
-    if electrodes_by_implant and isinstance(electrodes_by_implant, list) and electrode_index_map:
-        inverse_map = {(str(v[0]), int(v[1])): k for k, v in electrode_index_map.items()}
+    if (
+        electrodes_by_implant
+        and isinstance(electrodes_by_implant, list)
+        and electrode_index_map
+    ):
+        inverse_map = {
+            (str(v[0]), int(v[1])): k for k, v in electrode_index_map.items()
+        }
         global_indices = []
         for block in electrodes_by_implant:
-            imp_id = str(block.get('implant_id','')).strip()
-            indices = block.get('electrode_index', [])
+            imp_id = str(block.get("implant_id", "")).strip()
+            indices = block.get("electrode_index", [])
             if isinstance(indices, int):
                 indices = [indices]
             for elec_idx in indices:
                 key = (imp_id, int(elec_idx))
                 if key in inverse_map:
                     global_indices.append(inverse_map[key])
-                    print( f" [{imp_id}] electrodo {elec_idx} → índice global {inverse_map[key]}")
+                    print(
+                        f" [{imp_id}] electrodo {elec_idx} → índice global {inverse_map[key]}"
+                    )
                 else:
                     print(
                         f"  [{imp_id}] electrodo {elec_idx} no encontrado en CSV, saltando"
@@ -730,11 +766,11 @@ Ejemplos de uso:
     if vf_scope_deg is None:
         vf_scope_deg = 15.0
 
-    #fuente de coordenadas
-    coords_source = electrode_config.get('coordinate_source', 'dynaphos_yaml')
-    coords_csv_path = electrode_config.get('coords_csv_path','')
-    implant_id_filter = electrode_config.get('implant_id_filter','all')
-    if coords_source == 'phoslab_csv' and coords_csv_path:
+    # fuente de coordenadas
+    coords_source = electrode_config.get("coordinate_source", "dynaphos_yaml")
+    coords_csv_path = electrode_config.get("coords_csv_path", "")
+    implant_id_filter = electrode_config.get("implant_id_filter", "all")
+    if coords_source == "phoslab_csv" and coords_csv_path:
         coord_file_to_use = coords_csv_path
         print(f"[COORDS] Usando CSV de phoslab: {coords_csv_path}")
     else:
@@ -775,15 +811,7 @@ Ejemplos de uso:
 
     # Si el usuario usa dict sparse sin especificar default en el dict,
     # permitimos setearlo globalmente desde stimulation.default_current_uA.
-    if isinstance(STIMULATION_CURRENTS_CFG, dict) and (
-        "default_uA" not in STIMULATION_CURRENTS_CFG
-        and "default" not in STIMULATION_CURRENTS_CFG
-        and "_default" not in STIMULATION_CURRENTS_CFG
-        and "overrides" not in STIMULATION_CURRENTS_CFG
-    ):
-        # Caso raro: dict sin estructura; no tocar.
-        pass
-    elif isinstance(STIMULATION_CURRENTS_CFG, dict) and default_uA_sparse != 0.0:
+    if isinstance(STIMULATION_CURRENTS_CFG, dict) and default_uA_sparse != 0.0:
         # Re-resolver para aplicar default global si el dict no lo trae.
         # (Si el dict sí lo trae, _parse_sparse_currents_mapping ya manda.)
         if (
@@ -848,7 +876,7 @@ Ejemplos de uso:
             mapping_config=mapping_config,
             cli_electrode=cli_electrode,
             total_electrodes=len(mapper.active_electrodes),
-            electrode_index_map=getattr(mapper, "_electrode_index_map", None)
+            electrode_index_map=getattr(mapper, "_electrode_index_map", None),
         )
 
         # Activar solo los electrodos que se van a mapear
@@ -881,7 +909,6 @@ Ejemplos de uso:
         electrode_indices = mapping_electrode_indices
         print(f"[MAPPING] Electrodos a mapear: {electrode_indices}")
 
-
         if cli_repetitions is not None:
             num_repetitions = cli_repetitions
             print(f"[CLI] Repeticiones desde CLI: {num_repetitions}")
@@ -894,288 +921,36 @@ Ejemplos de uso:
         # Detectar si es mapeo múltiple o simple
         is_multi_electrode = len(electrode_indices) > 1
 
-        if is_multi_electrode:
-            # ════════════════════════════════════════
-            # MODO: MÚLTIPLES ELECTRODOS
-            # ════════════════════════════════════════
-            print("=" * 70)
-            print("MODO MAPEO: MÚLTIPLES ELECTRODOS")
-            print(f"Electrodos a mapear: {electrode_indices}")
-            print(f"Repeticiones por electrodo: {num_repetitions}")
-            print("=" * 70)
-            print()
+        # ════════════════════════════════════════
+        # MODO: ELECTRODOS (guardado consolidado)
+        # ════════════════════════════════════════
+        print("=" * 70)
+        print("MODO MAPEO: ELECTRODOS (guardado consolidado)")
+        print(f"Electrodos a mapear: {electrode_indices}")
+        print(f"Repeticiones por electrodo: {num_repetitions}")
+        print("=" * 70)
+        print()
 
-            # Crear carpeta del experimento con timestamp
-            experiment_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            multi_experiment_dir = (
-                Path("mapping_experiments")
-                / f"mapping_mapeo_multiples_electrodo_{experiment_timestamp}"
-            )
-            multi_experiment_dir.mkdir(parents=True, exist_ok=True)
+        # Crear carpeta del experimento con timestamp
+        experiment_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        multi_experiment_dir = (
+            Path("mapping_experiments")
+            / f"mapping_mapeo_multiples_electrodo_{experiment_timestamp}"
+        )
+        multi_experiment_dir.mkdir(parents=True, exist_ok=True)
 
-            print(f"Carpeta de experimento: {multi_experiment_dir}\n")
+        print(f"Carpeta de experimento: {multi_experiment_dir}\n")
 
-            # Ejecutar mapeo para cada electrodo
-            completed_electrodes = []
+        # Ejecutar mapeo para cada electrodo
+        completed_electrodes = []
 
-            for electrode_num, electrode_index in enumerate(electrode_indices, 1):
-                # Verificar que el electrodo está activo
-                if electrode_index < 0 or electrode_index >= len(
-                    mapper.active_electrodes
-                ):
-                    print(
-                        f"✗ ERROR: Índice de electrodo fuera de rango: {electrode_index}"
-                    )
-                    print(f"         Rango válido: 0-{len(mapper.active_electrodes)-1}")
-                    print()
-                    continue
-
-                if not mapper.active_electrodes[electrode_index]:
-                    print(
-                        f"✗ ERROR: El electrodo {electrode_index} no está activo en la configuración"
-                    )
-                    print(
-                        f"         Electrodos activos: {np.where(mapper.active_electrodes)[0].tolist()}"
-                    )
-                    print()
-                    continue
-
-                # Obtener posición del electrodo
-                try: 
-                    phosphene_position = mapper.get_phosphene_position(electrode_index)
-                except ValueError:
-                    print(f"[SKIP] Electrodo {electrode_index}: No se pudo obtener la posición en el csv")
-                    continue
-
-                # Obtener corriente para este electrodo (MODO MAPPING)
-                # Regla de coherencia:
-                # - Si el vector de corrientes tiene longitud == total_electrodes, se interpreta como
-                #   "corriente por índice de electrodo".
-                # - En caso contrario, se interpreta como "corriente por orden del mapeo" (0-based),
-                #   es decir, currents[0] para el 1º electrodo de electrode_indices, currents[1] para el 2º, etc.
-                # y tras esto se aplica default_current
-                
-                if len(STIMULATION_CURRENTS_UA) == total_electrodes:
-                    if electrode_index < len(STIMULATION_CURRENTS_UA):
-                        current_uA = STIMULATION_CURRENTS_UA[electrode_index]
-                    else:
-                        current_uA = float (stim_config.get("default_current_uA", 90.0))
-                else:
-                    electrode_order_index = electrode_num - 1
-                    if electrode_order_index < len(STIMULATION_CURRENTS_UA):
-                        current_uA = STIMULATION_CURRENTS_UA[electrode_order_index]
-                    else:
-                        current_uA = float(stim_config.get("default_current_uA", 90.0))
-                        
-
-                # Crear experiment de mapeo para este electrodo
-                try:
-                    electrode_info = mapper.get_electrode_info(electrode_index)
-                except Exception:
-                    electrode_info = {"index": int(electrode_index)}
-
-                mapping_experiment = PhospheneMappingExperiment(
-                    params=params,
-                    screen=screen,
-                    clock=clock,
-                    eye_tracker=eye_tracker,
-                    anchor_screen=anchor_screen,
-                    drawing_tablet=drawing_tablet,
-                    webcam_viewer=webcam_viewer,
-                    gaze_trace=gaze_trace,
-                    display_info=display_metadata,
-                    timing_config={
-                        "prestimulation_ms": PRESTIMULATION_MS,
-                        "stimulation_ms": STIMULATION_MS,
-                        "poststimulation_ms": POSTSTIMULATION_MS,
-                        "interstimulation_ms": INTERSTIMULATION_MS,
-                    },
-                    electrode_index=electrode_index,
-                    electrode_info=electrode_info,
-                    num_repetitions=num_repetitions,
-                    experiment_name=f"mapeo_electrodo_{electrode_index}",
-                )
-
-                # Cambiar directorio a la carpeta multi-electrodo
-                mapping_experiment.experiment_dir = multi_experiment_dir
-                mapping_experiment.electrode_dir = (
-                    multi_experiment_dir / f"electrode_{electrode_index:03d}"
-                )
-                mapping_experiment.electrode_dir.mkdir(parents=True, exist_ok=True)
-
-                # Crear StimulationScreen para este electrodo
-                stimulation_screen = StimulationScreen(
-                    params,
-                    eye_tracker,
-                    phosphene_position=phosphene_position,
-                    current_uA=current_uA,
-                    pulse_width_us=PULSE_WIDTH_US,
-                    frequency_hz=FREQUENCY_HZ,
-                )
-                stimulation_screen.dynaphos_mapper = mapper
-                stimulation_screen.active_electrode_index = electrode_index
-
-                # Ejecutar N repeticiones
-                print("=" * 70)
-                print(
-                    f"ELECTRODO {electrode_num} de {len(electrode_indices)}: {electrode_index}"
-                )
-                print(f"Repeticiones: {num_repetitions}")
-                print("=" * 70)
-                print()
-
-                user_cancelled = False
-                for rep_num in range(1, num_repetitions + 1):
-                    rep_metadata = mapping_experiment.run_single_repetition(
-                        repetition_number=rep_num,
-                        stimulation_screen=stimulation_screen,
-                        phosphene_position=phosphene_position,
-                        current_uA=current_uA,
-                        pulse_width_us=PULSE_WIDTH_US,
-                        frequency_hz=FREQUENCY_HZ,
-                        run_prestim_func=run_prestimulation,
-                        run_stim_func=run_stimulation,
-                        run_poststim_func=run_poststimulation,
-                        run_interstim_func=run_interstimulation,
-                        check_quit_func=check_quit_events,
-                        drawing_tablet_reset_func=drawing_tablet_reset,
-                        FPS=FPS,
-                    )
-
-                    if rep_metadata is None:
-                        # Usuario canceló
-                        print("\n[INFO] Experimento cancelado por el usuario")
-                        user_cancelled = True
-                        break
-
-                if user_cancelled:
-                    cleanup_and_exit(eye_tracker, webcam_viewer)
-                    return
-
-                # Finalizar experimento de este electrodo
-                mapping_experiment.finalize()
-                completed_electrodes.append(electrode_index)
-
-                # ⚠️ ANÁLISIS INDIVIDUAL: Desactivado durante experimento para evitar interferencias
-                # El análisis consolidado al final es más eficiente y no interfiere con Pygame
-                # Si necesitas análisis individual, descomentar las líneas abajo
-                """
-                print("\n" + "=" * 70)
-                print(f"ANÁLISIS ELECTRODO {electrode_index}")
-                print("=" * 70 + "\n")
-                
-                try:
-                    analyzer = PhospheneMappingAnalyzer(mapping_experiment.electrode_dir)
-                    results = analyzer.analyze_electrode_repetitions()
-                    
-                    if results:
-                        fig = analyzer.visualize_results(results)
-                        if fig:
-                            import matplotlib.pyplot as plt
-                            plt.close(fig)
-                except Exception as e:
-                    print(f"⚠ Error durante análisis individual: {e}")
-                """
-
-                # Si hay más electrodos, mostrar pantalla de transición
-                if electrode_num < len(electrode_indices):
-                    print("\n" + "=" * 70)
-                    print("TRANSICIÓN AL SIGUIENTE ELECTRODO")
-                    print("=" * 70)
-                    continue_to_next = show_electrode_transition_screen(
-                        screen=screen,
-                        clock=clock,
-                        current_electrode=electrode_index,
-                        next_electrode=electrode_indices[electrode_num],
-                        screen_width=SCREEN_WIDTH,
-                        screen_height=SCREEN_HEIGHT,
-                    )
-
-                    if not continue_to_next:
-                        # Usuario presionó ESC
-                        print(
-                            "\n[INFO] Experimento cancelado por el usuario en pantalla de transición"
-                        )
-                        cleanup_and_exit(eye_tracker, webcam_viewer)
-                        return
-
-                print()
-
-            # ════════════════════════════════════════
-            # ANÁLISIS CONSOLIDADO DE TODOS LOS ELECTRODOS
-            # ════════════════════════════════════════
-            print("\n" + "=" * 70)
-            print("ANÁLISIS CONSOLIDADO")
-            print("=" * 70 + "\n")
-
-            # Ya no necesitamos eye tracker ni webcam viewer
-            if eye_tracker:
-                eye_tracker.release()
-            if webcam_viewer:
-                webcam_viewer.release()
-
-            try:
-                from scripts.multi_electrode_analyzer import MultiElectrodeAnalyzer
-
-                # Crear analizador consolidado
-                multi_analyzer = MultiElectrodeAnalyzer(multi_experiment_dir)
-
-                # Analizar todos los electrodos
-                consolidated_results = multi_analyzer.analyze_all_electrodes()
-
-                if consolidated_results:
-                    # Generar visualización consolidada
-                    multi_analyzer.visualize_consolidated_map(consolidated_results)
-
-                    # Generar reporte
-                    multi_analyzer.create_summary_report(consolidated_results)
-
-                    print("\n" + "=" * 70)
-                    print("MAPEO CONSOLIDADO COMPLETADO")
-                    print("=" * 70)
-                    print(f"\n📁 Resultados guardados en: {multi_experiment_dir}")
-                    print(f"   └─ consolidated_analysis/ (análisis integrado)")
-
-                else:
-                    print("⚠ No se pudieron generar resultados consolidados")
-
-            except Exception as e:
-                print(f"✗ ERROR en análisis consolidado: {e}")
-                import traceback
-
-                traceback.print_exc()
-
-            # ════════════════════════════════════════
-            # PANTALLA DE FINALIZACIÓN
-            # ════════════════════════════════════════
-            print("\n" + "=" * 70)
-            print("EXPERIMENTO COMPLETADO - Esperando confirmación del usuario...")
-            print("=" * 70 + "\n")
-
-            show_experiment_completion_screen(
-                screen=screen,
-                clock=clock,
-                screen_width=SCREEN_WIDTH,
-                screen_height=SCREEN_HEIGHT,
-            )
-
-        else:
-            # ════════════════════════════════════════
-            # MODO: UN SOLO ELECTRODO
-            # ════════════════════════════════════════
-            electrode_index = electrode_indices[0]
-
-            # Actualizar experiment_name automáticamente
-            experiment_name = f"mapeo_electrodo_{electrode_index}"
-            print(f"[AUTO] Nombre del experimento: {experiment_name}")
-            print()
-
+        for electrode_num, electrode_index in enumerate(electrode_indices, 1):
             # Verificar que el electrodo está activo
             if electrode_index < 0 or electrode_index >= len(mapper.active_electrodes):
                 print(f"✗ ERROR: Índice de electrodo fuera de rango: {electrode_index}")
                 print(f"         Rango válido: 0-{len(mapper.active_electrodes)-1}")
-                cleanup_and_exit(eye_tracker, webcam_viewer)
-                return
+                print()
+                continue
 
             if not mapper.active_electrodes[electrode_index]:
                 print(
@@ -1184,27 +959,36 @@ Ejemplos de uso:
                 print(
                     f"         Electrodos activos: {np.where(mapper.active_electrodes)[0].tolist()}"
                 )
-                cleanup_and_exit(eye_tracker, webcam_viewer)
-                return
+                print()
+                continue
 
             # Obtener posición del electrodo
-            phosphene_position = mapper.get_phosphene_position(electrode_index)
+            try:
+                phosphene_position = mapper.get_phosphene_position(electrode_index)
+            except ValueError:
+                print(
+                    f"[SKIP] Electrodo {electrode_index}: No se pudo obtener la posición en el csv"
+                )
+                continue
 
-            # Obtener corriente para este electrodo (ver regla arriba)
-            if len(STIMULATION_CURRENTS_UA) == total_electrodes:
-                if electrode_index < len(STIMULATION_CURRENTS_UA):
-                    current_uA = STIMULATION_CURRENTS_UA[electrode_index]
-                else:
-                    current_uA = (
-                        STIMULATION_CURRENTS_UA[-1] if STIMULATION_CURRENTS_UA else 90.0
-                    )
-            else:
-                if 0 < len(STIMULATION_CURRENTS_UA):
-                    current_uA = STIMULATION_CURRENTS_UA[0]
-                else:
-                    current_uA = 90.0
+            # Obtener corriente para este electrodo (MODO MAPPING)
+            # Regla de coherencia:
+            # - Si el vector de corrientes tiene longitud == total_electrodes, se interpreta como
+            #   "corriente por índice de electrodo".
+            # - En caso contrario, se interpreta como "corriente por orden del mapeo" (0-based),
+            #   es decir, currents[0] para el 1º electrodo de electrode_indices, currents[1] para el 2º, etc.
+            # y tras esto se aplica default_current
 
-            # Crear experiment de mapeo
+            electrode_order_index = electrode_num - 1
+            current_uA = _select_current_uA(
+                STIMULATION_CURRENTS_UA,
+                electrode_index=electrode_index,
+                order_index=electrode_order_index,
+                total_electrodes=total_electrodes,
+                default_current_uA=stim_config.get("default_current_uA", 90.0),
+            )
+
+            # Crear experiment de mapeo para este electrodo
             try:
                 electrode_info = mapper.get_electrode_info(electrode_index)
             except Exception:
@@ -1229,8 +1013,15 @@ Ejemplos de uso:
                 electrode_index=electrode_index,
                 electrode_info=electrode_info,
                 num_repetitions=num_repetitions,
-                experiment_name=experiment_name,
+                experiment_name=f"mapeo_electrodo_{electrode_index}",
             )
+
+            # Cambiar directorio a la carpeta multi-electrodo
+            mapping_experiment.experiment_dir = multi_experiment_dir
+            mapping_experiment.electrode_dir = (
+                multi_experiment_dir / f"electrode_{electrode_index:03d}"
+            )
+            mapping_experiment.electrode_dir.mkdir(parents=True, exist_ok=True)
 
             # Crear StimulationScreen para este electrodo
             stimulation_screen = StimulationScreen(
@@ -1246,12 +1037,14 @@ Ejemplos de uso:
 
             # Ejecutar N repeticiones
             print("=" * 70)
-            print(f"INICIANDO EXPERIMENTO DE MAPEO")
-            print(f"Electrodo: {electrode_index}")
+            print(
+                f"ELECTRODO {electrode_num} de {len(electrode_indices)}: {electrode_index}"
+            )
             print(f"Repeticiones: {num_repetitions}")
             print("=" * 70)
             print()
 
+            user_cancelled = False
             for rep_num in range(1, num_repetitions + 1):
                 rep_metadata = mapping_experiment.run_single_repetition(
                     repetition_number=rep_num,
@@ -1271,77 +1064,124 @@ Ejemplos de uso:
 
                 if rep_metadata is None:
                     # Usuario canceló
-                    print("\n[INFO] Experimento de mapeo cancelado por el usuario")
-                    cleanup_and_exit(eye_tracker, webcam_viewer)
-                    return
+                    print("\n[INFO] Experimento cancelado por el usuario")
+                    user_cancelled = True
+                    break
 
-            # Finalizar experimento de mapeo
+            if user_cancelled:
+                cleanup_and_exit(eye_tracker, webcam_viewer)
+                return
+
+            # Finalizar experimento de este electrodo
             mapping_experiment.finalize()
+            completed_electrodes.append(electrode_index)
 
-            # Ya no necesitamos eye tracker ni webcam viewer
-            if eye_tracker:
-                eye_tracker.release()
-            if webcam_viewer:
-                webcam_viewer.release()
-
-            # ============================================
-            # ANÁLISIS AUTOMÁTICO DE RESULTADOS
-            # ============================================
+            # ⚠️ ANÁLISIS INDIVIDUAL: Desactivado durante experimento para evitar interferencias
+            # El análisis consolidado al final es más eficiente y no interfiere con Pygame
+            # Si necesitas análisis individual, descomentar las líneas abajo
+            """
             print("\n" + "=" * 70)
-            print("ANÁLISIS AUTOMÁTICO DE RESULTADOS")
-            print("=" * 70)
-            print()
+            print(f"ANÁLISIS ELECTRODO {electrode_index}")
+            print("=" * 70 + "\n")
 
             try:
-                # Crear analizador
                 analyzer = PhospheneMappingAnalyzer(mapping_experiment.electrode_dir)
-
-                # Ejecutar análisis
                 results = analyzer.analyze_electrode_repetitions()
 
                 if results:
-                    # Guardar visualización matplotlib como PNG
                     fig = analyzer.visualize_results(results)
                     if fig:
                         import matplotlib.pyplot as plt
-
-                        plt.close(fig)  # Cerrar la figura después de guardarla
-
-                    # Resumen en consola
-                    print("\n" + "=" * 70)
-                    print("RESUMEN DE RESULTADOS")
-                    print("=" * 70)
-                    print(f"Electrodo: {results['electrode_index']}")
-                    print(
-                        f"Repeticiones válidas: {results['num_valid_repetitions']}/{results['num_total_repetitions']}"
-                    )
-                    print(
-                        f"Posición promedio: ({results['mean_position']['x']:.1f}, {results['mean_position']['y']:.1f}) px"
-                    )
-                    print(
-                        f"Desviación estándar: ({results['std_position']['x']:.1f}, {results['std_position']['y']:.1f}) px"
-                    )
-                    print(
-                        f"Distancia media al promedio: {results['mean_distance_from_average']:.1f} px"
-                    )
-                    print("=" * 70)
-                    print()
-
-                else:
-                    print("⚠ No se pudieron analizar los resultados")
-
+                        plt.close(fig)
             except Exception as e:
-                print(f"✗ ERROR durante el análisis: {e}")
-                import traceback
+                print(f"⚠ Error durante análisis individual: {e}")
+            """
 
-                traceback.print_exc()
+            # Si hay más electrodos, mostrar pantalla de transición
+            if electrode_num < len(electrode_indices):
+                print("\n" + "=" * 70)
+                print("TRANSICIÓN AL SIGUIENTE ELECTRODO")
+                print("=" * 70)
+                continue_to_next = show_electrode_transition_screen(
+                    screen=screen,
+                    clock=clock,
+                    current_electrode=electrode_index,
+                    next_electrode=electrode_indices[electrode_num],
+                    screen_width=SCREEN_WIDTH,
+                    screen_height=SCREEN_HEIGHT,
+                )
+
+                if not continue_to_next:
+                    # Usuario presionó ESC
+                    print(
+                        "\n[INFO] Experimento cancelado por el usuario en pantalla de transición"
+                    )
+                    cleanup_and_exit(eye_tracker, webcam_viewer)
+                    return
+
+            print()
+
+        # ════════════════════════════════════════
+        # ANÁLISIS CONSOLIDADO DE TODOS LOS ELECTRODOS
+        # ════════════════════════════════════════
+        print("\n" + "=" * 70)
+        print("ANÁLISIS CONSOLIDADO")
+        print("=" * 70 + "\n")
+
+        # Ya no necesitamos eye tracker ni webcam viewer
+        if eye_tracker:
+            eye_tracker.release()
+        if webcam_viewer:
+            webcam_viewer.release()
+
+        try:
+            from scripts.multi_electrode_analyzer import MultiElectrodeAnalyzer
+
+            # Crear analizador consolidado
+            multi_analyzer = MultiElectrodeAnalyzer(multi_experiment_dir)
+
+            # Analizar todos los electrodos
+            consolidated_results = multi_analyzer.analyze_all_electrodes()
+
+            if consolidated_results:
+                # Generar visualización consolidada
+                multi_analyzer.visualize_consolidated_map(consolidated_results)
+
+                # Generar reporte
+                multi_analyzer.create_summary_report(consolidated_results)
+
+                print("\n" + "=" * 70)
+                print("MAPEO CONSOLIDADO COMPLETADO")
+                print("=" * 70)
+                print(f"\n📁 Resultados guardados en: {multi_experiment_dir}")
+                print(f"   └─ consolidated_analysis/ (análisis integrado)")
+
+            else:
+                print("⚠ No se pudieron generar resultados consolidados")
+
+        except Exception as e:
+            print(f"✗ ERROR en análisis consolidado: {e}")
+            import traceback
+
+            traceback.print_exc()
+
+        # ════════════════════════════════════════
+        # PANTALLA DE FINALIZACIÓN
+        # ════════════════════════════════════════
+        print("\n" + "=" * 70)
+        print("EXPERIMENTO COMPLETADO - Esperando confirmación del usuario...")
+        print("=" * 70 + "\n")
+
+        show_experiment_completion_screen(
+            screen=screen,
+            clock=clock,
+            screen_width=SCREEN_WIDTH,
+            screen_height=SCREEN_HEIGHT,
+        )
 
         # Mensaje final
         print("\n📁 Resultados guardados en:")
-        if is_multi_electrode:
-            print(f"   {multi_experiment_dir}")
-        else:
-            print(f"   {mapping_experiment.electrode_dir}")
+        print(f"   {multi_experiment_dir}")
         print()
         print("Presiona cualquier tecla para salir...")
         waiting = True
@@ -1420,16 +1260,13 @@ Ejemplos de uso:
         # Regla de coherencia:
         # - Si el vector tiene longitud == total_electrodes: corriente por índice de electrodo.
         # - Si no: corriente por orden de presentación (phosphene_index).
-        if len(STIMULATION_CURRENTS_STANDARD_UA) == total_electrodes:
-            if electrode_index < len(STIMULATION_CURRENTS_STANDARD_UA):
-                current_uA = STIMULATION_CURRENTS_STANDARD_UA[electrode_index]
-            else:
-                current_uA = float(stim_config.get("default_current_uA", 90.0))
-        else:
-            if phosphene_index < len(STIMULATION_CURRENTS_STANDARD_UA):
-                current_uA = STIMULATION_CURRENTS_STANDARD_UA[phosphene_index]
-            else:
-                current_uA = float(stim_config.get("default_current_uA", 90.0))
+        current_uA = _select_current_uA(
+            STIMULATION_CURRENTS_STANDARD_UA,
+            electrode_index=electrode_index,
+            order_index=phosphene_index,
+            total_electrodes=total_electrodes,
+            default_current_uA=stim_config.get("default_current_uA", 90.0),
+        )
 
         print("=" * 70)
         print(f"PUNTO BRILLANTE {phosphene_display_number}/{NUM_PHOSPHENES}")
@@ -1716,11 +1553,13 @@ Ejemplos de uso:
 
     try:
         from scripts.standard_analyzer import StandardExperimentAnalyzer
+
         analyzer = StandardExperimentAnalyzer(experiment_dir)
         analyzer.analyze_all_electrodes()
     except Exception as e:
         print(f" Error en análisis standard: {e}")
         import traceback
+
         traceback.print_exc()
 
     # Mostrar pantalla de finalización

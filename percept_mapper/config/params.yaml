@@ -5,12 +5,12 @@ experiment:
 experiment_mode: mapping
 phosphene_mapping:
   electrodes_by_implant:
-  - implant_id: 3a10244ec859
+  - implant_id: 7c5bec897f45
     electrode_index:
     - 30
-    - 95
-    - 70
-  num_repetitions: 5
+    - 52
+    - 69
+  num_repetitions: 2
   experiment_name: mapeo_multiples_electrodos
   interstimulation_between_reps: true
   enabled: true
@@ -20,7 +20,7 @@ phosphene_mapping:
   save_eyetracking_data: true
   save_stimulation_metadata: true
   save_stimulation_currents_uA: true
-input_mode: mouse
+input_mode: gaze
 screen:
   width: 1920
   height: 1080
@@ -47,18 +47,13 @@ timing:
   interstimulation: 500
   max_fixation_wait: 100000
 stimulation:
-  pulse_width: 200
+  pulse_width: 190
   frequency: 50
   default_current_uA: 90
   stimulation_currents_uA:
-  - 90
-  - 90
-  - 90
+  - 30.0
   stimulation_currents_standard_uA:
-  - 150
-  - 30
-  - 90
-  - 40
+  - 90.0
 eye_tracker:
   enabled: true
   camera_index: 0
@@ -116,17 +111,21 @@ retinotopic_mapping:
   implant_id_filter: all
   coordinate_source: phoslab_csv
   coords_csv_path: C:/Users/lilli/OneDrive - Universidad Politécnica de Cartagena/AÑO
-    4 2025-2026/phoslab/percept_mapper/config/trial5.csv
+    4 2025-2026/phoslab/percept_mapper/config/trial3.csv
   coordinate_files:
     shanks_10x16: config/coords_shanks_10x16.yaml
     shanks_10x32: config/coords_shanks_10x32.yaml
     squares_utah: config/coords_squares_utah.yaml
   dropout: 0.0
   electrode_selection:
-    mode: range
+    mode: manual
     start: 11
     end: 15
     step: 1
+    indices:
+    - 65
+    - 75
+    - 85
   cortical_magnification:
     k: 17.0
     a: 0.75
