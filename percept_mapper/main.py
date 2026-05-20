@@ -535,7 +535,15 @@ Ejemplos de uso:
         help="Número de repeticiones (alternativa)",
     )
 
+    parser.add_argument(
+        "--no-save",
+        action="store_true",
+        dest="no_save",
+        help="No guardar los datos del experimento en disco",
+    )
+
     args = parser.parse_args()
+    SAVE_RESULTS = not args.no_save
 
     # CARGAR CONFIGURACIÓN DESDE YAML
     print("=" * 70)
@@ -931,15 +939,20 @@ Ejemplos de uso:
         print("=" * 70)
         print()
 
-        # Crear carpeta del experimento con timestamp
+        # Crear carpeta del experimento con timestamp (solo si se van a guardar resultados)
         experiment_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        multi_experiment_dir = (
-            Path("mapping_experiments")
-            / f"mapping_mapeo_multiples_electrodo_{experiment_timestamp}"
-        )
-        multi_experiment_dir.mkdir(parents=True, exist_ok=True)
-
-        print(f"Carpeta de experimento: {multi_experiment_dir}\n")
+        if SAVE_RESULTS:
+            multi_experiment_dir = (
+                Path("mapping_experiments")
+                / f"mapping_mapeo_multiples_electrodo_{experiment_timestamp}"
+            )
+            multi_experiment_dir.mkdir(parents=True, exist_ok=True)
+            print(f"Carpeta de experimento: {multi_experiment_dir}\n")
+        else:
+            multi_experiment_dir = None
+            print(
+                "⚠️  Modo sin guardado: los datos del experimento NO se guardarán en disco\n"
+            )
 
         # Ejecutar mapeo para cada electrodo
         completed_electrodes = []
@@ -1014,14 +1027,8 @@ Ejemplos de uso:
                 electrode_info=electrode_info,
                 num_repetitions=num_repetitions,
                 experiment_name=f"mapeo_electrodo_{electrode_index}",
+                experiment_dir=multi_experiment_dir,
             )
-
-            # Cambiar directorio a la carpeta multi-electrodo
-            mapping_experiment.experiment_dir = multi_experiment_dir
-            mapping_experiment.electrode_dir = (
-                multi_experiment_dir / f"electrode_{electrode_index:03d}"
-            )
-            mapping_experiment.electrode_dir.mkdir(parents=True, exist_ok=True)
 
             # Crear StimulationScreen para este electrodo
             stimulation_screen = StimulationScreen(
@@ -1072,8 +1079,9 @@ Ejemplos de uso:
                 cleanup_and_exit(eye_tracker, webcam_viewer)
                 return
 
-            # Finalizar experimento de este electrodo
-            mapping_experiment.finalize()
+            # Finalizar experimento de este electrodo (solo guardar si SAVE_RESULTS)
+            if SAVE_RESULTS:
+                mapping_experiment.finalize()
             completed_electrodes.append(electrode_index)
 
             # ⚠️ ANÁLISIS INDIVIDUAL: Desactivado durante experimento para evitar interferencias
@@ -1134,36 +1142,39 @@ Ejemplos de uso:
         if webcam_viewer:
             webcam_viewer.release()
 
-        try:
-            from scripts.multi_electrode_analyzer import MultiElectrodeAnalyzer
+        if SAVE_RESULTS:
+            try:
+                from scripts.multi_electrode_analyzer import MultiElectrodeAnalyzer
 
-            # Crear analizador consolidado
-            multi_analyzer = MultiElectrodeAnalyzer(multi_experiment_dir)
+                # Crear analizador consolidado
+                multi_analyzer = MultiElectrodeAnalyzer(multi_experiment_dir)
 
-            # Analizar todos los electrodos
-            consolidated_results = multi_analyzer.analyze_all_electrodes()
+                # Analizar todos los electrodos
+                consolidated_results = multi_analyzer.analyze_all_electrodes()
 
-            if consolidated_results:
-                # Generar visualización consolidada
-                multi_analyzer.visualize_consolidated_map(consolidated_results)
+                if consolidated_results:
+                    # Generar visualización consolidada
+                    multi_analyzer.visualize_consolidated_map(consolidated_results)
 
-                # Generar reporte
-                multi_analyzer.create_summary_report(consolidated_results)
+                    # Generar reporte
+                    multi_analyzer.create_summary_report(consolidated_results)
 
-                print("\n" + "=" * 70)
-                print("MAPEO CONSOLIDADO COMPLETADO")
-                print("=" * 70)
-                print(f"\n📁 Resultados guardados en: {multi_experiment_dir}")
-                print(f"   └─ consolidated_analysis/ (análisis integrado)")
+                    print("\n" + "=" * 70)
+                    print("MAPEO CONSOLIDADO COMPLETADO")
+                    print("=" * 70)
+                    print(f"\n📁 Resultados guardados en: {multi_experiment_dir}")
+                    print(f"   └─ consolidated_analysis/ (análisis integrado)")
 
-            else:
-                print("⚠ No se pudieron generar resultados consolidados")
+                else:
+                    print("⚠ No se pudieron generar resultados consolidados")
 
-        except Exception as e:
-            print(f"✗ ERROR en análisis consolidado: {e}")
-            import traceback
+            except Exception as e:
+                print(f"✗ ERROR en análisis consolidado: {e}")
+                import traceback
 
-            traceback.print_exc()
+                traceback.print_exc()
+        else:
+            print("\n⚠️  Modo sin guardado: análisis consolidado omitido")
 
         # ════════════════════════════════════════
         # PANTALLA DE FINALIZACIÓN
@@ -1180,8 +1191,11 @@ Ejemplos de uso:
         )
 
         # Mensaje final
-        print("\n📁 Resultados guardados en:")
-        print(f"   {multi_experiment_dir}")
+        if SAVE_RESULTS:
+            print("\n📁 Resultados guardados en:")
+            print(f"   {multi_experiment_dir}")
+        else:
+            print("\n⚠️  Experimento completado sin guardar datos en disco")
         print()
         print("Presiona cualquier tecla para salir...")
         waiting = True

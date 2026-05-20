@@ -23,9 +23,6 @@ dependencies = [
 [tool.setuptools.packages.find]
 include = ["core*", "config*", "demo*"]
 
-[tool.uv.sources]
-torch = { path = "../../../../Downloads/torch-2.6.0+cpu-cp311-cp311-win_amd64.whl" }
-
 [[tool.uv.index]]
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"

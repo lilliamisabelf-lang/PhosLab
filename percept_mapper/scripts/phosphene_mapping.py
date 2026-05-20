@@ -35,6 +35,7 @@ class PhospheneMappingExperiment:
         display_info=None,
         num_repetitions=5,
         experiment_name="default",
+        experiment_dir=None,
     ):
         """
         Inicializa un experimento de mapeo de fosfenos
@@ -52,6 +53,8 @@ class PhospheneMappingExperiment:
             electrode_index: Índice del electrodo a mapear
             num_repetitions: Número de repeticiones N por electrodo
             experiment_name: Nombre descriptivo del experimento
+            experiment_dir: Si se proporciona, usa esta carpeta en lugar de crear una nueva
+                            (usado en modo multi-electrodo para evitar carpetas duplicadas)
         """
         print(
             f"\n[PhospheneMappingExperiment] Inicializando mapeo de electrodo {electrode_index}"
@@ -75,10 +78,15 @@ class PhospheneMappingExperiment:
 
         # Crear carpeta del experimento de mapeo
         experiment_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.experiment_dir = (
-            Path("mapping_experiments")
-            / f"mapping_{experiment_name}_{experiment_timestamp}"
-        )
+        if experiment_dir is not None:
+            # Modo multi-electrodo: usar carpeta externa ya creada, no crear carpeta propia
+            self.experiment_dir = Path(experiment_dir)
+        else:
+            # Modo electrodo único: crear carpeta propia
+            self.experiment_dir = (
+                Path("mapping_experiments")
+                / f"mapping_{experiment_name}_{experiment_timestamp}"
+            )
         self.electrode_dir = self.experiment_dir / f"electrode_{electrode_index:03d}"
         self.electrode_dir.mkdir(parents=True, exist_ok=True)
 

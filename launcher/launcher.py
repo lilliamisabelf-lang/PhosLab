@@ -906,6 +906,28 @@ class PipelineLauncher(QMainWindow):
         esel_lay.addWidget(self._esel_manual_widget)
         self._esel_manual_widget.hide()
 
+        # ── Electrodos disponibles (desde CSV) ─────────────────────────
+        avail_lbl = QLabel("Electrodos disponibles:")
+        avail_lbl.setStyleSheet("color: #c9d1e0; font-size: 12px; margin-top: 6px;")
+        esel_lay.addWidget(avail_lbl)
+
+        self._std_electrodes_scroll = QScrollArea()
+        self._std_electrodes_scroll.setWidgetResizable(True)
+        self._std_electrodes_scroll.setFixedHeight(130)
+        self._std_electrodes_scroll.setStyleSheet("QScrollArea { border: none; }")
+        self._std_electrodes_container = QWidget()
+        self._std_electrodes_layout = QVBoxLayout(self._std_electrodes_container)
+        self._std_electrodes_layout.setSpacing(6)
+        self._std_electrodes_layout.setContentsMargins(0, 0, 0, 0)
+        self._std_electrodes_layout.addStretch()
+        self._std_electrodes_scroll.setWidget(self._std_electrodes_container)
+
+        _std_no_csv_lbl = QLabel("Carga un CSV para ver los electrodos disponibles")
+        _std_no_csv_lbl.setStyleSheet("color: #4a5568; font-size: 11px; padding: 8px;")
+        self._std_electrodes_layout.insertWidget(0, _std_no_csv_lbl)
+
+        esel_lay.addWidget(self._std_electrodes_scroll)
+
         std_lay.addWidget(esel_grp)
 
         # stimulation standard
@@ -1378,6 +1400,8 @@ class PipelineLauncher(QMainWindow):
 
         # Reconstruir bloques de electrodos por implant en la página de parámetros
         self._rebuild_implant_electrode_blocks()
+        # Actualizar panel de electrodos disponibles en modo Standard
+        self._rebuild_std_electrode_info()
 
         # Actualizar params.yaml con ruta del CSV
         self._update_params_csv(str(dst))
@@ -1629,6 +1653,7 @@ class PipelineLauncher(QMainWindow):
             self._implant_list.selectAll()
 
             self._rebuild_implant_electrode_blocks()
+            self._rebuild_std_electrode_info()
             saved_by_implant = self._params.get("phosphene_mapping", {}).get(
                 "electrodes_by_implant", []
             )
@@ -1888,6 +1913,49 @@ class PipelineLauncher(QMainWindow):
     def _on_mode_changed(self, mode: str):
         self._mapping_grp.setVisible(mode == "mapping")
         self._standard_grp.setVisible(mode == "standard")
+
+    def _rebuild_std_electrode_info(self):
+        """Reconstruye el panel de electrodos disponibles en el modo Standard."""
+        # Limpiar layout anterior (excepto el stretch final)
+        while self._std_electrodes_layout.count() > 1:
+            item = self._std_electrodes_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+        if not self._implant_data:
+            no_csv = QLabel("Carga un CSV para ver los electrodos disponibles")
+            no_csv.setStyleSheet("color: #4a5568; font-size: 11px; padding: 8px;")
+            self._std_electrodes_layout.insertWidget(0, no_csv)
+            return
+
+        for i, (iid, available_indices) in enumerate(self._implant_data.items()):
+            block = QFrame()
+            block.setStyleSheet(
+                "QFrame { background: rgba(99,102,241,0.06); "
+                "border: 0.5px solid rgba(100,120,200,0.2); border-radius: 6px; }"
+            )
+            bl = QVBoxLayout(block)
+            bl.setContentsMargins(10, 6, 10, 6)
+            bl.setSpacing(3)
+
+            hdr = QHBoxLayout()
+            id_lbl = QLabel(f"Implant: {iid}")
+            id_lbl.setStyleSheet("color: #818cf8; font-size: 12px; font-weight: 500;")
+            hdr.addWidget(id_lbl)
+            count_lbl = QLabel(f"{len(available_indices)} electrodos")
+            count_lbl.setStyleSheet("color: #27ae60; font-size: 11px;")
+            hdr.addStretch()
+            hdr.addWidget(count_lbl)
+            bl.addLayout(hdr)
+
+            hint = QLabel(
+                f"Disponibles: {', '.join(str(x) for x in available_indices)}"
+            )
+            hint.setStyleSheet("color: #6b7280; font-size: 10px;")
+            hint.setWordWrap(True)
+            bl.addWidget(hint)
+
+            self._std_electrodes_layout.insertWidget(i, block)
 
     def _on_esel_changed(self, mode: str):
         self._esel_range_widget.setVisible(mode == "range")
