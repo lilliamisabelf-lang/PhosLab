@@ -405,7 +405,7 @@ class DynaphosMapper:
                 )
 
             entries.append((implant_id, idx, x_deg, y_deg))
-        
+
         unique_keys = [(e[0], e[1]) for e in entries]
         if len(set(unique_keys)) != len(unique_keys):
             raise ValueError(
@@ -444,8 +444,6 @@ class DynaphosMapper:
             for imp_id, offset in implant_offsets.items():
                 print(f"                 - Implant '{imp_id}': offset {offset}")
 
-
-        
         meta = {
             "path": str(csv_path),
             "pol_convention": str(pol_convention).strip().lower(),
@@ -506,6 +504,15 @@ class DynaphosMapper:
             f"[DynaphosMapper] Electrodos activos: {num_active}/{self.num_electrodes}"
         )
 
+    def _get_valid_electrode_indices(self):
+        """Devuelve lista de índices globales que tienen coordenadas válidas (no NaN)."""
+        px = self.electrode_positions_visual_px
+        return [
+            int(i)
+            for i in range(self.num_electrodes)
+            if np.isfinite(px[i][0]) and np.isfinite(px[i][1])
+        ]
+
     def configure_electrodes_from_selection(self, selection_config):
         """
         Configura electrodos activos basándose en el diccionario de configuración
@@ -520,15 +527,20 @@ class DynaphosMapper:
             indices = selection_config.get("indices", [])
             self.set_active_electrodes(indices)
 
+        elif mode == "all":
+            # Todos los electrodos con coordenadas válidas en el CSV
+            indices = self._get_valid_electrode_indices()
+            print(
+                f"[ALL] Seleccionados {len(indices)} electrodos válidos: {indices[:8]}{'...' if len(indices) > 8 else ''}"
+            )
+            self.set_active_electrodes(indices)
+
         elif mode == "pattern":
             # Modo pattern: usar patrones predefinidos
             pattern = selection_config.get("pattern", "random")
             n_electrodes = selection_config.get("n_electrodes", 10)
 
-            if pattern == "all":
-                # Todos los electrodos
-                indices = list(range(self.num_electrodes))
-            elif pattern == "random":
+            if pattern == "random":
                 # N electrodos aleatorios
                 indices = random.sample(
                     range(self.num_electrodes), min(n_electrodes, self.num_electrodes)
@@ -556,11 +568,19 @@ class DynaphosMapper:
             self.set_active_electrodes(indices)
 
         elif mode == "range":
-            # Modo range: rango con saltos
+            # Modo range: selecciona electrodos cuyo electrode_index esté
+            # dentro del rango [start, end) con paso step.
+            # Se excluyen automáticamente índices sin coordenadas en el CSV (NaN).
             start = selection_config.get("start", 0)
             end = selection_config.get("end", self.num_electrodes)
             step = selection_config.get("step", 1)
-            indices = list(range(start, min(end, self.num_electrodes), step))
+            requested = set(range(int(start), int(end), int(step)))
+            valid_set = set(self._get_valid_electrode_indices())
+            indices = sorted(requested & valid_set)
+            skipped = sorted(requested - valid_set)
+            if skipped:
+                print(f"[RANGE] Índices pedidos sin coordenadas en el CSV (ignorados): {skipped}")
+            print(f"[RANGE] Seleccionados {len(indices)} electrodos: {indices[:8]}{'...' if len(indices) > 8 else ''}")
             self.set_active_electrodes(indices)
 
         else:

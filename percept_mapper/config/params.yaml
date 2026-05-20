@@ -117,14 +117,16 @@ retinotopic_mapping:
     squares_utah: config/coords_squares_utah.yaml
   dropout: 0.0
   electrode_selection:
-    mode: range
-    start: 10
-    end: 16
-    step: 1
+    mode: manual
+    start: 5
+    end: 18
+    step: 2
     indices:
-    - 85
-    - 40
-    - 18
+    - 28
+    - 29
+    - 38
+    - 42
+    - 41
   cortical_magnification:
     k: 17.0
     a: 0.75

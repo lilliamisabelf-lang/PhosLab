@@ -803,6 +803,9 @@ Ejemplos de uso:
     # ============================================
     # RESOLVER CORRIENTES (ahora ya sabemos total_electrodes)
     # ============================================
+    # total_electrodes = tamaño COMPLETO del array (antes de filtrar por selection)
+    # Se usa para resolver corrientes mapping y como referencia global.
+
     total_electrodes = len(mapper.active_electrodes)
     default_uA_sparse = float(stim_config.get("default_current_uA", 0.0))
 
@@ -811,6 +814,8 @@ Ejemplos de uso:
         total_electrodes=total_electrodes,
         default_uA_fallback=90.0,
     )
+    # STANDARD_UA se resolverá de nuevo tras configure_electrodes_from_selection
+    # para que total_electrodes refleje solo los electrodos activos del selection.
     STIMULATION_CURRENTS_STANDARD_UA = _resolve_currents_uA(
         STIMULATION_CURRENTS_STANDARD_CFG,
         total_electrodes=total_electrodes,
@@ -894,11 +899,11 @@ Ejemplos de uso:
         )
 
     else:
-        # MODO STANDARD: Los electrodos son los de electrode_selection
-        mapper.configure_electrodes_from_selection(
-            electrode_config["electrode_selection"]
-        )
-        print(f"[STANDARD] Electrodos según electrode_selection configurados")
+            # MODO STANDARD: Los electrodos son los de electrode_selection
+            mapper.configure_electrodes_from_selection(
+                electrode_config["electrode_selection"]
+            )
+            print(f"[STANDARD] Electrodos según electrode_selection configurados")
 
     # Obtener posiciones de fosfenos
     PHOSPHENE_POSITIONS = mapper.get_active_phosphene_positions()
