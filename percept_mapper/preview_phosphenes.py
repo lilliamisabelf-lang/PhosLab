@@ -148,9 +148,9 @@ def main():
     show_grid = True
 
     # Fuentes
-    font_large = pygame.font.Font(None, 36)
-    font_small = pygame.font.Font(None, 24)
-    font_tiny = pygame.font.Font(None, 18)
+    font_large = pygame.font.Font(None, 48)
+    font_small = pygame.font.Font(None, 32)
+    font_tiny = pygame.font.Font(None, 24)
 
     # ============================================
     # BUCLE PRINCIPAL

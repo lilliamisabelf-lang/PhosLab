@@ -128,6 +128,8 @@ def _ensure_valid_qt_app_font(app: QApplication, fallback_pt: int = 11) -> None:
 # =============================================================================
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DATA_ROOT = REPO_ROOT / "data" / "nhp"
+# Exported receptive fields always live under implant_explorer/data/exported_RFs
+EXPORTED_RFS_DIR = REPO_ROOT / "data" / "exported_RFs"
 atlas_path = str(DATA_ROOT / "atlas" / "D99_in_Spike_iso.nii.gz")
 prf_path = str(DATA_ROOT / "prf_maps")
 fiducials_path = str(DATA_ROOT / "fiducials")
@@ -4942,15 +4944,29 @@ class ImplantExplorerWindow(QMainWindow):
                     }
                 )
 
+    @staticmethod
+    def _default_rf_export_path(suffix):
+        """Default save path under implant_explorer/data/exported_RFs."""
+        EXPORTED_RFS_DIR.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        return str(EXPORTED_RFS_DIR / f"exported_rf_{stamp}{suffix}")
+
     def _export_rfs_csv(self):
         rows = self._build_rf_export_rows()
         opts = QFileDialog.Options()
         opts |= QFileDialog.DontUseNativeDialog
         path, _ = QFileDialog.getSaveFileName(
-            self, "Export RFs CSV", "", "CSV Files (*.csv)", options=opts
+            self,
+            "Export RFs CSV",
+            self._default_rf_export_path(".csv"),
+            "CSV Files (*.csv)",
+            options=opts,
         )
         if not path:
             return
+        # Ensure the .csv extension is present even if the user omitted it.
+        if not path.lower().endswith(".csv"):
+            path += ".csv"
         self._write_rf_export_csv(path, rows)
         self._show_info_message("Saved", f"RF CSV saved:\n{path}\n\nRows: {len(rows)}")
 
@@ -4960,10 +4976,17 @@ class ImplantExplorerWindow(QMainWindow):
         opts = QFileDialog.Options()
         opts |= QFileDialog.DontUseNativeDialog
         path, _ = QFileDialog.getSaveFileName(
-            self, "Export RFs JSON", "", "JSON Files (*.json)", options=opts
+            self,
+            "Export RFs JSON",
+            self._default_rf_export_path(".json"),
+            "JSON Files (*.json)",
+            options=opts,
         )
         if not path:
             return
+        # Ensure the .json extension is present even if the user omitted it.
+        if not path.lower().endswith(".json"):
+            path += ".json"
         with open(path, "w", encoding="utf-8") as f:
             json.dump(payload, f, indent=2)
         self._show_info_message("Saved", f"RF JSON saved:\n{path}\n\nRows: {len(rows)}")

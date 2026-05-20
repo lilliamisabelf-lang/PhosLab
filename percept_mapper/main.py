@@ -338,9 +338,9 @@ def show_mapping_results_pygame(
     centroids = results["centroids"]
 
     # Fuentes
-    font_large = pygame.font.Font(None, 56)
-    font_medium = pygame.font.Font(None, 42)
-    font_small = pygame.font.Font(None, 32)
+    font_large = pygame.font.Font(None, 76)
+    font_medium = pygame.font.Font(None, 56)
+    font_small = pygame.font.Font(None, 44)
 
     running = True
     while running:
@@ -616,19 +616,35 @@ Ejemplos de uso:
                 pass
     pygame.init()
 
-    # Info del monitor (solo informativo)
+    # Info del monitor
     display_info = pygame.display.Info()
     native_width = display_info.current_w
     native_height = display_info.current_h
     print(f"[INIT] Resolución nativa del monitor: {native_width}x{native_height}")
 
+    # Tamaño de ventana adaptativo: por defecto la ventana se ajusta a la
+    # pantalla actual para funcionar en distintos PCs y monitores. Se puede
+    # desactivar poniendo `screen.adaptive: false` en params.yaml para usar
+    # la resolución fija indicada por width/height.
+    adaptive = screen_config.get("adaptive", True)
+    if adaptive and native_width > 0 and native_height > 0:
+        if FULLSCREEN:
+            # Fullscreen ocupa toda la pantalla nativa.
+            SCREEN_WIDTH = native_width
+            SCREEN_HEIGHT = native_height
+        else:
+            # En modo ventana dejamos margen para la barra de título / bordes.
+            SCREEN_WIDTH = min(SCREEN_WIDTH, int(native_width * 0.95))
+            SCREEN_HEIGHT = min(SCREEN_HEIGHT, int(native_height * 0.92))
+        print(
+            f"[INIT] Tamaño adaptativo de ventana: {SCREEN_WIDTH}x{SCREEN_HEIGHT}"
+        )
+
     if FULLSCREEN:
-        # Usar la resolución especificada por el usuario (params.yaml)
         screen = pygame.display.set_mode(
             (SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN
         )
     else:
-        # Usar la resolución especificada por el usuario (params.yaml)
         screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
     pygame.display.set_caption("Simulador Prótesis Cortical")
@@ -1616,9 +1632,9 @@ def show_electrode_transition_screen(
     WHITE = (255, 255, 255)
     LIGHT_BLUE = (100, 200, 255)
 
-    font_large = pygame.font.Font(None, 72)
-    font_medium = pygame.font.Font(None, 48)
-    font_small = pygame.font.Font(None, 36)
+    font_large = pygame.font.Font(None, 96)
+    font_medium = pygame.font.Font(None, 64)
+    font_small = pygame.font.Font(None, 48)
 
     waiting = True
     while waiting:
@@ -1696,9 +1712,9 @@ def show_experiment_completion_screen(screen, clock, screen_width, screen_height
     WHITE = (255, 255, 255)
     GREEN = (100, 255, 100)
 
-    font_large = pygame.font.Font(None, 96)
-    font_medium = pygame.font.Font(None, 48)
-    font_small = pygame.font.Font(None, 36)
+    font_large = pygame.font.Font(None, 124)
+    font_medium = pygame.font.Font(None, 64)
+    font_small = pygame.font.Font(None, 48)
 
     waiting = True
     while waiting:
@@ -2028,8 +2044,8 @@ def run_interstimulation(
     print(f"      → (Presiona ESPACIO para saltar el descanso)")
 
     inter_start_time = time.time()
-    font_large = pygame.font.Font(None, 72)
-    font_timer = pygame.font.Font(None, 96)
+    font_large = pygame.font.Font(None, 96)
+    font_timer = pygame.font.Font(None, 124)
 
     while True:
         elapsed_ms = (time.time() - inter_start_time) * 1000

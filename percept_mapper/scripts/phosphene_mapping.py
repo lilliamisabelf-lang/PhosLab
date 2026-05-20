@@ -338,8 +338,8 @@ class PhospheneMappingExperiment:
         Similar a run_interstimulation pero adaptado para mapeo
         """
         background_color = tuple(self.params["screen"]["background_color"])
-        font = pygame.font.Font(None, 72)
-        font_small = pygame.font.Font(None, 48)
+        font = pygame.font.Font(None, 96)
+        font_small = pygame.font.Font(None, 64)
 
         INTERSTIMULATION_MS = self.timing_config["interstimulation_ms"]
         start_time = time.time()

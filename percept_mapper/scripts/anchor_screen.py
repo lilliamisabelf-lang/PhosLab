@@ -42,7 +42,7 @@ class AnchorScreen:
         self.is_looking = False
 
         # Fuente para texto
-        self.font = pygame.font.Font(None, 32)
+        self.font = pygame.font.Font(None, 44)
 
         print("[AnchorScreen] Inicializado")
 

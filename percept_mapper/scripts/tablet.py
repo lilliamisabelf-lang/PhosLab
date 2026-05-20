@@ -46,7 +46,7 @@ class DrawingTablet:
         self.finished = False
 
         # Fuente para título
-        self.font = pygame.font.Font(None, 48)
+        self.font = pygame.font.Font(None, 64)
 
         print("[DrawingTablet] ✓ Inicializado")
 
