@@ -145,7 +145,25 @@ class StandardExperimentAnalyzer:
 
         results_list = []
 
+        # Catch / practice gating (de §1.2 y §1.4 del rigor plan): los catch
+        # trials no llevan estimulación, las prácticas no se guardan como
+        # señal. Ninguno entra en el análisis principal. Catch responses se
+        # reportan por separado al final.
+        catch_total = 0
+        catch_with_response = 0
+
         for phos in phosphenes:
+            if phos.get("is_practice"):
+                continue
+            if phos.get("is_catch"):
+                catch_total += 1
+                resp = resolve_response_features(
+                    phos, self.experiment_dir, self._extract_centroid
+                )
+                if resp.get("ok"):
+                    catch_with_response += 1
+                continue
+
             electrode_index = phos["electrode_index"]
             stim_pos = phos.get("position", [0, 0])
             electrode_info = phos.get("electrode_info", {})
@@ -339,6 +357,21 @@ class StandardExperimentAnalyzer:
 
         # Guardar CSV consolidado
         self._export_consolidated_csv(results_list)
+
+        # Reporte agregado de catch trials (tasa de false-positive)
+        if catch_total > 0:
+            rate = catch_with_response / catch_total
+            print(
+                f"\n[StandardAnalyzer] Catch trials: {catch_with_response}/{catch_total} "
+                f"con respuesta ({100.0 * rate:.1f}%)"
+            )
+            summary = {
+                "n_total": catch_total,
+                "n_with_response": catch_with_response,
+                "response_rate": rate,
+            }
+            with open(self.analysis_dir / "catch_trial_stats.json", "w", encoding="utf-8") as f:
+                json.dump(summary, f, indent=2, ensure_ascii=False)
 
         print(f"\n✓ Análisis guardado en: {self.analysis_dir}")
         return results_list
