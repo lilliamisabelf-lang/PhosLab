@@ -24,6 +24,7 @@ import pygame  # noqa: E402
 
 from scripts.saccade_screen import SaccadeScreen  # noqa: E402
 from scripts.audio_cue import from_config as build_audio_cue  # noqa: E402
+from scripts.response_capture import SaccadeResponseCapture  # noqa: E402
 
 
 class MockEyeTracker:
@@ -162,6 +163,98 @@ def test_retry_budget():
     print("  ✓ PASS")
 
 
+def test_mouse_fallback_ignores_stale_tracker():
+    """Regression: in input_mode=mouse/wacom, allow_mouse_fallback=True must
+    bypass the tracker's last_*_gaze attributes. MouseTracker only refreshes
+    those inside is_looking_at_point() (prestim/stim/poststim), so after the
+    first trial they hold a frozen, prestim-era cursor position. If we honor
+    them during the saccade window the trace freezes from trial 2 onward."""
+    print("\n=== test: allow_mouse_fallback bypasses stale tracker.last_smooth_gaze ===")
+    pygame.init()
+    pygame.display.set_mode((1920, 1080))
+    anchor = (960, 540)
+
+    class StaleTracker:
+        # Simulates MouseTracker AFTER prestim cached a value that won't
+        # change during saccade capture.
+        last_raw_gaze = (123, 456)
+        last_smooth_gaze = (123, 456)
+
+    screen_obj = SaccadeScreen(
+        screen_width=1920,
+        screen_height=1080,
+        anchor_xy=anchor,
+        eye_tracker=StaleTracker(),
+        capture_duration_ms=150,
+        extraction="idt_first_fixation",
+        max_attempts=1,
+        allow_mouse_fallback=True,
+    )
+    screen_obj.reset()
+    surf = pygame.display.get_surface()
+
+    # Drive a few frames; collect the raw sample x positions.
+    finished = False
+    while not finished:
+        finished, _ = screen_obj.update(surf, [])
+        time.sleep(1 / 240.0)
+
+    sample_xs = {int(s["x"]) for s in screen_obj.samples}
+    assert 123 not in sample_xs, (
+        f"trace must not be pinned to stale tracker value; samples_x={sorted(sample_xs)[:6]}"
+    )
+    print(f"  samples captured={len(screen_obj.samples)}  stale_x_seen={123 in sample_xs}")
+    print("  ✓ PASS")
+
+
+def test_response_capture_silent_retry():
+    """SaccadeResponseCapture.update() must keep returning False (and call
+    reset on the underlying SaccadeScreen) while should_rerun() is true, then
+    finally return True with a fail payload when the budget runs out."""
+    print("\n=== test: SaccadeResponseCapture silent retry through wrapper ===")
+    pygame.init()
+    pygame.display.set_mode((1920, 1080))
+    anchor = (960, 540)
+    tracker = MockEyeTracker(anchor, anchor, switch_ms=200)  # no saccade ever
+    screen_obj = SaccadeScreen(
+        screen_width=1920,
+        screen_height=1080,
+        anchor_xy=anchor,
+        eye_tracker=tracker,
+        capture_duration_ms=150,
+        extraction="idt_first_fixation",
+        max_attempts=3,
+    )
+    wrapper = SaccadeResponseCapture(screen_obj)
+    wrapper.reset()
+
+    surf = pygame.display.get_surface()
+    finished_count = 0
+    safety_iters = 0
+    while True:
+        safety_iters += 1
+        if safety_iters > 2000:
+            raise RuntimeError("wrapper retry loop did not terminate")
+        tracker._tick()
+        finished = wrapper.update(surf, [])
+        if finished:
+            finished_count += 1
+            break
+        time.sleep(1 / 240.0)
+
+    assert finished_count == 1, "wrapper should report finished exactly once"
+    assert wrapper.last_status != "ok", (
+        f"with no saccade, final wrapper status should not be ok; got {wrapper.last_status}"
+    )
+    assert screen_obj._attempts == 3, (
+        f"wrapper should silently exhaust retries; got attempts={screen_obj._attempts}"
+    )
+    print(
+        f"  attempts={screen_obj._attempts}  wrapper.last_status={wrapper.last_status}"
+    )
+    print("  ✓ PASS")
+
+
 def test_audio_cue_builds():
     print("\n=== test: audio_cue from_config ===")
     cue = build_audio_cue({"enabled": True, "frequency_hz": 880, "duration_ms": 80, "volume": 0.4})
@@ -177,6 +270,8 @@ def main():
     test_velocity_endpoint()
     test_no_saccade_returns_failure()
     test_retry_budget()
+    test_mouse_fallback_ignores_stale_tracker()
+    test_response_capture_silent_retry()
     test_audio_cue_builds()
     print("\nAll smoke tests passed.")
 

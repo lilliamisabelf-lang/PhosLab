@@ -115,6 +115,10 @@ class StimulationScreen:
         # Estado
         self.is_looking = False
         self.show_phosphene = False  # Controla si se muestra el punto
+        # Catch trial: cuando True, set_show_phosphene(True) es un no-op.
+        # Esto garantiza que la pantalla de stim corre con la misma duración
+        # y feedback visual del anchor que un trial real, pero sin fosfeno.
+        self.catch_mode = False
 
         print(
             f"[StimulationScreen] ✓ Inicializado - Fosfeno en posición absoluta {phosphene_position}"
@@ -200,11 +204,14 @@ class StimulationScreen:
 
     def set_show_phosphene(self, show):
         """
-        Activa o desactiva la visualización del punto brillante
-
-        Args:
-            show: True para mostrar el punto, False para ocultarlo
+        Activa o desactiva la visualización del punto brillante.
+        Si catch_mode está activo, fuerza show=False (catch trial: misma
+        pantalla pero sin fosfeno).
         """
+        if show and self.catch_mode:
+            self.show_phosphene = False
+            print("[StimulationScreen] ◇ Catch trial: fosfeno suprimido")
+            return
         self.show_phosphene = show
         if show:
             print("[StimulationScreen] ⚪ Punto brillante ACTIVADO")
@@ -240,105 +247,51 @@ class StimulationScreen:
         return self.is_looking
 
     def draw(self, screen):
-        """Dibuja la pantalla con círculo de anclaje + punto brillante (si está activado)"""
-        # ============================================
-        # 1. FONDO NEGRO
-        # ============================================
+        """Dibuja la pantalla con círculo de anclaje + punto brillante (si está activado).
+
+        Traffic-light state encoding for the anchor:
+          - red FILLED  : stimulation active ("hold still") — distinct from
+                          the empty rings used in other phases.
+          - green ring  : fixation acquired, stim about to fire
+          - white ring  : idle / not looking
+        """
         screen.fill(self.background_color)
 
-        # ============================================
-        # 2. CÍRCULO DE ANCLAJE (rojo o verde según si mira)
-        # ============================================
-        if self.is_looking:
-            circle_color = (0, 255, 0)  # Verde si está mirando
+        if self.show_phosphene:
+            anchor_color = (220, 30, 30)
+            thickness = 0  # filled
+        elif self.is_looking:
+            anchor_color = (0, 220, 0)
+            thickness = self.circle_thickness
         else:
-            circle_color = self.circle_color  # Rojo si no está mirando
+            anchor_color = (200, 200, 200)
+            thickness = self.circle_thickness
 
-        # Dibujar círculo de anclaje en el centro
         pygame.draw.circle(
             screen,
-            circle_color,
+            anchor_color,
             self.circle_center,
             self.circle_radius,
-            self.circle_thickness,  # 0 = relleno, >0 = solo borde
+            thickness,
         )
 
-        # ============================================
-        # 3. PUNTO BRILLANTE (SOLO SI ESTÁ ACTIVADO)
-        # ============================================
+        # Punto brillante (sólo si la fase de stim lo ha activado).
         if self.show_phosphene:
-            if (
-                self.dynaphos_mapper is not None
-                and self.active_electrode_index is not None
-            ):
-                #self._draw_dynaphos_phosphene(screen)
-            #else:
-                self._draw_gaussian_phosphene(screen)
+            self._draw_gaussian_phosphene(screen)
 
     def _draw_gaussian_phosphene(self, screen):
-        """
-        Dibuja un fosfeno con distribución gaussiana de intensidad
-        Simula la apariencia real de fosfenos con difusión de luz
-        """
+        """Renderiza el fosfeno como una gaussiana 2D centrada en
+        phosphene_position. Vectorizado para evitar el bucle pixel-a-pixel."""
         cx, cy = self.phosphene_position
         radius = int(self.phosphene_size)
-        sigma = radius * self.radius_to_sigma  # Sigma de la gaussiana
+        sigma = radius * self.radius_to_sigma
+        size = max(1, int(radius * 3))  # ≈3σ cubre 99.7%
 
-        # Crear superficie temporal para el fosfeno (con canal alpha)
-        size = int(radius * 3)  # 3 sigmas para cubrir el 99.7%
-        surface = pygame.Surface((size * 2, size * 2), pygame.SRCALPHA)
+        ys, xs = np.mgrid[-size:size, -size:size]
+        distance = np.sqrt(xs * xs + ys * ys)
+        intensity = np.exp(-0.5 * (distance / max(sigma, 1e-6)) ** 2)
+        brightness = (intensity * self.phosphene_brightness).clip(0, 255).astype(np.uint8)
 
-        # Renderizar cada píxel con intensidad gaussiana
-        for x in range(size * 2):
-            for y in range(size * 2):
-                # Distancia desde el centro del fosfeno
-                dx = x - size
-                dy = y - size
-                distance = np.sqrt(dx**2 + dy**2)
-
-                # Intensidad gaussiana: exp(-0.5 * (d/sigma)^2)
-                intensity = np.exp(-0.5 * (distance / sigma) ** 2)
-
-                # Aplicar brillo del fosfeno
-                brightness = int(intensity * self.phosphene_brightness)
-
-                if brightness > 0:
-                    # Dibujar píxel con intensidad calculada
-                    surface.set_at(
-                        (x, y), (brightness, brightness, brightness, brightness)
-                    )
-
-        # Dibujar superficie en la pantalla principal
+        rgba = np.stack([brightness, brightness, brightness, brightness], axis=-1)
+        surface = pygame.image.frombuffer(rgba.tobytes(), (size * 2, size * 2), "RGBA")
         screen.blit(surface, (cx - size, cy - size))
-
-    def _draw_dynaphos_phosphene(self, screen):
-        """
-        Dibuja el fosfeno usando la imagen pre-renderizada de Dynaphos
-        (si está disponible) para mayor realismo visual
-        """
-        n_sim = self.dynaphos_mapper.simulator.phosphene_maps.shape[0]
-        currents = np.zeros(n_sim, dtype=np.float32)
-        idx = self.active_electrode_index
-        if 0 <= idx < n_sim:
-            currents[idx] = self.current_uA
-        phosphene_image = self.dynaphos_mapper.simulate_phosphenes(
-            current_amplitudes_uA=currents
-        )
-
-        if phosphene_image.ndim == 3 and phosphene_image.shape[0] == 1:
-            phosphene_image = phosphene_image[0]
-        
-        if phosphene_image.max() > 0:
-            phosphene_image = phosphene_image / phosphene_image.max()
-        img_uint8 = (phosphene_image*255).astype(np.uint8)
-
-        if img_uint8.ndim == 2:
-            img_rgb = np.stack([img_uint8] * 3, axis=-1)
-        else:
-            img_rgb = img_uint8
-
-        surface = pygame.surfarray.make_surface(img_rgb.transpose(1, 0, 2))
-        surface_scaled = pygame.transform.scale(surface, (self.width, self.height))
-        screen.blit(surface_scaled, (0, 0))
-            
-

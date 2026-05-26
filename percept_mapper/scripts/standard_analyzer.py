@@ -26,6 +26,7 @@ from scripts.mapping_analyzer import (
     _distance_deg,
     _ellipse_from_cov,
 )
+from scripts.response_capture import resolve_response_features
 
 
 class StandardExperimentAnalyzer:
@@ -146,50 +147,23 @@ class StandardExperimentAnalyzer:
 
         for phos in phosphenes:
             electrode_index = phos["electrode_index"]
-            drawing_file_name = phos.get("drawing_file")
             stim_pos = phos.get("position", [0, 0])
             electrode_info = phos.get("electrode_info", {})
             pred_deg = electrode_info.get("visual_position_deg", [0.0, 0.0])
-            response_mode = phos.get("response_mode", "drawing")
 
             print(f"\n[StandardAnalyzer] Electrodo {electrode_index}...")
 
-            if response_mode == "saccade":
-                # Modo saccade: el punto-respuesta ya está calculado por SaccadeScreen.
-                response_xy = phos.get("response_xy")
-                if not response_xy:
-                    status = phos.get("response_status", "unknown")
-                    print(f"  ✗ Sin respuesta saccade válida (status={status})")
-                    continue
-                features = {
-                    "centroid": (float(response_xy[0]), float(response_xy[1])),
-                    "n_pixels": 1,
-                    "intensity_sum": 1,
-                    "bbox": {
-                        "left": int(response_xy[0]),
-                        "top": int(response_xy[1]),
-                        "right": int(response_xy[0]) + 1,
-                        "bottom": int(response_xy[1]) + 1,
-                        "width": 1,
-                        "height": 1,
-                        "area": 1,
-                    },
-                    "fill_ratio": 1.0,
-                }
-            else:
-                if not drawing_file_name:
-                    print(f"  ✗ Sin archivo de dibujo")
-                    continue
-
-                drawing_path = self.experiment_dir / drawing_file_name
-                if not drawing_path.exists():
-                    print(f"  ✗ No encontrado: {drawing_file_name}")
-                    continue
-
-                features = self._extract_centroid(drawing_path)
-                if features is None:
-                    print(f"  ✗ Dibujo vacío: {drawing_file_name}")
-                    continue
+            response = resolve_response_features(
+                phos,
+                self.experiment_dir,
+                self._extract_centroid,
+            )
+            if not response["ok"]:
+                print(f"  ✗ {response['error']}")
+                continue
+            response_mode = response["mode"]
+            response_file_name = response["source_file"]
+            features = response["features"]
 
             centroid = features["centroid"]
             centroid_deg = self._px_to_deg(centroid[0], centroid[1])
@@ -230,7 +204,10 @@ class StandardExperimentAnalyzer:
                 "per_repetition": [
                     {
                         "repetition_number": 1,
-                        "drawing_file": drawing_file_name,
+                        "response_mode": response_mode,
+                        "response_file": response_file_name,
+                        "drawing_file": response_file_name if response_mode == "drawing" else None,
+                        "saccade_samples_file": response_file_name if response_mode == "saccade" else None,
                         "centroid": {"x": float(centroid[0]), "y": float(centroid[1])},
                         "centroid_deg": {
                             "x": float(centroid_deg[0]),

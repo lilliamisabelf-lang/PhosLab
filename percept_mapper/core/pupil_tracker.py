@@ -6,6 +6,7 @@ Requires Pupil Capture (https://github.com/pupil-labs/pupil) running with the
 Surface Tracker plugin enabled and a named screen surface.
 """
 
+import os
 import threading
 import time
 import numpy as np
@@ -13,7 +14,10 @@ import numpy as np
 import zmq
 import msgpack
 
-DIAG_PERIOD_S = 2.0  # log diagnostic snapshot every N seconds
+# Diagnostic snapshot every N seconds. Off by default — set PHOSLAB_PUPIL_DEBUG=1
+# to enable; useful when surface detection or confidence filtering is suspect.
+DIAG_PERIOD_S = 2.0
+_DIAG_ENABLED = os.environ.get("PHOSLAB_PUPIL_DEBUG", "").strip() not in ("", "0", "false", "False")
 
 
 class _OneEuro:
@@ -131,7 +135,7 @@ class PupilTracker:
         while not self._stop.is_set():
             socks = dict(poller.poll(timeout=100))
             now = time.time()
-            if now - diag_t0 >= DIAG_PERIOD_S:
+            if _DIAG_ENABLED and now - diag_t0 >= DIAG_PERIOD_S:
                 with self._lock:
                     smooth = self.last_smooth_gaze
                     screen = self._screen_size

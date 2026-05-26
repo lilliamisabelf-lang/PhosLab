@@ -52,7 +52,7 @@ class SaccadeScreen:
         allow_mouse_fallback: bool = False,
         audio_cue=None,
         anchor_radius: int = 50,
-        anchor_color=(255, 0, 0),
+        anchor_color=(180, 180, 180),  # dim white — "response phase, still a saccade target"
         anchor_thickness: int = 3,
     ):
         print(f"[SaccadeScreen] Inicializando (extraction={extraction})...")
@@ -74,7 +74,18 @@ class SaccadeScreen:
         self.anchor_thickness = int(anchor_thickness)
 
         self.font = pygame.font.Font(None, 48)
-        self.title_text = "Mira el fosfeno y vuelve al centro"
+        if self.allow_mouse_fallback:
+            self.title_text = "Mueve el cursor al fosfeno y vuelve al centro"
+        else:
+            self.title_text = "Mira el fosfeno y vuelve al centro"
+
+        # Title fade: full opacity for first `title_full_alpha_ms` after cue,
+        # then linear fade to 0 by `title_fade_done_ms`. After the first 3
+        # captures of this SaccadeScreen instance, suppress the title entirely
+        # (participant has learned the task).
+        self.title_full_alpha_ms = 200
+        self.title_fade_done_ms = 500
+        self.title_suppress_after_trial = 3
 
         # Per-trial state
         self.samples: list[dict[str, Any]] = []
@@ -154,6 +165,16 @@ class SaccadeScreen:
     # ---- helpers ------------------------------------------------------------
 
     def _read_gaze(self):
+        # When the user's input mode is mouse/Wacom, allow_mouse_fallback is
+        # True and we must read pygame.mouse.get_pos() LIVE. We cannot trust
+        # MouseTracker.last_*_gaze here: that attribute is only refreshed
+        # inside MouseTracker.is_looking_at_point(), which is called during
+        # prestim/stim/poststim — not during the saccade capture window. If
+        # we deferred to it, every trial after the first would render a
+        # frozen trace stuck at whatever cursor position prestim happened to
+        # cache.
+        if self.allow_mouse_fallback:
+            return pygame.mouse.get_pos()
         et = self.eye_tracker
         if et is not None:
             p = getattr(et, "last_smooth_gaze", None)
@@ -162,9 +183,6 @@ class SaccadeScreen:
             p = getattr(et, "last_raw_gaze", None)
             if p is not None:
                 return p
-        if self.allow_mouse_fallback:
-            # Debug fallback for input_mode: mouse / Wacom tests.
-            return pygame.mouse.get_pos()
         return None
 
     def _play_audio_cue(self):
@@ -188,21 +206,49 @@ class SaccadeScreen:
             self.anchor_thickness,
         )
 
-        # Optional gaze trace overlay (faint, last ~300 ms)
-        if self.show_gaze_trace and len(self.samples) >= 2:
-            cutoff = elapsed - 0.3
-            recent = [s for s in self.samples if s["t"] >= cutoff]
-            if len(recent) >= 2:
-                points = [(int(s["x"]), int(s["y"])) for s in recent]
-                pygame.draw.lines(screen, (120, 120, 120), False, points, 2)
+        # Live gaze trace + current-position marker.
+        if self.show_gaze_trace and self.samples:
+            # Trace: bright cyan polyline over the last N samples, regardless
+            # of timestamp — so even a small mouse jitter still draws a line.
+            if len(self.samples) >= 2:
+                recent = self.samples[-90:]  # ~1.5 s at 60 Hz
+                # Drop near-duplicate consecutive points to avoid invisible
+                # zero-length segments when the pointer is stationary.
+                points = []
+                last_pt = None
+                for s in recent:
+                    p = (int(s["x"]), int(s["y"]))
+                    if last_pt is None or p != last_pt:
+                        points.append(p)
+                        last_pt = p
+                if len(points) >= 2:
+                    pygame.draw.lines(screen, (0, 220, 255), False, points, 4)
 
-        # Progress text (lightweight, top of screen)
-        remaining = max(0.0, self.capture_duration_s - elapsed)
-        title = self.font.render(self.title_text, True, (255, 255, 255))
-        screen.blit(
-            title,
-            title.get_rect(center=(self.screen_width // 2, 50)),
-        )
+            # Current position: small filled yellow dot
+            last = self.samples[-1]
+            pygame.draw.circle(
+                screen, (255, 255, 0), (int(last["x"]), int(last["y"])), 5
+            )
+
+        # Title fade: opaque early, faded by 500ms, suppressed after a few
+        # trials. A visible timer or persistent instruction trains the
+        # participant to attend the title instead of the percept memory.
+        if self._attempts <= self.title_suppress_after_trial:
+            elapsed_ms = elapsed * 1000.0
+            if elapsed_ms <= self.title_full_alpha_ms:
+                alpha = 255
+            elif elapsed_ms >= self.title_fade_done_ms:
+                alpha = 0
+            else:
+                span = self.title_fade_done_ms - self.title_full_alpha_ms
+                alpha = int(255 * (1.0 - (elapsed_ms - self.title_full_alpha_ms) / span))
+            if alpha > 0:
+                title = self.font.render(self.title_text, True, (255, 255, 255))
+                title.set_alpha(alpha)
+                screen.blit(
+                    title,
+                    title.get_rect(center=(self.screen_width // 2, 50)),
+                )
 
     def _finalize(self, force_status: str | None = None):
         """Run the chosen extractor, build the payload, return (True, payload)."""

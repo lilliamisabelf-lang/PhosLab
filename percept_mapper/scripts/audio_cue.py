@@ -70,3 +70,28 @@ def from_config(cfg: dict | None) -> pygame.mixer.Sound | None:
     except Exception as e:
         print(f"[audio_cue] ⚠ make_tone falló: {e}")
         return None
+
+
+def make_fixation_tick(cfg: dict | None = None) -> pygame.mixer.Sound | None:
+    """Soft low tick (~200 Hz, 30 ms) that confirms fixation was acquired.
+
+    Mirrors the green anchor transition. Always quieter than the saccade-cue
+    so the two are easily distinguishable by ear. Config block (optional):
+        ui.fixation_tick:
+          enabled: true
+          frequency_hz: 200
+          duration_ms: 30
+          volume: 0.25
+    """
+    cfg = cfg or {}
+    if not cfg.get("enabled", True):
+        return None
+    try:
+        return make_tone(
+            frequency_hz=float(cfg.get("frequency_hz", 200.0)),
+            duration_ms=int(cfg.get("duration_ms", 30)),
+            volume=float(cfg.get("volume", 0.25)),
+        )
+    except Exception as e:
+        print(f"[audio_cue] ⚠ make_fixation_tick falló: {e}")
+        return None

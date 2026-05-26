@@ -10,6 +10,25 @@ Este repositorio contiene un pipeline completo para explorar una protesis cortic
 
 En otras palabras: el pipeline intenta aproximar la experiencia visual que producira una protesis cortical y aprender una correccion para que el mapa sea mas preciso.
 
+## Alcance y limitaciones (importante)
+Este es un banco de pruebas para investigación. Conviene tener claro qué partes son reales y qué partes son simuladas antes de interpretar cualquier resultado.
+
+**Real**:
+- captura de respuesta del participante (saccade o drawing) en un monitor real,
+- eye tracker real (webcam + MediaPipe, o un Pupil Core externo),
+- entrada Wacom real para dibujo,
+- secuencia de trials reproducible con seed, catch trials, ISI con jitter.
+
+**Simulado (no estimulación hardware-in-the-loop)**:
+- la "estimulación cortical" es renderizado en pantalla del fosfeno predicho por `dynaphos` (Bosking et al. 2017 / Fernández et al. 2021),
+- no hay ICMS real, ni driver de estimulador conectado, ni pulsos eléctricos. Los parámetros `current_uA`, `pulse_width_us`, `frequency_hz` se usan únicamente para calcular tamaño y brillo del punto en pantalla,
+- la "validación" del mapa corregido se hace contra observaciones del participante mirando el fosfeno simulado, no contra percepción evocada eléctricamente.
+
+**Implicaciones**:
+- Los offsets aprendidos por los modelos bayesiano y neural corrigen el modelo `dynaphos` para que coincida con el reporte conductual; no corrigen una prótesis real.
+- Para un experimento HW-in-the-loop habría que añadir un driver al estimulador (no incluido) y validar la latencia stim-onset → render con un fotodiodo (ver `PHOSPHENE_MAPPING_RIGOR_PLAN.md §5.2`).
+- Las gaps de rigor experimental que aún hace falta cerrar antes de cualquier reporte publicable están detalladas en [PHOSPHENE_MAPPING_RIGOR_PLAN.md](PHOSPHENE_MAPPING_RIGOR_PLAN.md).
+
 ## Que es un fosfeno (explicacion rapida)
 Un fosfeno es un punto de luz percibido al estimular el cortex visual. Cada electrodo de un implante puede producir un fosfeno en una posicion del campo visual. El objetivo es predecir y corregir la posicion de esos fosfenos.
 

@@ -272,7 +272,13 @@ from scripts.dynaphos_adapter import (
 )
 from scripts.gaze_trace import GazeTrace
 from scripts.phosphene_mapping import PhospheneMappingExperiment
-from scripts.mapping_analyzer import PhospheneMappingAnalyzer
+from scripts.response_capture import (
+    DrawingResponseCapture,
+    SaccadeResponseCapture,
+    apply_response_metadata,
+    write_response_summary,
+)
+from scripts.trial_sequence import build_trial_list, summary as trial_summary
 
 # endregion
 
@@ -570,9 +576,18 @@ Ejemplos de uso:
         dest="no_save",
         help="No guardar los datos del experimento en disco",
     )
+    parser.add_argument(
+        "--resume",
+        type=str,
+        default=None,
+        help="Reanudar una sesión: ruta al directorio mapping_experiments/mapping_*/. "
+             "Lee session_metadata.json y salta trials cuyo trial_idx ya tiene "
+             "artefactos guardados.",
+    )
 
     args = parser.parse_args()
     SAVE_RESULTS = not args.no_save
+    resume_dir = Path(args.resume) if args.resume else None
 
     # CARGAR CONFIGURACIÓN DESDE YAML
     print("=" * 70)
@@ -783,7 +798,16 @@ Ejemplos de uso:
 
     # Crear pantallas
     print("[INIT] Creando pantallas...")
-    anchor_screen = AnchorScreen(params, eye_tracker)
+    ui_cfg = config.get("ui", {}) or {}
+    try:
+        from scripts.audio_cue import make_fixation_tick
+        fixation_tick = make_fixation_tick(ui_cfg.get("fixation_tick"))
+        if fixation_tick is not None:
+            print("[INIT] Fixation tick activado")
+    except Exception as e:
+        print(f"[INIT] ⚠ fixation_tick no disponible: {e}")
+        fixation_tick = None
+    anchor_screen = AnchorScreen(params, eye_tracker, fixation_tick=fixation_tick)
 
     # Leer configuración del pincel desde params.yaml
     drawing_tablet_cfg = config.get("drawing_tablet", {}) or {}
@@ -860,7 +884,7 @@ Ejemplos de uso:
         else:  # 'skip' or unknown
             max_attempts = 1
 
-        drawing_tablet = SaccadeScreen(
+        response_screen = SaccadeScreen(
             screen_width=actual_width,
             screen_height=actual_height,
             anchor_xy=(actual_width // 2, actual_height // 2),
@@ -883,8 +907,9 @@ Ejemplos de uso:
                 )
             ),
         )
+        response_capture = SaccadeResponseCapture(response_screen)
     else:
-        drawing_tablet = DrawingTablet(
+        response_screen = DrawingTablet(
             actual_width,
             actual_height,
             brush_size,
@@ -894,8 +919,9 @@ Ejemplos de uso:
             hide_cursor=hide_cursor,
             cursor_clip_rect=cursor_clip_rect,
         )
+        response_capture = DrawingResponseCapture(response_screen)
 
-    _set_active_response_screen(drawing_tablet)
+    _set_active_response_screen(response_capture)
 
     # Gaze trace overlay
     gaze_trace_config = config.get("eye_tracker", {}).get("gaze_trace", {})
@@ -1125,69 +1151,66 @@ Ejemplos de uso:
         print("=" * 70)
         print()
 
-        # Crear carpeta del experimento con timestamp (solo si se van a guardar resultados)
-        experiment_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        if SAVE_RESULTS:
-            multi_experiment_dir = (
-                Path("mapping_experiments")
-                / f"mapping_mapeo_multiples_electrodo_{experiment_timestamp}"
-            )
-            multi_experiment_dir.mkdir(parents=True, exist_ok=True)
-            print(f"Carpeta de experimento: {multi_experiment_dir}\n")
+        # Carpeta del experimento — nueva o reanudada
+        resumed_session_meta = None
+        if resume_dir is not None:
+            if not resume_dir.exists():
+                print(f"✗ ERROR: --resume {resume_dir} no existe")
+                return
+            session_meta_path = resume_dir / "session_metadata.json"
+            if not session_meta_path.exists():
+                print(f"✗ ERROR: {session_meta_path} no encontrado — no se puede reanudar")
+                return
+            with open(session_meta_path, encoding="utf-8") as f:
+                resumed_session_meta = json.load(f)
+            multi_experiment_dir = resume_dir
+            print(f"[RESUME] Reanudando sesión: {multi_experiment_dir}")
+            print(f"[RESUME] Trials totales en sesión original: {resumed_session_meta.get('summary', {}).get('n')}")
+            print()
         else:
-            multi_experiment_dir = None
-            print(
-                "⚠️  Modo sin guardado: los datos del experimento NO se guardarán en disco\n"
-            )
+            experiment_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            if SAVE_RESULTS:
+                multi_experiment_dir = (
+                    Path("mapping_experiments")
+                    / f"mapping_mapeo_multiples_electrodo_{experiment_timestamp}"
+                )
+                multi_experiment_dir.mkdir(parents=True, exist_ok=True)
+                print(f"Carpeta de experimento: {multi_experiment_dir}\n")
+            else:
+                multi_experiment_dir = None
+                print("⚠️  Modo sin guardado: los datos NO se guardarán en disco\n")
 
-        # Ejecutar mapeo para cada electrodo
+        # ============================================
+        # PRE-VALIDACIÓN: Construir recursos por electrodo
+        # ============================================
         completed_electrodes = []
+        exp_by_electrode = {}
+        stim_by_electrode = {}
+        position_by_electrode = {}
+        current_by_electrode = {}
+        valid_electrode_indices = []
 
         for electrode_num, electrode_index in enumerate(electrode_indices, 1):
-            # Verificar que el electrodo está activo
             if electrode_index < 0 or electrode_index >= len(mapper.active_electrodes):
                 print(f"✗ ERROR: Índice de electrodo fuera de rango: {electrode_index}")
-                print(f"         Rango válido: 0-{len(mapper.active_electrodes)-1}")
-                print()
                 continue
-
             if not mapper.active_electrodes[electrode_index]:
-                print(
-                    f"✗ ERROR: El electrodo {electrode_index} no está activo en la configuración"
-                )
-                print(
-                    f"         Electrodos activos: {np.where(mapper.active_electrodes)[0].tolist()}"
-                )
-                print()
+                print(f"✗ ERROR: El electrodo {electrode_index} no está activo")
                 continue
-
-            # Obtener posición del electrodo
             try:
                 phosphene_position = mapper.get_phosphene_position(electrode_index)
             except ValueError:
-                print(
-                    f"[SKIP] Electrodo {electrode_index}: No se pudo obtener la posición en el csv"
-                )
+                print(f"[SKIP] Electrodo {electrode_index}: posición no disponible en el CSV")
                 continue
 
-            # Obtener corriente para este electrodo (MODO MAPPING)
-            # Regla de coherencia:
-            # - Si el vector de corrientes tiene longitud == total_electrodes, se interpreta como
-            #   "corriente por índice de electrodo".
-            # - En caso contrario, se interpreta como "corriente por orden del mapeo" (0-based),
-            #   es decir, currents[0] para el 1º electrodo de electrode_indices, currents[1] para el 2º, etc.
-            # y tras esto se aplica default_current
-
-            electrode_order_index = electrode_num - 1
             current_uA = _select_current_uA(
                 STIMULATION_CURRENTS_UA,
                 electrode_index=electrode_index,
-                order_index=electrode_order_index,
+                order_index=electrode_num - 1,
                 total_electrodes=total_electrodes,
                 default_current_uA=stim_config.get("default_current_uA", 90.0),
             )
 
-            # Crear experiment de mapeo para este electrodo
             try:
                 electrode_info = mapper.get_electrode_info(electrode_index)
             except Exception:
@@ -1199,7 +1222,7 @@ Ejemplos de uso:
                 clock=clock,
                 eye_tracker=eye_tracker,
                 anchor_screen=anchor_screen,
-                drawing_tablet=drawing_tablet,
+                drawing_tablet=response_capture,
                 webcam_viewer=webcam_viewer,
                 gaze_trace=gaze_trace,
                 display_info=display_metadata,
@@ -1216,8 +1239,6 @@ Ejemplos de uso:
                 experiment_name=f"mapeo_electrodo_{electrode_index}",
                 experiment_dir=multi_experiment_dir,
             )
-
-            # Crear StimulationScreen para este electrodo
             stimulation_screen = StimulationScreen(
                 params,
                 eye_tracker,
@@ -1229,92 +1250,205 @@ Ejemplos de uso:
             stimulation_screen.dynaphos_mapper = mapper
             stimulation_screen.active_electrode_index = electrode_index
 
-            # Ejecutar N repeticiones
-            print("=" * 70)
-            print(
-                f"ELECTRODO {electrode_num} de {len(electrode_indices)}: {electrode_index}"
-            )
-            print(f"Repeticiones: {num_repetitions}")
-            print("=" * 70)
+            exp_by_electrode[electrode_index] = mapping_experiment
+            stim_by_electrode[electrode_index] = stimulation_screen
+            position_by_electrode[electrode_index] = phosphene_position
+            current_by_electrode[electrode_index] = current_uA
+            valid_electrode_indices.append(electrode_index)
+
+        if not valid_electrode_indices:
+            print("✗ ERROR: Ningún electrodo válido para mapear.")
+            cleanup_and_exit(eye_tracker, webcam_viewer)
+            return
+
+        # ============================================
+        # CONSTRUIR TRIAL LIST (randomizado, con catch & practice)
+        # ============================================
+        import secrets as _secrets
+        import random as _rng_mod
+
+        if resumed_session_meta is not None:
+            ts_cfg = resumed_session_meta.get("trial_sequence_config", {}) or {}
+            realized_seed = int(ts_cfg.get("random_seed"))
+            catch_rate = float(ts_cfg.get("catch_trial_rate", 0.0))
+            do_randomize = bool(ts_cfg.get("randomize", True))
+            no_repeat = bool(ts_cfg.get("no_immediate_repeat", True))
+            num_practice = int(ts_cfg.get("num_practice_trials", 0))
+            isi_jitter_ms = float(ts_cfg.get("isi_jitter_ms", 0.0))
+            print(f"[RESUME] Usando seed original = {realized_seed} (orden idéntico al de la sesión original)")
+        else:
+            seed_cfg = mapping_config.get("random_seed")
+            realized_seed = int(seed_cfg) if seed_cfg is not None else _secrets.randbits(32)
+            catch_rate = float(mapping_config.get("catch_trial_rate", 0.0))
+            do_randomize = bool(mapping_config.get("randomize", True))
+            no_repeat = bool(mapping_config.get("no_immediate_repeat", True))
+            num_practice = int(mapping_config.get("num_practice_trials", 0))
+            isi_jitter_ms = float(mapping_config.get("isi_jitter_ms", 0.0))
+
+        trials = build_trial_list(
+            valid_electrode_indices,
+            num_repetitions,
+            seed=realized_seed,
+            catch_trial_rate=catch_rate,
+            no_immediate_repeat=no_repeat,
+            randomize=do_randomize,
+            num_practice_trials=num_practice,
+        )
+        ts = trial_summary(trials)
+        print("=" * 70)
+        print(f"TRIAL SEQUENCE: {ts}  seed={realized_seed}")
+        print(f"  randomize={do_randomize}  catch_rate={catch_rate}  practice={num_practice}")
+        print(f"  isi_jitter_ms={isi_jitter_ms}")
+        print("=" * 70)
+        print()
+
+        if SAVE_RESULTS and multi_experiment_dir is not None:
+            session_meta = {
+                "session_started": datetime.now().isoformat(),
+                "valid_electrode_indices": valid_electrode_indices,
+                "num_repetitions": num_repetitions,
+                "trial_sequence_config": {
+                    "randomize": do_randomize,
+                    "random_seed": realized_seed,
+                    "catch_trial_rate": catch_rate,
+                    "no_immediate_repeat": no_repeat,
+                    "num_practice_trials": num_practice,
+                    "isi_jitter_ms": isi_jitter_ms,
+                },
+                "summary": ts,
+                "trial_order": [t.to_dict() for t in trials],
+            }
+            with open(multi_experiment_dir / "session_metadata.json", "w", encoding="utf-8") as f:
+                json.dump(session_meta, f, indent=2, ensure_ascii=False)
+            print(f"✓ Trial order guardado: {multi_experiment_dir / 'session_metadata.json'}")
             print()
 
-            user_cancelled = False
-            for rep_num in range(1, num_repetitions + 1):
-                rep_metadata = mapping_experiment.run_single_repetition(
-                    repetition_number=rep_num,
-                    stimulation_screen=stimulation_screen,
-                    phosphene_position=phosphene_position,
-                    current_uA=current_uA,
-                    pulse_width_us=PULSE_WIDTH_US,
-                    frequency_hz=FREQUENCY_HZ,
-                    run_prestim_func=run_prestimulation,
-                    run_stim_func=run_stimulation,
-                    run_poststim_func=run_poststimulation,
-                    run_interstim_func=run_interstimulation,
-                    check_quit_func=check_quit_events,
-                    drawing_tablet_reset_func=drawing_tablet_reset,
-                    FPS=FPS,
-                )
+        # ============================================
+        # EJECUTAR TRIAL LIST (interleaved, jittered ISI)
+        # ============================================
+        # Resume: descubrir qué trial_idx ya tienen artefactos guardados, para
+        # saltarlos. Leemos cada electrode_<idx>/metadata.json y extraemos los
+        # trial_idx ya completados.
+        completed_trial_idx: set[int] = set()
+        if resumed_session_meta is not None and multi_experiment_dir is not None:
+            for d in multi_experiment_dir.glob("electrode_*"):
+                meta_file = d / "metadata.json"
+                if not meta_file.exists():
+                    continue
+                try:
+                    with open(meta_file, encoding="utf-8") as f:
+                        emeta = json.load(f)
+                    for rep in emeta.get("repetitions", []):
+                        tid = rep.get("trial_idx")
+                        if isinstance(tid, int):
+                            completed_trial_idx.add(tid)
+                except Exception as e:
+                    print(f"[RESUME] ⚠ No se pudo leer {meta_file}: {e}")
+            print(f"[RESUME] Saltando {len(completed_trial_idx)} trials ya completados")
 
-                if rep_metadata is None:
-                    # Usuario canceló
-                    print("\n[INFO] Experimento cancelado por el usuario")
+        isi_rng = _rng_mod.Random(realized_seed + 1)
+        user_cancelled = False
+        # Mini-dashboard: tasa de éxito y catch-response acumuladas.
+        dash_real_total = 0
+        dash_real_ok = 0
+        dash_catch_total = 0
+        dash_catch_response = 0
+
+        for trial_pos, trial in enumerate(trials):
+            if trial.trial_idx in completed_trial_idx:
+                continue
+            if trial.is_catch:
+                # Stand-in: cualquier electrodo válido sirve (no se muestra fosfeno)
+                stand_in = valid_electrode_indices[0]
+                exp = exp_by_electrode[stand_in]
+                stim = stim_by_electrode[stand_in]
+                ph_pos = position_by_electrode[stand_in]
+                cur = 0.0
+                rep_for_call = trial_pos + 1  # solo label
+            else:
+                exp = exp_by_electrode[trial.electrode_index]
+                stim = stim_by_electrode[trial.electrode_index]
+                ph_pos = position_by_electrode[trial.electrode_index]
+                cur = current_by_electrode[trial.electrode_index]
+                rep_for_call = trial.rep_num if trial.rep_num > 0 else (trial_pos + 1)
+
+            rep_metadata = exp.run_single_repetition(
+                repetition_number=rep_for_call,
+                stimulation_screen=stim,
+                phosphene_position=ph_pos,
+                current_uA=cur,
+                pulse_width_us=PULSE_WIDTH_US,
+                frequency_hz=FREQUENCY_HZ,
+                run_prestim_func=run_prestimulation,
+                run_stim_func=run_stimulation,
+                run_poststim_func=run_poststimulation,
+                run_interstim_func=run_interstimulation,
+                check_quit_func=check_quit_events,
+                drawing_tablet_reset_func=drawing_tablet_reset,
+                FPS=FPS,
+                trial_idx=trial.trial_idx,
+                is_catch=trial.is_catch,
+                is_practice=trial.is_practice,
+                run_interstim_after=False,
+            )
+
+            if rep_metadata is None:
+                print("\n[INFO] Experimento cancelado por el usuario")
+                user_cancelled = True
+                break
+
+            # Mini-dashboard (experimenter visibility, §4.2):
+            # imprimir un summary 1-línea cada trial.
+            rep_status = (rep_metadata.get("response_status") or "ok").lower()
+            if trial.is_catch:
+                dash_catch_total += 1
+                if rep_status == "ok":
+                    dash_catch_response += 1
+            elif not trial.is_practice:
+                dash_real_total += 1
+                if rep_status == "ok":
+                    dash_real_ok += 1
+            real_rate = (
+                f"{dash_real_ok}/{dash_real_total} ({100.0*dash_real_ok/max(1,dash_real_total):.0f}%)"
+                if dash_real_total else "0/0"
+            )
+            catch_rate_str = (
+                f"{dash_catch_response}/{dash_catch_total} ({100.0*dash_catch_response/max(1,dash_catch_total):.0f}%)"
+                if dash_catch_total else "0/0"
+            )
+            print(
+                f"      [DASH] trial {trial_pos+1}/{len(trials)} "
+                f"real_ok={real_rate}  catch_response={catch_rate_str}  "
+                f"status={rep_status}"
+            )
+
+            # Inter-trial break con jitter, salvo en el último trial
+            if trial_pos < len(trials) - 1:
+                next_trial = trials[trial_pos + 1]
+                next_electrode = next_trial.electrode_index or valid_electrode_indices[0]
+                next_exp = exp_by_electrode[next_electrode]
+                jitter = isi_rng.uniform(-isi_jitter_ms, isi_jitter_ms) if isi_jitter_ms > 0 else 0.0
+                duration_ms = max(0.0, INTERSTIMULATION_MS + jitter)
+                if not next_exp._run_interstimulation_mapping(
+                    trial_pos + 1, len(trials), duration_ms=duration_ms
+                ):
+                    print("\n[INFO] Cancelado durante interstim")
                     user_cancelled = True
                     break
 
-            if user_cancelled:
-                cleanup_and_exit(eye_tracker, webcam_viewer)
-                return
+        if user_cancelled:
+            for electrode_index in valid_electrode_indices:
+                if SAVE_RESULTS:
+                    exp_by_electrode[electrode_index].finalize()
+            cleanup_and_exit(eye_tracker, webcam_viewer)
+            return
 
-            # Finalizar experimento de este electrodo (solo guardar si SAVE_RESULTS)
+        # Finalizar todos los experimentos (un metadata.json por electrodo)
+        for electrode_index in valid_electrode_indices:
             if SAVE_RESULTS:
-                mapping_experiment.finalize()
+                exp_by_electrode[electrode_index].finalize()
             completed_electrodes.append(electrode_index)
-
-            # ⚠️ ANÁLISIS INDIVIDUAL: Desactivado durante experimento para evitar interferencias
-            # El análisis consolidado al final es más eficiente y no interfiere con Pygame
-            # Si necesitas análisis individual, descomentar las líneas abajo
-            """
-            print("\n" + "=" * 70)
-            print(f"ANÁLISIS ELECTRODO {electrode_index}")
-            print("=" * 70 + "\n")
-
-            try:
-                analyzer = PhospheneMappingAnalyzer(mapping_experiment.electrode_dir)
-                results = analyzer.analyze_electrode_repetitions()
-
-                if results:
-                    fig = analyzer.visualize_results(results)
-                    if fig:
-                        import matplotlib.pyplot as plt
-                        plt.close(fig)
-            except Exception as e:
-                print(f"⚠ Error durante análisis individual: {e}")
-            """
-
-            # Si hay más electrodos, mostrar pantalla de transición
-            if electrode_num < len(electrode_indices):
-                print("\n" + "=" * 70)
-                print("TRANSICIÓN AL SIGUIENTE ELECTRODO")
-                print("=" * 70)
-                continue_to_next = show_electrode_transition_screen(
-                    screen=screen,
-                    clock=clock,
-                    current_electrode=electrode_index,
-                    next_electrode=electrode_indices[electrode_num],
-                    screen_width=SCREEN_WIDTH,
-                    screen_height=SCREEN_HEIGHT,
-                )
-
-                if not continue_to_next:
-                    # Usuario presionó ESC
-                    print(
-                        "\n[INFO] Experimento cancelado por el usuario en pantalla de transición"
-                    )
-                    cleanup_and_exit(eye_tracker, webcam_viewer)
-                    return
-
-            print()
+        print()
 
         # ════════════════════════════════════════
         # ANÁLISIS CONSOLIDADO DE TODOS LOS ELECTRODOS
@@ -1595,41 +1729,21 @@ Ejemplos de uso:
         phosphene_metadata["drawing_start"] = datetime.now().isoformat()
 
         # Resetear pantalla de respuesta (DrawingTablet o SaccadeScreen)
-        drawing_tablet_reset(drawing_tablet)
+        drawing_tablet_reset(response_capture)
 
         drawing_completed = False
-        canvas = None             # pygame.Surface en modo drawing
-        saccade_payload = None    # dict en modo saccade
 
         while not drawing_completed:
             events = pygame.event.get()
 
-            finished, output = drawing_tablet.update(screen, events)
+            finished = response_capture.update(screen, events)
 
             if finished:
-                if isinstance(output, dict):
-                    # Modo saccade: payload {response_xy, samples, status, ...}
-                    status = output.get("status", "unknown")
-                    if status != "ok" and hasattr(drawing_tablet, "should_rerun") and drawing_tablet.should_rerun():
-                        # Silent retry: reset and continue without UI feedback.
-                        print(
-                            f"      [SaccadeScreen] retry silencioso "
-                            f"({output.get('attempts')}/{output.get('max_attempts')}) "
-                            f"motivo={status}"
-                        )
-                        drawing_tablet.reset()
-                        continue
-                    saccade_payload = output
-                    print(
-                        f"      ✓ {phosphene_display_number} completado "
-                        f"(saccade, status={status})"
-                    )
-                    drawing_completed = True
-                else:
-                    # Modo drawing: output es la Surface del canvas
-                    canvas = output
-                    print(f"      ✓  {phosphene_display_number} completado")
-                    drawing_completed = True
+                print(
+                    f"      ✓ {phosphene_display_number} completado "
+                    f"({response_capture.mode}, status={response_capture.last_status})"
+                )
+                drawing_completed = True
 
             # Comprobar ESC
             for event in events:
@@ -1650,37 +1764,13 @@ Ejemplos de uso:
         # ============================================
         print(f"      [GUARDANDO] Punto {phosphene_display_number}...")
 
-        if saccade_payload is not None:
-            # Modo saccade: serializa el trazo + punto-respuesta como JSON
-            samples_filename = (
-                experiment_dir / f"saccade_samples_{phosphene_display_number}.json"
-            )
-            saccade_record = {
-                "response_xy": saccade_payload.get("response_xy"),
-                "status": saccade_payload.get("status"),
-                "extraction": saccade_payload.get("extraction"),
-                "attempts": saccade_payload.get("attempts"),
-                "max_attempts": saccade_payload.get("max_attempts"),
-                "capture_duration_ms": saccade_payload.get("capture_duration_ms"),
-                "anchor_xy": saccade_payload.get("anchor_xy"),
-                "samples": saccade_payload.get("samples", []),
-            }
-            with open(samples_filename, "w", encoding="utf-8") as f:
-                json.dump(saccade_record, f, indent=2, ensure_ascii=False)
-            print(f"        ✓ Saccade samples: {samples_filename.name}")
-            phosphene_metadata["response_mode"] = "saccade"
-            phosphene_metadata["saccade_samples_file"] = samples_filename.name
-            phosphene_metadata["response_xy"] = saccade_payload.get("response_xy")
-            phosphene_metadata["response_status"] = saccade_payload.get("status")
-            phosphene_metadata["response_extraction"] = saccade_payload.get("extraction")
-            phosphene_metadata["response_attempts"] = saccade_payload.get("attempts")
-        else:
-            # Modo drawing (comportamiento original)
-            drawing_filename = experiment_dir / f"drawing_{phosphene_display_number}.png"
-            pygame.image.save(canvas, str(drawing_filename))
-            print(f"        ✓ Dibujo: {drawing_filename.name}")
-            phosphene_metadata["response_mode"] = "drawing"
-            phosphene_metadata["drawing_file"] = drawing_filename.name
+        response_result = response_capture.save_result(
+            experiment_dir,
+            drawing_filename=f"drawing_{phosphene_display_number}.png",
+            saccade_filename=f"saccade_samples_{phosphene_display_number}.json",
+        )
+        apply_response_metadata(phosphene_metadata, response_result)
+        print(f"        ✓ Respuesta: {response_result.response_file}")
 
         phosphene_metadata["end_time"] = datetime.now().isoformat()
 
@@ -1718,7 +1808,7 @@ Ejemplos de uso:
         print()
 
     # Ya no necesitamos eye tracker ni webcam viewer
-    _close_response_screen(drawing_tablet)
+    _close_response_screen(response_capture)
     if eye_tracker:
         eye_tracker.release()
     if webcam_viewer:
@@ -1767,19 +1857,7 @@ Ejemplos de uso:
             f.write(f"  Inicio: {phos['start_time']}\n")
             f.write(f"  Fin: {phos['end_time']}\n")
             f.write(f"  Pérdidas de fijación: {phos['fixation_losses']}\n")
-            phos_mode = phos.get("response_mode", "drawing")
-            if phos_mode == "saccade":
-                f.write(
-                    f"  Modo respuesta: saccade ({phos.get('response_extraction')}, "
-                    f"status={phos.get('response_status')}, "
-                    f"intentos={phos.get('response_attempts')})\n"
-                )
-                f.write(f"  response_xy: {phos.get('response_xy')}\n")
-                f.write(
-                    f"  Archivo saccade: {phos.get('saccade_samples_file', '-')}\n"
-                )
-            else:
-                f.write(f"  Archivo de dibujo: {phos.get('drawing_file', '-')}\n")
+            write_response_summary(f, phos)
 
             if "events" in phos and "prestim_start" in phos["events"]:
                 f.write(f"  Prestim inicio: {phos['events']['prestim_start']}\n")
@@ -2004,10 +2082,20 @@ def run_prestimulation(
     Returns:
         bool: True si completó exitosamente, False si hubo error
     """
+    # Fixation gate (verificado §1.3): el stim NO se dispara hasta acumular
+    # PRESTIMULATION_MS de fijación CONTINUA. Si la mirada se pierde,
+    # `looking_start_time` se resetea a None y el contador empieza de cero.
+    # MAX_FIXATION_WAIT_MS es solo un presupuesto total para evitar trials
+    # eternos cuando el participante no puede fijar — no un fallback que
+    # deje pasar el stim sin fijación.
     print("[1/4] PRESTIMULATION: Esperando fijación...")
     print(
         f"      (target=center, tolerance={anchor_screen.tolerance_radius}px, needed={PRESTIMULATION_MS}ms)"
     )
+
+    # Edge-trigger the fixation tick afresh for this trial
+    if hasattr(anchor_screen, "reset_fixation_edge"):
+        anchor_screen.reset_fixation_edge()
 
     looking_start_time = None
     wait_start_time = time.time()

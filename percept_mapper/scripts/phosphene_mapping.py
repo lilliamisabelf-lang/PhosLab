@@ -13,6 +13,8 @@ from datetime import datetime
 from pathlib import Path
 import json
 
+from scripts.response_capture import apply_response_metadata, write_response_summary
+
 
 class PhospheneMappingExperiment:
     """
@@ -122,6 +124,11 @@ class PhospheneMappingExperiment:
         check_quit_func,
         drawing_tablet_reset_func,
         FPS,
+        *,
+        trial_idx=None,
+        is_catch=False,
+        is_practice=False,
+        run_interstim_after=True,
     ):
         """
         Ejecuta UNA repetición del experimento de mapeo
@@ -144,17 +151,29 @@ class PhospheneMappingExperiment:
         Returns:
             dict: Metadata de esta repetición, o None si el usuario canceló
         """
+        tag = " [CATCH]" if is_catch else (" [PRACTICE]" if is_practice else "")
         print("\n" + "=" * 70)
-        print(f"REPETICIÓN {repetition_number}/{self.num_repetitions}")
+        print(f"REPETICIÓN {repetition_number}/{self.num_repetitions}{tag}")
         print(f"Electrodo: {self.electrode_index}")
+        if trial_idx is not None:
+            print(f"trial_idx global: {trial_idx}")
         print(f"Posición: {phosphene_position}")
         print(f"Corriente: {current_uA} µA")
         print("=" * 70)
+
+        # Activar/desactivar modo catch en la pantalla de estim. Esto se restaura
+        # al final del método.
+        prev_catch_mode = getattr(stimulation_screen, "catch_mode", False)
+        if hasattr(stimulation_screen, "catch_mode"):
+            stimulation_screen.catch_mode = bool(is_catch)
 
         # Metadata de esta repetición
         repetition_metadata = {
             "repetition_number": repetition_number,
             "electrode_index": self.electrode_index,
+            "trial_idx": trial_idx,
+            "is_catch": bool(is_catch),
+            "is_practice": bool(is_practice),
             "position": phosphene_position,
             "stimulation_parameters": {
                 "current_uA": current_uA,
@@ -245,14 +264,12 @@ class PhospheneMappingExperiment:
         drawing_tablet_reset_func(self.drawing_tablet)
 
         drawing_completed = False
-        canvas = None              # pygame.Surface en modo drawing
-        saccade_payload = None     # dict en modo saccade
         drawing_start_time = time.time()
 
         while not drawing_completed:
             events = pygame.event.get()
 
-            finished, output = self.drawing_tablet.update(self.screen, events)
+            finished = self.drawing_tablet.update(self.screen, events)
 
             # Registrar gaze coordinates durante drawing (sólo informativo;
             # en modo saccade el payload ya contiene las muestras).
@@ -272,26 +289,11 @@ class PhospheneMappingExperiment:
                 )
 
             if finished:
-                if isinstance(output, dict):
-                    status = output.get("status", "unknown")
-                    if status != "ok" and hasattr(self.drawing_tablet, "should_rerun") and self.drawing_tablet.should_rerun():
-                        print(
-                            f"      [SaccadeScreen] retry silencioso "
-                            f"({output.get('attempts')}/{output.get('max_attempts')}) "
-                            f"motivo={status}"
-                        )
-                        self.drawing_tablet.reset()
-                        continue
-                    saccade_payload = output
-                    print(
-                        f"      ✓ Repetición {repetition_number} completada "
-                        f"(saccade, status={status})"
-                    )
-                    drawing_completed = True
-                else:
-                    canvas = output
-                    print(f"      ✓ Repetición {repetition_number} completada")
-                    drawing_completed = True
+                print(
+                    f"      ✓ Repetición {repetition_number} completada "
+                    f"({self.drawing_tablet.mode}, status={self.drawing_tablet.last_status})"
+                )
+                drawing_completed = True
 
             # Comprobar ESC/QUIT
             for event in events:
@@ -308,137 +310,88 @@ class PhospheneMappingExperiment:
         # ============================================
         # GUARDADO
         # ============================================
-        print(f"      [GUARDANDO] Repetición {repetition_number}...")
-
-        if saccade_payload is not None:
-            # Modo saccade: serializa el trazo + punto-respuesta como JSON
-            samples_filename = (
-                self.electrode_dir
-                / f"saccade_samples_{repetition_number:03d}.json"
-            )
-            saccade_record = {
-                "response_xy": saccade_payload.get("response_xy"),
-                "status": saccade_payload.get("status"),
-                "extraction": saccade_payload.get("extraction"),
-                "attempts": saccade_payload.get("attempts"),
-                "max_attempts": saccade_payload.get("max_attempts"),
-                "capture_duration_ms": saccade_payload.get("capture_duration_ms"),
-                "anchor_xy": saccade_payload.get("anchor_xy"),
-                "samples": saccade_payload.get("samples", []),
-            }
-            with open(samples_filename, "w", encoding="utf-8") as f:
-                json.dump(saccade_record, f, indent=2, ensure_ascii=False)
-            print(f"        ✓ Saccade samples: {samples_filename.name}")
-            repetition_metadata["response_mode"] = "saccade"
-            repetition_metadata["saccade_samples_file"] = samples_filename.name
-            repetition_metadata["response_xy"] = saccade_payload.get("response_xy")
-            repetition_metadata["response_status"] = saccade_payload.get("status")
-            repetition_metadata["response_extraction"] = saccade_payload.get("extraction")
-            repetition_metadata["response_attempts"] = saccade_payload.get("attempts")
+        if is_practice:
+            # Practice trials run the same flow but do not write artifacts
+            # nor join the analyzed repetitions list.
+            print(f"      [PRACTICE] Repetición {repetition_number} ejecutada sin guardado")
         else:
-            # Modo drawing (comportamiento original)
-            drawing_filename = (
-                self.electrode_dir / f"repetition_{repetition_number:03d}.png"
+            tag = "CATCH" if is_catch else "GUARDANDO"
+            print(f"      [{tag}] Repetición {repetition_number}...")
+
+            file_prefix = "catch" if is_catch else "repetition"
+            response_result = self.drawing_tablet.save_result(
+                self.electrode_dir,
+                drawing_filename=f"{file_prefix}_{repetition_number:03d}.png",
+                saccade_filename=f"saccade_samples_{file_prefix}_{repetition_number:03d}.json",
             )
-            pygame.image.save(canvas, str(drawing_filename))
-            print(f"        ✓ Dibujo: {drawing_filename.name}")
-            repetition_metadata["response_mode"] = "drawing"
-            repetition_metadata["drawing_file"] = drawing_filename.name
+            apply_response_metadata(repetition_metadata, response_result)
+            print(f"        ✓ Respuesta: {response_result.response_file}")
 
-        repetition_metadata["end_time"] = datetime.now().isoformat()
+            repetition_metadata["end_time"] = datetime.now().isoformat()
 
-        # Añadir a la lista de repeticiones
-        self.experiment_metadata["repetitions"].append(repetition_metadata)
+            # Añadir a la lista de repeticiones
+            self.experiment_metadata["repetitions"].append(repetition_metadata)
 
-        # Guardar metadata intermedia (por si el experimento se interrumpe)
-        self._save_metadata()
+            # Guardar metadata intermedia (por si el experimento se interrumpe)
+            self._save_metadata()
 
-        print(f"        ✓ Metadata guardada")
+            print(f"        ✓ Metadata guardada")
+
+        # Restaurar modo catch del stim_screen para no contaminar el siguiente trial.
+        if hasattr(stimulation_screen, "catch_mode"):
+            stimulation_screen.catch_mode = prev_catch_mode
 
         # ============================================
-        # INTERSTIMULATION (solo si NO es la última repetición)
+        # INTERSTIMULATION (modo legacy: solo si run_interstim_after=True y no es la última rep)
+        # En el modelo de trial-list, main.py setea run_interstim_after=False
+        # y maneja los breaks entre trials externamente.
         # ============================================
-        if repetition_number < self.num_repetitions:
+        if run_interstim_after and repetition_number < self.num_repetitions:
             print()
-            print(
-                f"      [BREAK] Descanso antes de la repetición {repetition_number + 1}..."
-            )
-
+            print(f"      [BREAK] Descanso antes de la repetición {repetition_number + 1}...")
             repetition_metadata["interstim_start"] = datetime.now().isoformat()
-
-            # Usar run_interstimulation pero con mensaje personalizado
             success = self._run_interstimulation_mapping(
                 repetition_number, self.num_repetitions
             )
             if not success:
-                return None  # Usuario canceló
-
+                return None
             repetition_metadata["interstim_end"] = datetime.now().isoformat()
-        else:
-            print()
-            print("      [FIN] Última repetición completada - No hay break")
 
         print()
         return repetition_metadata
 
-    def _run_interstimulation_mapping(self, current_rep, total_reps):
-        """
-        Pantalla de descanso entre repeticiones
-        Similar a run_interstimulation pero adaptado para mapeo
-        """
+    def _run_interstimulation_mapping(self, current_rep, total_reps, *, duration_ms=None):
+        """Pantalla mínima entre estimulaciones: anchor visible, sin texto ni
+        contador. Un contador visible entrena al participante a anticipar el
+        próximo estímulo según el reloj — ese es exactamente el confound que
+        el cue de audio existe para evitar. Mostramos solo el anchor."""
         background_color = tuple(self.params["screen"]["background_color"])
-        font = pygame.font.Font(None, 96)
-        font_small = pygame.font.Font(None, 64)
 
-        INTERSTIMULATION_MS = self.timing_config["interstimulation_ms"]
+        interstim_ms = float(self.timing_config["interstimulation_ms"] if duration_ms is None else duration_ms)
         start_time = time.time()
 
         while True:
             elapsed_ms = (time.time() - start_time) * 1000
-
-            if elapsed_ms >= INTERSTIMULATION_MS:
+            if elapsed_ms >= interstim_ms:
                 return True
 
-            # Actualizar webcam viewer
             if self.webcam_viewer is not None:
                 if not self.webcam_viewer.update():
                     print("      ⚠ Ventana de webcam cerrada")
 
             self.screen.fill(background_color)
+            if self.anchor_screen is not None and hasattr(self.anchor_screen, "draw"):
+                # Anchor neutro (no hay fixación activa todavía)
+                self.anchor_screen.draw(self.screen)
 
-            # Texto principal
-            text = f"Intervalo entre estimulaciones - Repetición {current_rep}/{total_reps}"
-            text_surface = font.render(text, True, (255, 255, 255))
-            text_rect = text_surface.get_rect(
-                center=(
-                    self.screen.get_width() // 2,
-                    self.screen.get_height() // 2 - 50,
-                )
-            )
-            self.screen.blit(text_surface, text_rect)
-
-            # Tiempo restante
-            remaining_s = (INTERSTIMULATION_MS - elapsed_ms) / 1000
-            time_text = f"{remaining_s:.1f}s"
-            time_surface = font_small.render(time_text, True, (200, 200, 200))
-            time_rect = time_surface.get_rect(
-                center=(
-                    self.screen.get_width() // 2,
-                    self.screen.get_height() // 2 + 50,
-                )
-            )
-            self.screen.blit(time_surface, time_rect)
-
-            # Comprobar eventos
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return False
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         return False
-                    elif event.key == pygame.K_SPACE:
-                        # Permitir saltar el descanso con ESPACIO
-                        return True
+                    if event.key == pygame.K_SPACE:
+                        return True  # saltar break con ESPACIO
 
             self._display_flip()
             self.clock.tick(60)
@@ -505,21 +458,8 @@ class PhospheneMappingExperiment:
                 f.write(f"  Fin: {rep['end_time']}\n")
                 f.write(f"  Pérdidas de fijación: {rep['fixation_losses']}\n")
                 f.write(f"  Intentos: {rep['trial_attempts']}\n")
-                rep_mode = rep.get("response_mode", "drawing")
-                if rep_mode == "saccade":
-                    f.write(
-                        f"  Modo respuesta: saccade ({rep.get('response_extraction')}, "
-                        f"status={rep.get('response_status')}, "
-                        f"intentos={rep.get('response_attempts')})\n"
-                    )
-                    f.write(f"  response_xy: {rep.get('response_xy')}\n")
-                    f.write(
-                        f"  Archivo saccade: {rep.get('saccade_samples_file', '-')}\n\n"
-                    )
-                else:
-                    f.write(
-                        f"  Archivo de dibujo: {rep.get('drawing_file', '-')}\n\n"
-                    )
+                write_response_summary(f, rep)
+                f.write("\n")
 
         print(f"✓ Metadata TXT: {txt_filename.name}")
 

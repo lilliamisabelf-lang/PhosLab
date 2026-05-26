@@ -18,6 +18,7 @@ import numpy as np
 from scripts.learning.data_loader import PhospheneDataLoader
 from scripts.learning.bayesian_model import BayesianPhospheneCorrector
 from scripts.learning.model_evaluator import ModelEvaluator
+from scripts.learning.cross_validation import k_fold_cv, bayesian_corrector
 
 try:
     from scripts.learning.neural_model import NeuralPhospheneCorrector
@@ -153,6 +154,18 @@ def main():
         "--test-experiment",
         default="",
         help="Nombre del experimento de test (solo con test-mode=select)",
+    )
+    parser.add_argument(
+        "--cv",
+        type=int,
+        default=5,
+        help="K-fold CV para el modelo bayesiano. 0 desactiva CV (default: 5).",
+    )
+    parser.add_argument(
+        "--cv-bootstrap",
+        type=int,
+        default=2000,
+        help="Iteraciones de bootstrap para p-value (default: 2000)",
     )
     args = parser.parse_args()
 
@@ -345,9 +358,57 @@ def main():
     )
     evaluator.plot_error_comparison(metrics_eval)
 
+    # ── CROSS-VALIDATION (k-fold) ─────────────────────────
+    # Reemplaza el single-holdout `train_split: 0.8`. Cada fold deja fuera
+    # 1/K del dataset, ajusta el corrector bayesiano en el resto, y mide
+    # error en held-out. El paired bootstrap sobre los errores por-trial
+    # da un CI 95% y un p-value de "corregido < no corregido".
+    cv_payload = None
+    if args.cv and args.cv > 1 and pred.shape[0] >= args.cv:
+        print("\n" + "=" * 60)
+        print(f"CROSS-VALIDATION ({args.cv}-fold, bayesiano)")
+        print("=" * 60)
+        cv_result = k_fold_cv(
+            pred, obs,
+            fit_correct_fn=bayesian_corrector(
+                prior_mean=bayes_cfg.get("prior_mean", 0.0),
+                prior_std=bayes_cfg.get("prior_std", 5.0),
+                noise_std=bayes_cfg.get("noise_std", 0.5),
+            ),
+            k=int(args.cv),
+            seed=int(bayes_cfg.get("cv_seed", 0)),
+            bootstrap_iter=int(args.cv_bootstrap),
+        )
+        print(
+            f"  MSE uncorrected (mean across folds): {cv_result.mean_mse_uncorrected:.3f}"
+            f" ± {cv_result.std_mse_uncorrected:.3f}"
+        )
+        print(
+            f"  MSE corrected   (mean across folds): {cv_result.mean_mse_corrected:.3f}"
+            f" ± {cv_result.std_mse_corrected:.3f}"
+        )
+        print(
+            f"  Improvement: {cv_result.improvement_abs:.3f} ({cv_result.improvement_pct:.1f}%)"
+        )
+        print(
+            f"  Bootstrap p={cv_result.bootstrap_p_value:.4f}  "
+            f"95% CI=({cv_result.bootstrap_ci_low:.3f}, {cv_result.bootstrap_ci_high:.3f})"
+        )
+        if cv_result.bootstrap_p_value is not None and cv_result.bootstrap_p_value < 0.05:
+            print("  → Mejora estadísticamente significativa al 5%.")
+        else:
+            print("  → Mejora NO estadísticamente significativa al 5%.")
+        cv_payload = cv_result.to_dict()
+    elif args.cv:
+        print(f"\nWARN: dataset (N={pred.shape[0]}) demasiado pequeño para {args.cv}-fold CV; CV omitido.")
+
     # Guardar métricas
     metrics_file = output_path / "evaluation_metrics.json"
-    metrics_payload = {"train": metrics_train, "test": metrics_eval}
+    metrics_payload = {
+        "train": metrics_train,
+        "test": metrics_eval,
+        "cross_validation": cv_payload,
+    }
     with open(metrics_file, "w", encoding="utf-8") as f:
         json.dump(metrics_payload, f, indent=2, ensure_ascii=False)
     print(f"\nOK: Métricas guardadas en: {metrics_file}")

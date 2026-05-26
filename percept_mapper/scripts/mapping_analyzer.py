@@ -18,6 +18,7 @@ import matplotlib
 matplotlib.use("Agg")  # Backend no interactivo - solo guarda archivos
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
+from scripts.response_capture import resolve_response_features
 
 try:
     from scipy.stats import chi2
@@ -363,48 +364,44 @@ class PhospheneMappingAnalyzer:
         centroids = []
         valid_repetitions = []
         per_repetition = []
+        # Catch trials: contar cuántos produjeron una respuesta y cuántos no.
+        # Tasa de false-positives = catch_with_response / catch_total.
+        catch_total = 0
+        catch_with_response = 0
 
         # Analizar cada repetición
         for rep_data in self.metadata["repetitions"]:
+            # Skip practice trials: nunca debieron persistir aquí pero por si acaso.
+            if rep_data.get("is_practice"):
+                continue
+            # Catch trials: analizar por separado, no entran en el centroide.
+            if rep_data.get("is_catch"):
+                catch_total += 1
+                # Tuvo respuesta válida? (saccade reportó endpoint, o drawing tenía píxeles)
+                response = resolve_response_features(
+                    rep_data,
+                    self.electrode_dir,
+                    self.extract_drawing_features,
+                )
+                if response.get("ok"):
+                    catch_with_response += 1
+                continue
+
             rep_number = rep_data["repetition_number"]
-            response_mode = rep_data.get("response_mode", "drawing")
+            print(f"Repeticion {rep_number}: ", end="")
 
-            print(f"Repetición {rep_number}: ", end="")
-
-            if response_mode == "saccade":
-                # Punto-respuesta ya calculado por SaccadeScreen; sin PNG.
-                response_xy = rep_data.get("response_xy")
-                if not response_xy:
-                    status = rep_data.get("response_status", "unknown")
-                    print(f"✗ Sin respuesta saccade válida (status={status})")
-                    continue
-                centroid = (float(response_xy[0]), float(response_xy[1]))
-                features = {
-                    "n_pixels": 1,
-                    "intensity_sum": 1.0,
-                    "bbox": {
-                        "left": int(centroid[0]),
-                        "top": int(centroid[1]),
-                        "right": int(centroid[0]) + 1,
-                        "bottom": int(centroid[1]) + 1,
-                        "width": 1,
-                        "height": 1,
-                        "area": 1,
-                    },
-                    "fill_ratio": 1.0,
-                }
-                rep_source_file = rep_data.get("saccade_samples_file", "")
-            else:
-                drawing_file = self.electrode_dir / rep_data["drawing_file"]
-                if not drawing_file.exists():
-                    print(f"✗ Archivo no encontrado: {drawing_file.name}")
-                    continue
-                features = self.extract_drawing_features(drawing_file)
-                if features is None:
-                    print(f"✗ No se pudo calcular centroide (dibujo vacío)")
-                    continue
-                centroid = features["centroid"]
-                rep_source_file = drawing_file.name
+            response = resolve_response_features(
+                rep_data,
+                self.electrode_dir,
+                self.extract_drawing_features,
+            )
+            if not response["ok"]:
+                print(f"X {response['error']}")
+                continue
+            response_mode = response["mode"]
+            features = response["features"]
+            centroid = features["centroid"]
+            rep_source_file = response["source_file"]
 
             centroid_deg = self._px_to_deg(centroid[0], centroid[1])
 
@@ -414,6 +411,7 @@ class PhospheneMappingAnalyzer:
                 {
                     "repetition_number": int(rep_number),
                     "response_mode": response_mode,
+                    "response_file": rep_source_file,
                     "drawing_file": rep_source_file if response_mode == "drawing" else None,
                     "saccade_samples_file": rep_source_file if response_mode == "saccade" else None,
                     "centroid": {"x": float(centroid[0]), "y": float(centroid[1])},
@@ -567,6 +565,54 @@ class PhospheneMappingAnalyzer:
                 ),
                 "distance_to_stim_deg": _tukey_boxplot_stats(dist_to_stim_deg),
             },
+        }
+
+        # Catch-trial false-positive rate (de §1.2 del plan de rigor):
+        # cuántos catch trials produjeron una respuesta — si la tasa es alta,
+        # el participante está respondiendo aún sin estímulo.
+        results["catch_trial_stats"] = {
+            "n_total": catch_total,
+            "n_with_response": catch_with_response,
+            "response_rate": (
+                float(catch_with_response) / float(catch_total) if catch_total > 0 else None
+            ),
+        }
+
+        # 95% confidence ellipse del centroide (de §2.3). Si tenemos al menos
+        # 2 puntos válidos, la covarianza 2D se reduce a (major, minor, angle).
+        ellipse_params = None
+        if centroids.shape[0] >= 2:
+            cov = np.cov(centroids.T, ddof=1)
+            ellipse_params = _ellipse_from_cov(cov, confidence=0.95)
+        if ellipse_params is not None:
+            major, minor, angle_deg = ellipse_params
+            results["confidence_ellipse_95_px"] = {
+                "major_axis": float(major),
+                "minor_axis": float(minor),
+                "angle_deg": float(angle_deg),
+            }
+            # Mismo elipse pero en grados (asumiendo isotropía aproximada)
+            results["confidence_ellipse_95_deg"] = {
+                "major_axis": float(major / max(self.pixels_per_degree_x, 1e-9)),
+                "minor_axis": float(minor / max(self.pixels_per_degree_y, 1e-9)),
+                "angle_deg": float(angle_deg),
+            }
+
+        # Within-electrode reliability (sustituto de test-retest, §2.4):
+        # SEM por eje = std / sqrt(n). Cuanto más bajo, más reproducible.
+        n = max(1, centroids.shape[0])
+        sem_x = float(std_position[0]) / (n ** 0.5)
+        sem_y = float(std_position[1]) / (n ** 0.5)
+        results["within_electrode_reliability"] = {
+            "n_valid": int(centroids.shape[0]),
+            "sem_x_px": sem_x,
+            "sem_y_px": sem_y,
+            "sem_x_deg": sem_x / max(self.pixels_per_degree_x, 1e-9),
+            "sem_y_deg": sem_y / max(self.pixels_per_degree_y, 1e-9),
+            "noise_floor_radius_deg": (
+                (sem_x ** 2 + sem_y ** 2) ** 0.5
+                / max((self.pixels_per_degree_x + self.pixels_per_degree_y) / 2.0, 1e-9)
+            ),
         }
 
         # Imprimir resumen
