@@ -20,7 +20,9 @@ phosphene_mapping:
   save_eyetracking_data: true
   save_stimulation_metadata: true
   save_stimulation_currents_uA: true
-input_mode: mouse
+input_mode: wacom # pupil | wacom | mouse
+drawing_input: both   # mouse | tablet | both — pygame no distingue ratón vs stylus, así que solo afecta UI
+response_mode: saccade  # drawing | saccade — cómo el participante reporta la posición del fosfeno percibido
 screen:
   width: 1920
   height: 1080
@@ -60,9 +62,9 @@ eye_tracker:
   resolution:
   - 640
   - 480
-  detection_confidence: 0.5
-  tracking_confidence: 0.5
-  smoothing_buffer: 5
+  detection_confidence: 0.9
+  tracking_confidence: 0.9
+  smoothing_buffer: 10
   gaze_trace:
     enabled: true
     trace_duration_ms: 300
@@ -100,6 +102,30 @@ drawing_tablet:
     - 255
     - 255
     font_size: 24
+  # Confinar el cursor al monitor seleccionado mientras la pantalla de dibujo
+  # está activa. Se libera al confirmar (ENTER). NO arregla el mapeo del
+  # driver Wacom (eso se hace en Wacom Center → Mapping → Display): si el
+  # Wacom envía coordenadas a otro monitor y este clip las rechaza, el
+  # cursor colapsa al borde y la mitad de la tableta queda inservible.
+  # Deja `enabled: false` salvo que el Wacom ya esté mapeado a un solo
+  # monitor y quieras esto como red de seguridad para el ratón.
+  cursor_clip:
+    enabled: false
+    monitor: primary   # primary | 0 | 1 | ... | none
+  # Per-mode overrides (opcional). Si la clave coincide con `drawing_input`,
+  # estos valores ganan al `brush`/cursor_clip generales por dispositivo.
+  mouse:
+    brush:
+      size: 2
+    hide_cursor: false
+  tablet:
+    brush:
+      size: 4
+    hide_cursor: false   # poner true si el driver Wacom ya pinta su propio cursor
+  both:
+    brush:
+      size: 3
+    hide_cursor: false
 logging:
   enabled: true
   directory: logs
@@ -107,10 +133,12 @@ logging:
   save_drawing: true
   filename_format: experiment_{timestamp}
 retinotopic_mapping:
+
+
   array_type: shanks_10x32
   implant_id_filter: all
   coordinate_source: phoslab_csv
-  coords_csv_path: C:/Users/lilli/Desktop/phoslab/percept_mapper/config/intento1.csv
+  coords_csv_path: C:\Users\admin\PhosLab\implant_explorer\data\exported_RFs\export_rf_test.csv
   coordinate_files:
     shanks_10x16: config/coords_shanks_10x16.yaml
     shanks_10x32: config/coords_shanks_10x32.yaml
@@ -144,3 +172,47 @@ learning:
     num_epochs: 500
     learning_rate: 0.01
     train_split: 0.8
+pupil:
+  address: 127.0.0.1
+  port: 50020
+  surface_name: Surface 2
+  min_confidence: 0.7
+  max_sample_age_s: 0.25
+  one_euro:
+    fps: 60
+    min_cutoff: 0.3
+    beta: 0.001
+    d_cutoff: 1.0
+apriltag_overlay:
+  enabled: true
+  png_dir: percept_mapper/assets/apriltags
+  tag_files: [tag_0.png, tag_1.png, tag_2.png, tag_3.png]
+  tag_size_px: 300
+  margin_px: 30
+saccade:
+  # Ventana de captura tras el estímulo. TODO: sustituir por detección de
+  # "regreso al anchor" cuando la calidad del gaze sea suficiente.
+  capture_duration_ms: 1500
+  # Método de extracción del punto-respuesta a partir del trazo de gaze:
+  #   idt_first_fixation -> centroide de la primera fijación estable tras el
+  #                         saccade (recomendado; gold standard en literatura)
+  #   peak_distance      -> muestra más alejada del anchor (baseline barato)
+  #   velocity_endpoint  -> primer aterrizaje tras el saccade (basado en velocidad)
+  extraction: idt_first_fixation
+  idt:
+    dispersion_px: 60       # ≈1° a 60 cm en monitor 2560x1440
+    min_duration_ms: 100
+    skip_anchor_radius_px: 40   # ignorar fijaciones aún en el anchor central
+  velocity:
+    onset_threshold_px_s: 1500
+    settle_threshold_px_s: 300
+    smoothing_window: 5
+  min_response_distance_px: 30   # respuestas más cercanas al anchor son inválidas
+  # Política de reintento silencioso al fallar la extracción
+  on_failure: rerun_max_3        # skip | rerun | rerun_max_<N>
+  show_gaze_trace: true
+  audio_cue:
+    enabled: true
+    frequency_hz: 880
+    duration_ms: 80
+    volume: 0.4

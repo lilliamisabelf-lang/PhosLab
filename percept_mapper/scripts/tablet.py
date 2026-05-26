@@ -11,20 +11,42 @@ class DrawingTablet:
     Interfaz de dibujo simple para capturar la respuesta del usuario
     """
 
-    def __init__(self, screen_width, screen_height, brush_size=5, brush_color=(255, 255, 0)):
+    def __init__(
+        self,
+        screen_width,
+        screen_height,
+        brush_size=5,
+        brush_color=(255, 255, 0),
+        mode="both",
+        instructions_text=None,
+        hide_cursor=False,
+        cursor_clip_rect=None,
+    ):
         """
-        Inicializa la tablet de dibujo
+        Inicializa la tablet de dibujo.
 
         Args:
             screen_width: Ancho de la pantalla principal
             screen_height: Alto de la pantalla principal
             brush_size: Tamaño del pincel (radio en píxeles). Default: 5
             brush_color: Color del pincel en RGB. Default: (255, 255, 0) amarillo
+            mode: "mouse" | "tablet" | "both". Solo afecta a la UI (texto,
+                  cursor); pygame no distingue eventos de ratón y stylus, así
+                  que ambos dispositivos siempre funcionan físicamente.
+            instructions_text: Texto opcional para el subtítulo. Si es None,
+                  se elige uno por defecto según `mode`.
+            hide_cursor: Si True, oculta el cursor del sistema durante el
+                  dibujo (útil en modo tablet si el stylus muestra su propio
+                  indicador en pantalla).
         """
-        print("[DrawingTablet] Inicializando...")
+        print(f"[DrawingTablet] Inicializando (mode={mode})...")
 
         self.screen_width = screen_width
         self.screen_height = screen_height
+        self.mode = mode
+        self.hide_cursor = bool(hide_cursor)
+        self._cursor_clip_rect = cursor_clip_rect
+        self._cursor_clip_active = False
 
         # Colores
         self.BLACK = (0, 0, 0)
@@ -39,14 +61,28 @@ class DrawingTablet:
         self.brush_size = brush_size
         self.brush_color = brush_color
 
+        # Texto de instrucciones según modo
+        if instructions_text is None:
+            instructions_text = {
+                "mouse": "Dibuja con el ratón y presiona ENTER",
+                "tablet": "Dibuja con la tablet y presiona ENTER",
+                "both": "Dibuja (ratón o tablet) y presiona ENTER",
+            }.get(mode, "Dibuje ahora y presione ENTER")
+        self.title_text = instructions_text
+
         # Estado del dibujo
         self.drawing = False
         self.strokes = []  # Lista de trazos
         self.current_stroke = []  # Trazo actual
         self.finished = False
+        self._cursor_prev_visible = None
 
         # Fuente para título
         self.font = pygame.font.Font(None, 64)
+
+        if self.hide_cursor:
+            self._cursor_prev_visible = pygame.mouse.get_visible()
+            pygame.mouse.set_visible(False)
 
         print("[DrawingTablet] ✓ Inicializado")
 
@@ -85,6 +121,7 @@ class DrawingTablet:
                             f"[DrawingTablet] Dibujo confirmado ({len(self.strokes)} trazos)"
                         )
                         self.finished = True
+                        self._release_cursor_clip()
                         return (True, self.canvas.copy())
                     else:
                         print("[DrawingTablet] No hay trazos para confirmar")
@@ -117,8 +154,7 @@ class DrawingTablet:
         screen.blit(self.canvas, (0, 0))
 
         # Título en la parte superior
-        title = "Dibuje ahora y presione ENTER"
-        title_surface = self.font.render(title, True, self.WHITE)
+        title_surface = self.font.render(self.title_text, True, self.WHITE)
         title_rect = title_surface.get_rect(center=(self.screen_width // 2, 50))
         screen.blit(title_surface, title_rect)
 
@@ -149,4 +185,34 @@ class DrawingTablet:
         self.current_stroke = []
         self.drawing = False
         self.finished = False
+        self._apply_cursor_clip()
         print("[DrawingTablet] Reseteado para nuevo dibujo")
+
+    def close(self):
+        """Libera el confinamiento del cursor si está activo (idempotente)."""
+        self._release_cursor_clip()
+        if self._cursor_prev_visible is not None:
+            pygame.mouse.set_visible(self._cursor_prev_visible)
+            self._cursor_prev_visible = None
+
+    def _apply_cursor_clip(self):
+        if self._cursor_clip_rect is None or self._cursor_clip_active:
+            return
+        try:
+            from scripts.cursor_clip import clip_cursor
+            if clip_cursor(self._cursor_clip_rect):
+                self._cursor_clip_active = True
+                print(f"[DrawingTablet] Cursor confinado a {self._cursor_clip_rect}")
+        except Exception as e:
+            print(f"[DrawingTablet] ⚠ no se pudo aplicar cursor clip: {e}")
+
+    def _release_cursor_clip(self):
+        if not self._cursor_clip_active:
+            return
+        try:
+            from scripts.cursor_clip import clip_cursor
+            clip_cursor(None)
+        except Exception as e:
+            print(f"[DrawingTablet] ⚠ no se pudo liberar cursor clip: {e}")
+        finally:
+            self._cursor_clip_active = False

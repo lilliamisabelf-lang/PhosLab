@@ -150,22 +150,46 @@ class StandardExperimentAnalyzer:
             stim_pos = phos.get("position", [0, 0])
             electrode_info = phos.get("electrode_info", {})
             pred_deg = electrode_info.get("visual_position_deg", [0.0, 0.0])
+            response_mode = phos.get("response_mode", "drawing")
 
             print(f"\n[StandardAnalyzer] Electrodo {electrode_index}...")
 
-            if not drawing_file_name:
-                print(f"  ✗ Sin archivo de dibujo")
-                continue
+            if response_mode == "saccade":
+                # Modo saccade: el punto-respuesta ya está calculado por SaccadeScreen.
+                response_xy = phos.get("response_xy")
+                if not response_xy:
+                    status = phos.get("response_status", "unknown")
+                    print(f"  ✗ Sin respuesta saccade válida (status={status})")
+                    continue
+                features = {
+                    "centroid": (float(response_xy[0]), float(response_xy[1])),
+                    "n_pixels": 1,
+                    "intensity_sum": 1,
+                    "bbox": {
+                        "left": int(response_xy[0]),
+                        "top": int(response_xy[1]),
+                        "right": int(response_xy[0]) + 1,
+                        "bottom": int(response_xy[1]) + 1,
+                        "width": 1,
+                        "height": 1,
+                        "area": 1,
+                    },
+                    "fill_ratio": 1.0,
+                }
+            else:
+                if not drawing_file_name:
+                    print(f"  ✗ Sin archivo de dibujo")
+                    continue
 
-            drawing_path = self.experiment_dir / drawing_file_name
-            if not drawing_path.exists():
-                print(f"  ✗ No encontrado: {drawing_file_name}")
-                continue
+                drawing_path = self.experiment_dir / drawing_file_name
+                if not drawing_path.exists():
+                    print(f"  ✗ No encontrado: {drawing_file_name}")
+                    continue
 
-            features = self._extract_centroid(drawing_path)
-            if features is None:
-                print(f"  ✗ Dibujo vacío: {drawing_file_name}")
-                continue
+                features = self._extract_centroid(drawing_path)
+                if features is None:
+                    print(f"  ✗ Dibujo vacío: {drawing_file_name}")
+                    continue
 
             centroid = features["centroid"]
             centroid_deg = self._px_to_deg(centroid[0], centroid[1])

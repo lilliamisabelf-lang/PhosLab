@@ -20,6 +20,34 @@ from pathlib import Path
 import json
 import yaml
 
+_ACTIVE_RESPONSE_SCREEN = None
+_APRILTAG_OVERLAY = None
+
+
+def _set_active_response_screen(response_screen):
+    global _ACTIVE_RESPONSE_SCREEN
+    _ACTIVE_RESPONSE_SCREEN = response_screen
+
+
+def _close_response_screen(response_screen=None):
+    global _ACTIVE_RESPONSE_SCREEN
+    target = response_screen or _ACTIVE_RESPONSE_SCREEN
+    if target is not None and hasattr(target, "close"):
+        try:
+            target.close()
+        except Exception as e:
+            print(f"[CLEANUP] ⚠ Error cerrando pantalla de respuesta: {e}")
+    if target is _ACTIVE_RESPONSE_SCREEN:
+        _ACTIVE_RESPONSE_SCREEN = None
+
+
+def _display_flip(screen=None):
+    if _APRILTAG_OVERLAY is not None:
+        target = screen or pygame.display.get_surface()
+        if target is not None:
+            _APRILTAG_OVERLAY.draw(target)
+    pygame.display.flip()
+
 # ============================================
 # HELPERS: corrientes por electrodo (sparse)
 # ============================================
@@ -232,6 +260,7 @@ import ctypes
 # Importar módulos propios
 from core.eye_tracker import EyeTracker
 from core.mouse_tracker import MouseTracker
+from core.pupil_tracker import PupilTracker
 from scripts.anchor_screen import AnchorScreen
 from scripts.stimulation_screen import StimulationScreen
 from scripts.tablet import DrawingTablet
@@ -486,7 +515,7 @@ def show_mapping_results_pygame(
                 if event.key == pygame.K_RETURN or event.key == pygame.K_ESCAPE:
                     running = False
 
-        pygame.display.flip()
+        _display_flip(screen)
         clock.tick(30)
 
 
@@ -650,6 +679,14 @@ Ejemplos de uso:
     pygame.display.set_caption("Simulador Prótesis Cortical")
     clock = pygame.time.Clock()
 
+    # AprilTag corner overlay (siempre visible en cada frame) para Pupil Surface Tracker
+    global _APRILTAG_OVERLAY
+    from scripts.apriltag_overlay import from_config as _build_apriltag_overlay
+    try:
+        _APRILTAG_OVERLAY = _build_apriltag_overlay(config)
+    except Exception as e:
+        print(f"[INIT] ⚠ AprilTag overlay no disponible: {e}")
+
     actual_width = screen.get_width()
     actual_height = screen.get_height()
     print(f"[INIT] Tamaño real de pantalla: {actual_width}x{actual_height}")
@@ -688,6 +725,30 @@ Ejemplos de uso:
                 print("       ✓ Visualizador de webcam iniciado")
             except Exception as e:
                 print(f"       ⚠ Webcam viewer no disponible: {e}")
+    elif input_mode == "pupil":
+        print("[INIT] Inicializando Pupil tracker (ZMQ a Pupil Capture)...")
+        pupil_cfg = config.get("pupil", {}) or {}
+        try:
+            tracker = PupilTracker(
+                address=pupil_cfg.get("address", "127.0.0.1"),
+                port=pupil_cfg.get("port", 50020),
+                surface_name=pupil_cfg.get("surface_name", "phoslab_screen"),
+                min_confidence=pupil_cfg.get("min_confidence", 0.6),
+                one_euro=pupil_cfg.get("one_euro"),
+                max_sample_age_s=pupil_cfg.get("max_sample_age_s", 0.25),
+            )
+            print("       ✓ Pupil tracker iniciado correctamente")
+        except Exception as e:
+            print("=" * 70)
+            print("⚠ ERROR al iniciar Pupil tracker:")
+            print(str(e))
+            print("=" * 70)
+            if not bool(pupil_cfg.get("allow_mouse_fallback", False)):
+                print("✗ No se inicia el experimento sin Pupil. Activa pupil.allow_mouse_fallback solo para pruebas.")
+                cleanup_and_exit(None, webcam_viewer)
+                return
+            print("⚠ Cayendo a modo mouse por configuración pupil.allow_mouse_fallback=true.")
+            tracker = MouseTracker()
     else:
         tracker = MouseTracker()
 
@@ -725,12 +786,116 @@ Ejemplos de uso:
     anchor_screen = AnchorScreen(params, eye_tracker)
 
     # Leer configuración del pincel desde params.yaml
-    tablet_config = config.get("drawing_tablet", {}).get("brush", {})
-    brush_size = tablet_config.get("size", 5)  # Default: 5
-    brush_color = tuple(tablet_config.get("color", [255, 255, 0]))  # Default: amarillo
-    print(f"[CONFIG] Pincel de dibujo: tamaño={brush_size}, color={brush_color}")
+    drawing_tablet_cfg = config.get("drawing_tablet", {}) or {}
+    tablet_brush_cfg = drawing_tablet_cfg.get("brush", {}) or {}
+    brush_size = tablet_brush_cfg.get("size", 5)  # Default: 5
+    brush_color = tuple(tablet_brush_cfg.get("color", [255, 255, 0]))  # Default: amarillo
 
-    drawing_tablet = DrawingTablet(actual_width, actual_height, brush_size, brush_color)
+    # Modo de entrada de dibujo: 'mouse' | 'tablet' | 'both' (default both).
+    # pygame trata ratón y stylus como el mismo dispositivo, así que el flag
+    # solo ajusta UI (texto, cursor, tamaño de pincel por defecto). Override
+    # opcional de tamaño de pincel por modo en drawing_tablet.{mode}.brush.size.
+    drawing_input = (config.get("drawing_input") or "both").lower()
+    mode_override = drawing_tablet_cfg.get(drawing_input, {}) or {}
+    mode_brush = (mode_override.get("brush") or {})
+    if "size" in mode_brush:
+        brush_size = mode_brush["size"]
+    if "color" in mode_brush:
+        brush_color = tuple(mode_brush["color"])
+    instructions_text = (drawing_tablet_cfg.get("instructions") or {}).get("text")
+    if instructions_text and instructions_text.strip().startswith("Dibuja el punto"):
+        # Default config string is too generic; let mode pick the wording.
+        instructions_text = None
+    hide_cursor = bool(mode_override.get("hide_cursor", False))
+
+    # Cursor clipping (multi-monitor): mantener el puntero en un único monitor
+    # mientras la pantalla de dibujo esté activa. Default: monitor primario.
+    clip_cfg = drawing_tablet_cfg.get("cursor_clip") or {}
+    mode_clip_cfg = (mode_override.get("cursor_clip") or {})
+    clip_enabled = bool(mode_clip_cfg.get("enabled", clip_cfg.get("enabled", True)))
+    clip_monitor = mode_clip_cfg.get("monitor", clip_cfg.get("monitor", "primary"))
+    cursor_clip_rect = None
+    if clip_enabled:
+        try:
+            from scripts.cursor_clip import resolve_target_rect
+            cursor_clip_rect = resolve_target_rect(clip_monitor)
+        except Exception as e:
+            print(f"[INIT] ⚠ cursor_clip no disponible: {e}")
+            cursor_clip_rect = None
+
+    print(
+        f"[CONFIG] Pincel de dibujo: mode={drawing_input} tamaño={brush_size} "
+        f"color={brush_color} hide_cursor={hide_cursor} cursor_clip={cursor_clip_rect}"
+    )
+
+    # Modo de respuesta: 'drawing' (DrawingTablet) o 'saccade' (SaccadeScreen).
+    # Ambos cumplen la misma interfaz (reset / update(screen, events) -> (bool, payload) / close)
+    # así que el resto del experimento las consume con el mismo nombre.
+    response_mode = (config.get("response_mode") or "drawing").lower()
+    print(f"[CONFIG] Modo de respuesta: {response_mode}")
+
+    def _build_audio_cue(cue_cfg):
+        if not cue_cfg or not cue_cfg.get("enabled", False):
+            return None
+        try:
+            from scripts.audio_cue import from_config as _ac_from_config
+            return _ac_from_config(cue_cfg)
+        except Exception as e:
+            print(f"[INIT] ⚠ audio_cue no disponible: {e}")
+            return None
+
+    if response_mode == "saccade":
+        from scripts.saccade_screen import SaccadeScreen
+        saccade_cfg = config.get("saccade", {}) or {}
+        idt_cfg = saccade_cfg.get("idt", {}) or {}
+        vel_cfg = saccade_cfg.get("velocity", {}) or {}
+        on_failure = (saccade_cfg.get("on_failure") or "rerun_max_3").lower()
+        if on_failure.startswith("rerun_max_"):
+            try:
+                max_attempts = int(on_failure.split("_")[-1])
+            except (ValueError, IndexError):
+                max_attempts = 3
+        elif on_failure == "rerun":
+            max_attempts = 999
+        else:  # 'skip' or unknown
+            max_attempts = 1
+
+        drawing_tablet = SaccadeScreen(
+            screen_width=actual_width,
+            screen_height=actual_height,
+            anchor_xy=(actual_width // 2, actual_height // 2),
+            eye_tracker=eye_tracker,
+            capture_duration_ms=saccade_cfg.get("capture_duration_ms", 1500),
+            extraction=saccade_cfg.get("extraction", "idt_first_fixation"),
+            extractor_params={"idt": idt_cfg, "velocity": vel_cfg},
+            min_response_distance_px=saccade_cfg.get("min_response_distance_px", 30.0),
+            max_attempts=max_attempts,
+            show_gaze_trace=saccade_cfg.get("show_gaze_trace", True),
+            audio_cue=_build_audio_cue(saccade_cfg.get("audio_cue")),
+            # Debug fallback: when input_mode is mouse, the tracker doesn't
+            # update last_smooth_gaze outside is_looking_at_point — so let
+            # SaccadeScreen poll pygame.mouse directly. Off in production
+            # eye-tracker modes to avoid silent mouse contamination.
+            allow_mouse_fallback=bool(
+                saccade_cfg.get(
+                    "allow_mouse_fallback",
+                    input_mode in ("mouse", "wacom"),
+                )
+            ),
+        )
+    else:
+        drawing_tablet = DrawingTablet(
+            actual_width,
+            actual_height,
+            brush_size,
+            brush_color,
+            mode=drawing_input,
+            instructions_text=instructions_text,
+            hide_cursor=hide_cursor,
+            cursor_clip_rect=cursor_clip_rect,
+        )
+
+    _set_active_response_screen(drawing_tablet)
 
     # Gaze trace overlay
     gaze_trace_config = config.get("eye_tracker", {}).get("gaze_trace", {})
@@ -1038,6 +1203,7 @@ Ejemplos de uso:
                 webcam_viewer=webcam_viewer,
                 gaze_trace=gaze_trace,
                 display_info=display_metadata,
+                apriltag_overlay=_APRILTAG_OVERLAY,
                 timing_config={
                     "prestimulation_ms": PRESTIMULATION_MS,
                     "stimulation_ms": STIMULATION_MS,
@@ -1428,20 +1594,42 @@ Ejemplos de uso:
         print(f"[4/4] DRAWING: Dibuja el punto {phosphene_display_number}")
         phosphene_metadata["drawing_start"] = datetime.now().isoformat()
 
-        # Resetear tablet para nuevo dibujo
+        # Resetear pantalla de respuesta (DrawingTablet o SaccadeScreen)
         drawing_tablet_reset(drawing_tablet)
 
         drawing_completed = False
-        canvas = None
+        canvas = None             # pygame.Surface en modo drawing
+        saccade_payload = None    # dict en modo saccade
 
         while not drawing_completed:
             events = pygame.event.get()
 
-            finished, canvas = drawing_tablet.update(screen, events)
+            finished, output = drawing_tablet.update(screen, events)
 
             if finished:
-                print(f"      ✓  {phosphene_display_number} completado")
-                drawing_completed = True
+                if isinstance(output, dict):
+                    # Modo saccade: payload {response_xy, samples, status, ...}
+                    status = output.get("status", "unknown")
+                    if status != "ok" and hasattr(drawing_tablet, "should_rerun") and drawing_tablet.should_rerun():
+                        # Silent retry: reset and continue without UI feedback.
+                        print(
+                            f"      [SaccadeScreen] retry silencioso "
+                            f"({output.get('attempts')}/{output.get('max_attempts')}) "
+                            f"motivo={status}"
+                        )
+                        drawing_tablet.reset()
+                        continue
+                    saccade_payload = output
+                    print(
+                        f"      ✓ {phosphene_display_number} completado "
+                        f"(saccade, status={status})"
+                    )
+                    drawing_completed = True
+                else:
+                    # Modo drawing: output es la Surface del canvas
+                    canvas = output
+                    print(f"      ✓  {phosphene_display_number} completado")
+                    drawing_completed = True
 
             # Comprobar ESC
             for event in events:
@@ -1452,7 +1640,7 @@ Ejemplos de uso:
                     cleanup_and_exit(eye_tracker, webcam_viewer)
                     return
 
-            pygame.display.flip()
+            _display_flip(screen)
             clock.tick(FPS)  # Cómo de fluido se ejecuta el programa
 
         phosphene_metadata["drawing_end"] = datetime.now().isoformat()
@@ -1462,13 +1650,39 @@ Ejemplos de uso:
         # ============================================
         print(f"      [GUARDANDO] Punto {phosphene_display_number}...")
 
-        # Guardar dibujo individual
-        drawing_filename = experiment_dir / f"drawing_{phosphene_display_number}.png"
-        pygame.image.save(canvas, str(drawing_filename))
-        print(f"        ✓ Dibujo: {drawing_filename.name}")
+        if saccade_payload is not None:
+            # Modo saccade: serializa el trazo + punto-respuesta como JSON
+            samples_filename = (
+                experiment_dir / f"saccade_samples_{phosphene_display_number}.json"
+            )
+            saccade_record = {
+                "response_xy": saccade_payload.get("response_xy"),
+                "status": saccade_payload.get("status"),
+                "extraction": saccade_payload.get("extraction"),
+                "attempts": saccade_payload.get("attempts"),
+                "max_attempts": saccade_payload.get("max_attempts"),
+                "capture_duration_ms": saccade_payload.get("capture_duration_ms"),
+                "anchor_xy": saccade_payload.get("anchor_xy"),
+                "samples": saccade_payload.get("samples", []),
+            }
+            with open(samples_filename, "w", encoding="utf-8") as f:
+                json.dump(saccade_record, f, indent=2, ensure_ascii=False)
+            print(f"        ✓ Saccade samples: {samples_filename.name}")
+            phosphene_metadata["response_mode"] = "saccade"
+            phosphene_metadata["saccade_samples_file"] = samples_filename.name
+            phosphene_metadata["response_xy"] = saccade_payload.get("response_xy")
+            phosphene_metadata["response_status"] = saccade_payload.get("status")
+            phosphene_metadata["response_extraction"] = saccade_payload.get("extraction")
+            phosphene_metadata["response_attempts"] = saccade_payload.get("attempts")
+        else:
+            # Modo drawing (comportamiento original)
+            drawing_filename = experiment_dir / f"drawing_{phosphene_display_number}.png"
+            pygame.image.save(canvas, str(drawing_filename))
+            print(f"        ✓ Dibujo: {drawing_filename.name}")
+            phosphene_metadata["response_mode"] = "drawing"
+            phosphene_metadata["drawing_file"] = drawing_filename.name
 
         phosphene_metadata["end_time"] = datetime.now().isoformat()
-        phosphene_metadata["drawing_file"] = drawing_filename.name
 
         # Añadir metadata de este punto al experimento
         experiment_metadata["phosphenes"].append(phosphene_metadata)
@@ -1504,6 +1718,7 @@ Ejemplos de uso:
         print()
 
     # Ya no necesitamos eye tracker ni webcam viewer
+    _close_response_screen(drawing_tablet)
     if eye_tracker:
         eye_tracker.release()
     if webcam_viewer:
@@ -1552,7 +1767,19 @@ Ejemplos de uso:
             f.write(f"  Inicio: {phos['start_time']}\n")
             f.write(f"  Fin: {phos['end_time']}\n")
             f.write(f"  Pérdidas de fijación: {phos['fixation_losses']}\n")
-            f.write(f"  Archivo de dibujo: {phos['drawing_file']}\n")
+            phos_mode = phos.get("response_mode", "drawing")
+            if phos_mode == "saccade":
+                f.write(
+                    f"  Modo respuesta: saccade ({phos.get('response_extraction')}, "
+                    f"status={phos.get('response_status')}, "
+                    f"intentos={phos.get('response_attempts')})\n"
+                )
+                f.write(f"  response_xy: {phos.get('response_xy')}\n")
+                f.write(
+                    f"  Archivo saccade: {phos.get('saccade_samples_file', '-')}\n"
+                )
+            else:
+                f.write(f"  Archivo de dibujo: {phos.get('drawing_file', '-')}\n")
 
             if "events" in phos and "prestim_start" in phos["events"]:
                 f.write(f"  Prestim inicio: {phos['events']['prestim_start']}\n")
@@ -1694,7 +1921,7 @@ def show_electrode_transition_screen(
                     waiting = False
                     return False  # Salir
 
-        pygame.display.flip()
+        _display_flip(screen)
         clock.tick(30)
 
 
@@ -1758,7 +1985,7 @@ def show_experiment_completion_screen(screen, clock, screen_width, screen_height
                     waiting = False
                     return True  # Cerrar
 
-        pygame.display.flip()
+        _display_flip(screen)
         clock.tick(30)
 
 
@@ -1848,7 +2075,7 @@ def run_prestimulation(
         if check_quit_events():
             return False
 
-        pygame.display.flip()
+        _display_flip(screen)
         clock.tick(FPS)  # Cómo de fluido se ejecuta el programa
 
 
@@ -1937,7 +2164,7 @@ def run_stimulation(
             stimulation_screen.set_show_phosphene(False)
             return False
 
-        pygame.display.flip()
+        _display_flip(screen)
         clock.tick(FPS)  # Cómo de fluido se ejecuta el programa
 
 
@@ -2018,7 +2245,7 @@ def run_poststimulation(
         if check_quit_events():
             return False
 
-        pygame.display.flip()
+        _display_flip(screen)
         clock.tick(FPS)  # Cómo de fluido se ejecuta el programa
 
 
@@ -2095,19 +2322,17 @@ def run_interstimulation(
                     print(f"      ⏩ Break saltado por el usuario")
                     return True
 
-        pygame.display.flip()
+        _display_flip(screen)
         clock.tick(FPS)  # Cómo de fluido se ejecuta el programa
 
 
 def drawing_tablet_reset(tablet):
     """
-    Resetea la tablet para un nuevo dibujo
+    Resetea la pantalla de respuesta (DrawingTablet o SaccadeScreen) para un
+    nuevo trial. Usa la API pública .reset() para mantener la independencia
+    de la implementación concreta.
     """
-    tablet.canvas.fill(tablet.BLACK)
-    tablet.strokes = []
-    tablet.current_stroke = []
-    tablet.drawing = False
-    tablet.finished = False
+    tablet.reset()
 
 
 # ============================================
@@ -2125,9 +2350,10 @@ def check_quit_events():
     return False
 
 
-def cleanup_and_exit(eye_tracker, webcam_viewer=None):
+def cleanup_and_exit(eye_tracker, webcam_viewer=None, response_screen=None):
     """Libera recursos y cierra el programa"""
     print("\n[CLEANUP] Liberando recursos...")
+    _close_response_screen(response_screen)
     if eye_tracker:
         eye_tracker.release()
     if webcam_viewer:
@@ -2145,6 +2371,7 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         print("\n\n[INFO] Programa interrumpido (Ctrl+C)")
+        _close_response_screen()
         pygame.quit()
         sys.exit(0)
     except Exception as e:
@@ -2152,5 +2379,6 @@ if __name__ == "__main__":
         import traceback
 
         traceback.print_exc()
+        _close_response_screen()
         pygame.quit()
         sys.exit(1)

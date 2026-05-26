@@ -367,21 +367,45 @@ class PhospheneMappingAnalyzer:
         # Analizar cada repetición
         for rep_data in self.metadata["repetitions"]:
             rep_number = rep_data["repetition_number"]
-            drawing_file = self.electrode_dir / rep_data["drawing_file"]
+            response_mode = rep_data.get("response_mode", "drawing")
 
             print(f"Repetición {rep_number}: ", end="")
 
-            if not drawing_file.exists():
-                print(f"✗ Archivo no encontrado: {drawing_file.name}")
-                continue
+            if response_mode == "saccade":
+                # Punto-respuesta ya calculado por SaccadeScreen; sin PNG.
+                response_xy = rep_data.get("response_xy")
+                if not response_xy:
+                    status = rep_data.get("response_status", "unknown")
+                    print(f"✗ Sin respuesta saccade válida (status={status})")
+                    continue
+                centroid = (float(response_xy[0]), float(response_xy[1]))
+                features = {
+                    "n_pixels": 1,
+                    "intensity_sum": 1.0,
+                    "bbox": {
+                        "left": int(centroid[0]),
+                        "top": int(centroid[1]),
+                        "right": int(centroid[0]) + 1,
+                        "bottom": int(centroid[1]) + 1,
+                        "width": 1,
+                        "height": 1,
+                        "area": 1,
+                    },
+                    "fill_ratio": 1.0,
+                }
+                rep_source_file = rep_data.get("saccade_samples_file", "")
+            else:
+                drawing_file = self.electrode_dir / rep_data["drawing_file"]
+                if not drawing_file.exists():
+                    print(f"✗ Archivo no encontrado: {drawing_file.name}")
+                    continue
+                features = self.extract_drawing_features(drawing_file)
+                if features is None:
+                    print(f"✗ No se pudo calcular centroide (dibujo vacío)")
+                    continue
+                centroid = features["centroid"]
+                rep_source_file = drawing_file.name
 
-            features = self.extract_drawing_features(drawing_file)
-
-            if features is None:
-                print(f"✗ No se pudo calcular centroide (dibujo vacío)")
-                continue
-
-            centroid = features["centroid"]
             centroid_deg = self._px_to_deg(centroid[0], centroid[1])
 
             centroids.append(centroid)
@@ -389,7 +413,9 @@ class PhospheneMappingAnalyzer:
             per_repetition.append(
                 {
                     "repetition_number": int(rep_number),
-                    "drawing_file": drawing_file.name,
+                    "response_mode": response_mode,
+                    "drawing_file": rep_source_file if response_mode == "drawing" else None,
+                    "saccade_samples_file": rep_source_file if response_mode == "saccade" else None,
                     "centroid": {"x": float(centroid[0]), "y": float(centroid[1])},
                     "centroid_deg": {
                         "x": float(centroid_deg[0]),

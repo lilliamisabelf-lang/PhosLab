@@ -36,6 +36,7 @@ class PhospheneMappingExperiment:
         num_repetitions=5,
         experiment_name="default",
         experiment_dir=None,
+        apriltag_overlay=None,
     ):
         """
         Inicializa un experimento de mapeo de fosfenos
@@ -70,6 +71,7 @@ class PhospheneMappingExperiment:
         self.webcam_viewer = webcam_viewer
         self.gaze_trace = gaze_trace
         self.display_info = display_info
+        self.apriltag_overlay = apriltag_overlay
         self.timing_config = timing_config
         self.electrode_index = electrode_index
         self.electrode_info = electrode_info
@@ -239,19 +241,21 @@ class PhospheneMappingExperiment:
         print(f"[4/4] DRAWING: Dibuja el fosfeno (repetición {repetition_number})")
         repetition_metadata["drawing_start"] = datetime.now().isoformat()
 
-        # Resetear tablet para nuevo dibujo
+        # Resetear pantalla de respuesta para nuevo trial
         drawing_tablet_reset_func(self.drawing_tablet)
 
         drawing_completed = False
-        canvas = None
+        canvas = None              # pygame.Surface en modo drawing
+        saccade_payload = None     # dict en modo saccade
         drawing_start_time = time.time()
 
         while not drawing_completed:
             events = pygame.event.get()
 
-            finished, canvas = self.drawing_tablet.update(self.screen, events)
+            finished, output = self.drawing_tablet.update(self.screen, events)
 
-            # Registrar gaze coordinates durante drawing
+            # Registrar gaze coordinates durante drawing (sólo informativo;
+            # en modo saccade el payload ya contiene las muestras).
             if (
                 self.eye_tracker
                 and hasattr(self.eye_tracker, "last_raw_gaze")
@@ -268,8 +272,26 @@ class PhospheneMappingExperiment:
                 )
 
             if finished:
-                print(f"      ✓ Repetición {repetition_number} completada")
-                drawing_completed = True
+                if isinstance(output, dict):
+                    status = output.get("status", "unknown")
+                    if status != "ok" and hasattr(self.drawing_tablet, "should_rerun") and self.drawing_tablet.should_rerun():
+                        print(
+                            f"      [SaccadeScreen] retry silencioso "
+                            f"({output.get('attempts')}/{output.get('max_attempts')}) "
+                            f"motivo={status}"
+                        )
+                        self.drawing_tablet.reset()
+                        continue
+                    saccade_payload = output
+                    print(
+                        f"      ✓ Repetición {repetition_number} completada "
+                        f"(saccade, status={status})"
+                    )
+                    drawing_completed = True
+                else:
+                    canvas = output
+                    print(f"      ✓ Repetición {repetition_number} completada")
+                    drawing_completed = True
 
             # Comprobar ESC/QUIT
             for event in events:
@@ -278,7 +300,7 @@ class PhospheneMappingExperiment:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     return None
 
-            pygame.display.flip()
+            self._display_flip()
             self.clock.tick(FPS)
 
         repetition_metadata["drawing_end"] = datetime.now().isoformat()
@@ -288,15 +310,42 @@ class PhospheneMappingExperiment:
         # ============================================
         print(f"      [GUARDANDO] Repetición {repetition_number}...")
 
-        # Guardar dibujo individual
-        drawing_filename = (
-            self.electrode_dir / f"repetition_{repetition_number:03d}.png"
-        )
-        pygame.image.save(canvas, str(drawing_filename))
-        print(f"        ✓ Dibujo: {drawing_filename.name}")
+        if saccade_payload is not None:
+            # Modo saccade: serializa el trazo + punto-respuesta como JSON
+            samples_filename = (
+                self.electrode_dir
+                / f"saccade_samples_{repetition_number:03d}.json"
+            )
+            saccade_record = {
+                "response_xy": saccade_payload.get("response_xy"),
+                "status": saccade_payload.get("status"),
+                "extraction": saccade_payload.get("extraction"),
+                "attempts": saccade_payload.get("attempts"),
+                "max_attempts": saccade_payload.get("max_attempts"),
+                "capture_duration_ms": saccade_payload.get("capture_duration_ms"),
+                "anchor_xy": saccade_payload.get("anchor_xy"),
+                "samples": saccade_payload.get("samples", []),
+            }
+            with open(samples_filename, "w", encoding="utf-8") as f:
+                json.dump(saccade_record, f, indent=2, ensure_ascii=False)
+            print(f"        ✓ Saccade samples: {samples_filename.name}")
+            repetition_metadata["response_mode"] = "saccade"
+            repetition_metadata["saccade_samples_file"] = samples_filename.name
+            repetition_metadata["response_xy"] = saccade_payload.get("response_xy")
+            repetition_metadata["response_status"] = saccade_payload.get("status")
+            repetition_metadata["response_extraction"] = saccade_payload.get("extraction")
+            repetition_metadata["response_attempts"] = saccade_payload.get("attempts")
+        else:
+            # Modo drawing (comportamiento original)
+            drawing_filename = (
+                self.electrode_dir / f"repetition_{repetition_number:03d}.png"
+            )
+            pygame.image.save(canvas, str(drawing_filename))
+            print(f"        ✓ Dibujo: {drawing_filename.name}")
+            repetition_metadata["response_mode"] = "drawing"
+            repetition_metadata["drawing_file"] = drawing_filename.name
 
         repetition_metadata["end_time"] = datetime.now().isoformat()
-        repetition_metadata["drawing_file"] = drawing_filename.name
 
         # Añadir a la lista de repeticiones
         self.experiment_metadata["repetitions"].append(repetition_metadata)
@@ -391,8 +440,13 @@ class PhospheneMappingExperiment:
                         # Permitir saltar el descanso con ESPACIO
                         return True
 
-            pygame.display.flip()
+            self._display_flip()
             self.clock.tick(60)
+
+    def _display_flip(self):
+        if self.apriltag_overlay is not None:
+            self.apriltag_overlay.draw(self.screen)
+        pygame.display.flip()
 
     def _save_metadata(self):
         """Guarda el metadata del experimento (llamada intermedia y final)"""
@@ -451,7 +505,21 @@ class PhospheneMappingExperiment:
                 f.write(f"  Fin: {rep['end_time']}\n")
                 f.write(f"  Pérdidas de fijación: {rep['fixation_losses']}\n")
                 f.write(f"  Intentos: {rep['trial_attempts']}\n")
-                f.write(f"  Archivo de dibujo: {rep['drawing_file']}\n\n")
+                rep_mode = rep.get("response_mode", "drawing")
+                if rep_mode == "saccade":
+                    f.write(
+                        f"  Modo respuesta: saccade ({rep.get('response_extraction')}, "
+                        f"status={rep.get('response_status')}, "
+                        f"intentos={rep.get('response_attempts')})\n"
+                    )
+                    f.write(f"  response_xy: {rep.get('response_xy')}\n")
+                    f.write(
+                        f"  Archivo saccade: {rep.get('saccade_samples_file', '-')}\n\n"
+                    )
+                else:
+                    f.write(
+                        f"  Archivo de dibujo: {rep.get('drawing_file', '-')}\n\n"
+                    )
 
         print(f"✓ Metadata TXT: {txt_filename.name}")
 
