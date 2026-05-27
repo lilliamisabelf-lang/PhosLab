@@ -50,3 +50,5 @@ jobs:
         run: |
           uv run --project percept_mapper python percept_mapper/scripts/trial_sequence_property_test.py
           uv run --project percept_mapper python percept_mapper/scripts/saccade_extractors_property_test.py
+          uv run --project percept_mapper python percept_mapper/scripts/schemas_property_test.py
+          uv run --project percept_mapper python percept_mapper/scripts/stats/stats_property_test.py

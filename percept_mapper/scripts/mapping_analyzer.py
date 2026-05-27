@@ -12,14 +12,23 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-# Desactivar backend interactivo de matplotlib para evitar interferencias con Pygame
-import matplotlib
-
-matplotlib.use("Agg")  # Backend no interactivo - solo guarda archivos
-import matplotlib.pyplot as plt
-from matplotlib.patches import Ellipse
 from scripts.response_capture import resolve_response_features
 from scripts.schemas import ElectrodeAnalysisResult
+
+
+# Matplotlib is *not* imported at module load. The two `visualize_*` methods
+# below pull it in lazily on first call. This keeps the import-cost of
+# `from scripts.mapping_analyzer import PhospheneMappingAnalyzer` low enough
+# that a Jupyter notebook can call `analyze_electrode_repetitions` and get
+# typed numerical output without ever loading matplotlib + Qt + tkinter.
+def _matplotlib():
+    """Lazy importer: returns (plt, Ellipse). Sets the non-interactive Agg
+    backend so plots don't try to open a window inside the pygame loop."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Ellipse
+    return plt, Ellipse
 
 # Stat helpers extracted to scripts.stats so they're importable from
 # Jupyter without pulling in matplotlib / PIL / the analyzer class.
@@ -640,7 +649,7 @@ class PhospheneMappingAnalyzer:
             print("No hay resultados para visualizar")
             return
 
-        # Crear figura
+        plt, Ellipse = _matplotlib()
         fig, ax = plt.subplots(figsize=(10, 10))
 
         # Obtener datos
@@ -840,6 +849,7 @@ class PhospheneMappingAnalyzer:
         dy_deg = np.array([m["dy_to_stim_deg"] for m in metrics], dtype=float)
         dr_deg = np.array([m["distance_to_stim_deg"] for m in metrics], dtype=float)
 
+        plt, _ = _matplotlib()
         fig, axes = plt.subplots(1, 3, figsize=(14, 5))
 
         axes[0].boxplot(dx_deg, vert=True, showfliers=True)
@@ -881,7 +891,7 @@ class PhospheneMappingAnalyzer:
             print("No hay resultados para mostrar")
             return
 
-        # Crear la figura (sin guardarla automáticamente)
+        plt, Ellipse = _matplotlib()
         fig, ax = plt.subplots(figsize=(12, 10))
 
         # Obtener datos
