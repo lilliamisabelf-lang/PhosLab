@@ -279,6 +279,7 @@ from scripts.response_capture import (
     write_response_summary,
 )
 from scripts.trial_sequence import build_trial_list, summary as trial_summary
+from scripts.schemas import SessionMetadata, TrialSequenceConfig
 
 # endregion
 
@@ -1173,10 +1174,14 @@ Ejemplos de uso:
                 print(f"✗ ERROR: {session_meta_path} no encontrado — no se puede reanudar")
                 return
             with open(session_meta_path, encoding="utf-8") as f:
-                resumed_session_meta = json.load(f)
+                resumed_session = SessionMetadata.from_dict(json.load(f))
+            resumed_session_meta = resumed_session.to_dict()  # dict view used below
             multi_experiment_dir = resume_dir
             print(f"[RESUME] Reanudando sesión: {multi_experiment_dir}")
-            print(f"[RESUME] Trials totales en sesión original: {resumed_session_meta.get('summary', {}).get('n')}")
+            print(
+                f"[RESUME] schema_version={resumed_session.schema_version} "
+                f"trials totales en sesión original: {resumed_session.summary.get('n')}"
+            )
             print()
         else:
             experiment_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -1279,13 +1284,13 @@ Ejemplos de uso:
         import random as _rng_mod
 
         if resumed_session_meta is not None:
-            ts_cfg = resumed_session_meta.get("trial_sequence_config", {}) or {}
-            realized_seed = int(ts_cfg.get("random_seed"))
-            catch_rate = float(ts_cfg.get("catch_trial_rate", 0.0))
-            do_randomize = bool(ts_cfg.get("randomize", True))
-            no_repeat = bool(ts_cfg.get("no_immediate_repeat", True))
-            num_practice = int(ts_cfg.get("num_practice_trials", 0))
-            isi_jitter_ms = float(ts_cfg.get("isi_jitter_ms", 0.0))
+            tsc = resumed_session.trial_sequence_config
+            realized_seed = int(tsc.random_seed)
+            catch_rate = float(tsc.catch_trial_rate)
+            do_randomize = bool(tsc.randomize)
+            no_repeat = bool(tsc.no_immediate_repeat)
+            num_practice = int(tsc.num_practice_trials)
+            isi_jitter_ms = float(tsc.isi_jitter_ms)
             print(f"[RESUME] Usando seed original = {realized_seed} (orden idéntico al de la sesión original)")
         else:
             seed_cfg = mapping_config.get("random_seed")
@@ -1314,23 +1319,23 @@ Ejemplos de uso:
         print()
 
         if SAVE_RESULTS and multi_experiment_dir is not None:
-            session_meta = {
-                "session_started": datetime.now().isoformat(),
-                "valid_electrode_indices": valid_electrode_indices,
-                "num_repetitions": num_repetitions,
-                "trial_sequence_config": {
-                    "randomize": do_randomize,
-                    "random_seed": realized_seed,
-                    "catch_trial_rate": catch_rate,
-                    "no_immediate_repeat": no_repeat,
-                    "num_practice_trials": num_practice,
-                    "isi_jitter_ms": isi_jitter_ms,
-                },
-                "summary": ts,
-                "trial_order": [t.to_dict() for t in trials],
-            }
+            session_record = SessionMetadata(
+                session_started=datetime.now().isoformat(),
+                valid_electrode_indices=valid_electrode_indices,
+                num_repetitions=num_repetitions,
+                trial_sequence_config=TrialSequenceConfig(
+                    randomize=do_randomize,
+                    random_seed=realized_seed,
+                    catch_trial_rate=catch_rate,
+                    no_immediate_repeat=no_repeat,
+                    num_practice_trials=num_practice,
+                    isi_jitter_ms=isi_jitter_ms,
+                ),
+                summary=ts,
+                trial_order=[t.to_dict() for t in trials],
+            )
             with open(multi_experiment_dir / "session_metadata.json", "w", encoding="utf-8") as f:
-                json.dump(session_meta, f, indent=2, ensure_ascii=False)
+                json.dump(session_record.to_dict(), f, indent=2, ensure_ascii=False)
             print(f"✓ Trial order guardado: {multi_experiment_dir / 'session_metadata.json'}")
             print()
 

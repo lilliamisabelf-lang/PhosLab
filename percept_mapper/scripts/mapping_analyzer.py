@@ -19,6 +19,7 @@ matplotlib.use("Agg")  # Backend no interactivo - solo guarda archivos
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 from scripts.response_capture import resolve_response_features
+from scripts.schemas import ElectrodeAnalysisResult
 
 try:
     from scipy.stats import chi2
@@ -713,7 +714,12 @@ class PhospheneMappingAnalyzer:
                 )
         print(f"✓ Tabla por repetición guardada en: {table_file.name}")
 
-        return results
+        # Validate at the boundary: routing through ElectrodeAnalysisResult
+        # stamps schema_version, normalises known fields, and preserves the
+        # large amount of derived structure (boxplot_stats, ellipses, etc.)
+        # via the extras escape hatch. Callers still get a dict — they don't
+        # need to know about the dataclass yet.
+        return ElectrodeAnalysisResult.from_dict(results).to_dict()
 
     def visualize_results(self, results, output_file="analysis_plot.png"):
         """

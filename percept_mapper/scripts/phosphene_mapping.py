@@ -14,6 +14,7 @@ from pathlib import Path
 import json
 
 from scripts.response_capture import apply_response_metadata, write_response_summary
+from scripts.schemas import TrialRecord
 
 
 class PhospheneMappingExperiment:
@@ -402,10 +403,23 @@ class PhospheneMappingExperiment:
         pygame.display.flip()
 
     def _save_metadata(self):
-        """Guarda el metadata del experimento (llamada intermedia y final)"""
+        """Guarda el metadata del experimento (llamada intermedia y final).
+
+        Cada repetición se valida via `TrialRecord.from_dict(...).to_dict()`
+        antes de persistir — el dict resultante lleva schema_version,
+        nombres canónicos y mantiene campos desconocidos en `extras`. Esto
+        garantiza que el JSON en disco siempre sea cargable por analizadores
+        que esperen el schema, sin obligar al trial loop a mutar dataclasses
+        in-flight.
+        """
         metadata_file = self.electrode_dir / "metadata.json"
+        validated = dict(self.experiment_metadata)
+        validated["repetitions"] = [
+            TrialRecord.from_dict(rep).to_dict() if isinstance(rep, dict) else rep
+            for rep in self.experiment_metadata.get("repetitions", [])
+        ]
         with open(metadata_file, "w", encoding="utf-8") as f:
-            json.dump(self.experiment_metadata, f, indent=2, ensure_ascii=False)
+            json.dump(validated, f, indent=2, ensure_ascii=False)
 
     def finalize(self):
         """
