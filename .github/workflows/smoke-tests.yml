@@ -64,6 +64,10 @@ jobs:
         run: |
           uv run --project percept_mapper python percept_mapper/scripts/phase_runner_test.py
 
+      - name: Headless protocol runner (end-to-end on real protocol.yaml)
+        run: |
+          uv run --project percept_mapper python percept_mapper/scripts/headless_runner_test.py
+
       - name: Integration tests
         run: |
           uv run --project percept_mapper python percept_mapper/scripts/mapping_analyzer_integration_test.py
