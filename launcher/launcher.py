@@ -61,6 +61,7 @@ MAPPING_DIR = SIMULADOR_DIR / "mapping_experiments"
 LOGS_DIR = SIMULADOR_DIR / "logs"
 LEARNING_DIR = SIMULADOR_DIR / "learning_results"
 CORRECTED_MAP_SUMMARY = LEARNING_DIR / "corrected_map_summary.json"
+LOGOS_DIR = LAUNCHER_DIR / "assets" / "logos"
 IMAGE_ICON_SIZES = {
     "error_comparison.png": QSize(460, 300),
     "neural_training.png": QSize(460, 300),
@@ -75,32 +76,58 @@ IMAGE_ICON_SIZES = {
 
 class CsvWatcher(QThread):
     csv_detected = pyqtSignal(str)
+    watch_error = pyqtSignal(str)
 
     def __init__(self, watch_dir: Path, dest_dir: Path):
         super().__init__()
         self.watch_dir = watch_dir
         self.dest_dir = dest_dir
         self._running = True
-        self._known = set()
+        self._known = {}
 
     def run(self):
-        self._known = {p.name for p in self.watch_dir.glob("*.csv")}
+        self._known = self._snapshot()
         while self._running:
-            current = {p.name for p in self.watch_dir.glob("*.csv")}
-            new = current - self._known
-            for name in new:
-                src = self.watch_dir / name
-                dst = self.dest_dir / name
-                try:
-                    shutil.copy2(src, dst)
-                    self.csv_detected.emit(str(dst))
-                except Exception:
-                    pass
+            current = self._snapshot()
+            changed = [
+                name for name, sig in current.items()
+                if self._known.get(name) != sig
+            ]
+            for name in sorted(changed):
+                self._copy_csv(self.watch_dir / name)
             self._known = current
             self.msleep(1000)
 
     def stop(self):
         self._running = False
+
+    def _snapshot(self):
+        snapshot = {}
+        try:
+            paths = list(self.watch_dir.glob("*.csv"))
+        except Exception as e:
+            self.watch_error.emit(f"No se puede leer {self.watch_dir}: {e}")
+            return snapshot
+        for path in paths:
+            try:
+                stat = path.stat()
+                snapshot[path.name] = (stat.st_mtime_ns, stat.st_size)
+            except OSError:
+                continue
+        return snapshot
+
+    def _copy_csv(self, src: Path):
+        dst = self.dest_dir / src.name
+        last_error = None
+        for _ in range(3):
+            try:
+                shutil.copy2(src, dst)
+                self.csv_detected.emit(str(dst))
+                return
+            except Exception as e:
+                last_error = e
+                self.msleep(150)
+        self.watch_error.emit(f"No se pudo copiar {src.name}: {last_error}")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -311,7 +338,7 @@ class PipelineLauncher(QMainWindow):
         background-color: #0a0a0a;
         color: #e9ecf5;
         font-family: "Segoe UI", Arial, sans-serif;
-        font-size: 13px;
+        font-size: 15px;
     }
     QGroupBox {
         border: 0.5px solid rgba(123,108,252,0.35);
@@ -319,7 +346,7 @@ class PipelineLauncher(QMainWindow):
         margin-top: 14px;
         padding-top: 12px;
         color: rgba(123,108,252,0.7);
-        font-size: 10px;
+        font-size: 12px;
         text-transform: uppercase;
         letter-spacing: 0.1em;
     }
@@ -334,7 +361,7 @@ class PipelineLauncher(QMainWindow):
         border-radius: 6px;
         color: #d7d2ff;
         padding: 7px 16px;
-        font-size: 12px;
+        font-size: 14px;
     }
     QPushButton:hover  { background-color: rgba(0,212,255,0.14); color: #e6fbff; }
     QPushButton:pressed{ background-color: rgba(123,108,252,0.3); }
@@ -404,7 +431,7 @@ class PipelineLauncher(QMainWindow):
         border-radius: 6px;
         color: #7fe8ff;
         font-family: "Cascadia Code", "Consolas", monospace;
-        font-size: 11px;
+        font-size: 13px;
     }
     QTabWidget::pane {
         border: 0.5px solid rgba(123,108,252,0.25);
@@ -416,7 +443,7 @@ class PipelineLauncher(QMainWindow):
         color: #3a3b52;
         padding: 6px 16px;
         border: none;
-        font-size: 12px;
+        font-size: 14px;
     }
     QTabBar::tab:selected { color: #00d4ff; border-bottom: 2px solid #00d4ff; }
     QTabBar::tab:hover { color: #e9ecf5; }
@@ -429,9 +456,9 @@ class PipelineLauncher(QMainWindow):
     }
     QScrollBar::handle:horizontal { background: #231a44; border-radius: 3px; }
     QLabel#title {
-        font-size: 18px; font-weight: 500; color: #e9ecf5; padding: 4px 0;
+        font-size: 22px; font-weight: 500; color: #e9ecf5; padding: 4px 0;
     }
-    QLabel#subtitle { font-size: 11px; color: #3d3f5a; }
+    QLabel#subtitle { font-size: 13px; color: #3d3f5a; }
     QFrame#divider { background: rgba(123,108,252,0.2); max-height: 1px; }
     QFrame#card {
         background: #0f0f0f;
@@ -514,7 +541,7 @@ class PipelineLauncher(QMainWindow):
         nav_items = [
             ("▶  Lanzador", 0),
             ("  Parámetros", 1),
-            ("  Análisis", 2),
+            ("  analysis", 2),
             ("  Aprendizaje", 3),
             ("  Mapa optimizado", 4),
         ]
@@ -526,7 +553,7 @@ class PipelineLauncher(QMainWindow):
                 QPushButton {
                     background: transparent; border: none;
                     color: #3d3f5a; text-align: left;
-                    padding: 8px 10px; border-radius: 6px; font-size: 13px;
+                    padding: 8px 10px; border-radius: 6px; font-size: 15px;
                 }
                 QPushButton:hover   { background: rgba(0,212,255,0.08); color: #e9ecf5; }
                 QPushButton:checked { background: rgba(123,108,252,0.18); color: #00d4ff;
@@ -551,9 +578,9 @@ class PipelineLauncher(QMainWindow):
             row = QHBoxLayout()
             dot = QLabel("●")
             dot.setFixedWidth(14)
-            dot.setStyleSheet("color: #1a1a1a; font-size: 10px;")
+            dot.setStyleSheet("color: #1a1a1a; font-size: 12px;")
             txt = QLabel(label)
-            txt.setStyleSheet("color: #2d3748; font-size: 11px;")
+            txt.setStyleSheet("color: #2d3748; font-size: 13px;")
             row.addWidget(dot)
             row.addWidget(txt)
             row.addStretch()
@@ -590,28 +617,32 @@ class PipelineLauncher(QMainWindow):
                 "Implant Explorer — Colocación del implante",
                 "Coloca el implante y exporta el CSV de campos receptivos",
                 self._launch_phoslab,
-                "Abrir phosLab",
+                "Abrir Implant Explorer",
+                "implant_explorer.png",
             ),
             (
                 "2",
-                "CSV — Selección de coordenadas",
-                "Exporta desde Implant Explorer o selecciona un CSV existente",
+                "Seleccionar Campos Receptivos (Receptive Fields)",
+                "Exporta campos receptivos desde Implant Explorer o selecciona un CSV existente",
                 self._select_csv_manual,
-                "Seleccionar CSV",
+                "Seleccionar\nCampos Receptivos",
+                "receptive_fields.png",
             ),
             (
                 "3",
                 "Percept Mapper — Simulación ICMS",
                 "Lanza el experimento con los parámetros configurados",
                 self._launch_simulator,
-                "Lanzar simulador",
+                "Lanzar experimento",
+                "simulator.png",
             ),
             (
                 "4",
-                "Analysis — Centroides y métricas",
+                "analysis",
                 "Ver resultados del experimento completado",
                 lambda: self._show_page(2),
-                "Ver análisis",
+                "analysis",
+                "analysis.png",
             ),
             (
                 "5",
@@ -619,19 +650,37 @@ class PipelineLauncher(QMainWindow):
                 "Entrena el modelo bayesiano o red neuronal",
                 self._run_learning,
                 "Entrenar modelo",
+                "learning.png",
             ),
         ]
-        for num, title_s, desc, fn, btn_label in steps:
-            card = self._make_step_card(num, title_s, desc, fn, btn_label)
-            lay.addWidget(card)
+        steps_row = QHBoxLayout()
+        steps_row.setSpacing(14)
+        for num, title_s, desc, fn, btn_label, logo in steps:
+            card = self._make_step_card(num, title_s, desc, fn, btn_label, logo)
+            steps_row.addWidget(card)
             self._step_widgets.append(card)
+        steps_row.addStretch()
+
+        steps_widget = QWidget()
+        steps_widget.setLayout(steps_row)
+        steps_scroll = QScrollArea()
+        steps_scroll.setWidgetResizable(True)
+        steps_scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAsNeeded
+        )
+        steps_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        steps_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        steps_scroll.setFixedHeight(360)
+        steps_scroll.setWidget(steps_widget)
+        steps_scroll.setStyleSheet("QScrollArea { border: none; background: transparent; }")
+        lay.addWidget(steps_scroll)
 
         # CSV watcher status
         wb_row = QHBoxLayout()
         self._watcher_icon = QLabel("●")
-        self._watcher_icon.setStyleSheet("color: #ffc800; font-size: 14px;")
+        self._watcher_icon.setStyleSheet("color: #ffc800; font-size: 16px;")
         self._watcher_path = QLabel("Vigilando exportaciones de Implant Explorer...")
-        self._watcher_path.setStyleSheet("color: #2d3748; font-size: 11px;")
+        self._watcher_path.setStyleSheet("color: #2d3748; font-size: 13px;")
         wb_row.addWidget(self._watcher_icon)
         wb_row.addWidget(self._watcher_path)
         wb_row.addStretch()
@@ -640,7 +689,7 @@ class PipelineLauncher(QMainWindow):
         # CSV seleccionado
         self._csv_label = QLabel("Sin CSV seleccionado")
         self._csv_label.setStyleSheet(
-            "color: #2d3748; font-size: 11px; padding-left: 4px;"
+            "color: #2d3748; font-size: 13px; padding-left: 4px;"
         )
         lay.addWidget(self._csv_label)
 
@@ -655,37 +704,66 @@ class PipelineLauncher(QMainWindow):
 
         return w
 
-    def _make_step_card(self, num, title, desc, fn, btn_label):
+    def _make_step_card(self, num, title, desc, fn, btn_label, logo_file=None):
         card = QFrame()
         card.setObjectName("card")
-        lay = QHBoxLayout(card)
-        lay.setContentsMargins(16, 12, 16, 12)
+        card.setMinimumSize(240, 320)
+        card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        lay = QVBoxLayout(card)
+        lay.setContentsMargins(14, 14, 14, 14)
+        lay.setSpacing(10)
+
+        ICON_SIZE = 180
+
+        logo_path = (LOGOS_DIR / logo_file) if logo_file else None
+        logo_label = None
+        if logo_path and logo_path.exists():
+            logo_label = QLabel()
+            pix = QPixmap(str(logo_path)).scaled(
+                ICON_SIZE, ICON_SIZE,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+            logo_label.setPixmap(pix)
+            logo_label.setFixedSize(ICON_SIZE, ICON_SIZE)
+            logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            logo_label.setStyleSheet("background: transparent;")
+            lay.addWidget(logo_label, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         num_label = QLabel(num)
-        num_label.setFixedSize(30, 30)
+        num_label.setFixedSize(ICON_SIZE, ICON_SIZE)
         num_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         num_label.setStyleSheet(
-            "border: 1.5px solid #374151; border-radius: 15px; color: #6b7280; font-size: 12px;"
+            f"border: 2px solid #374151; border-radius: {ICON_SIZE // 2}px; "
+            "color: #6b7280; font-size: 72px;"
         )
-        lay.addWidget(num_label)
+        lay.addWidget(num_label, alignment=Qt.AlignmentFlag.AlignHCenter)
+        if logo_label is not None:
+            num_label.hide()
 
-        text_col = QVBoxLayout()
-        t = QLabel(title)
-        t.setStyleSheet(
-            "color: #c9d1e0; font-weight: 500; font-size: 13px; background: transparent;"
-        )
-        d = QLabel(desc)
-        d.setStyleSheet("color: #4a5568; font-size: 11px; background: transparent;")
-        text_col.addWidget(t)
-        text_col.addWidget(d)
-        lay.addLayout(text_col, stretch=1)
+        lay.addStretch(1)
 
         btn = QPushButton(btn_label)
-        btn.setFixedWidth(150)
+        btn.setMinimumHeight(68)
+        btn.setStyleSheet("""
+            QPushButton {
+                background-color: rgba(123,108,252,0.12);
+                border: 0.5px solid rgba(123,108,252,0.55);
+                border-radius: 8px;
+                color: #d7d2ff;
+                padding: 8px 10px;
+                font-size: 17px;
+                font-weight: 600;
+            }
+            QPushButton:hover { background-color: rgba(0,212,255,0.14); color: #e6fbff; }
+            QPushButton:pressed { background-color: rgba(123,108,252,0.3); }
+        """)
+        btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         btn.clicked.connect(fn)
         lay.addWidget(btn)
 
         card._num_label = num_label
+        card._logo_label = logo_label
         card._btn = btn
         return card
 
@@ -712,7 +790,7 @@ class PipelineLauncher(QMainWindow):
         csv_grp = QGroupBox("CSV activo")
         cg = QVBoxLayout(csv_grp)
         self._params_csv_label = QLabel("Sin CSV cargado")
-        self._params_csv_label.setStyleSheet("color: #ffc800; font-size: 11px;")
+        self._params_csv_label.setStyleSheet("color: #ffc800; font-size: 13px;")
         cg.addWidget(self._params_csv_label)
         ilay.addWidget(csv_grp)
 
@@ -732,7 +810,7 @@ class PipelineLauncher(QMainWindow):
         input_grp = QGroupBox("Modo de entrada")
         inp_lay = QHBoxLayout(input_grp)
         self._input_mode_combo = QComboBox()
-        self._input_mode_combo.addItems(["mouse", "gaze"])
+        self._input_mode_combo.addItems(["mouse", "gaze", "pupil"])
         self._input_mode_combo.setFixedWidth(120)
         inp_lay.addWidget(QLabel("Dispositivo de entrada:"))
         inp_lay.addWidget(self._input_mode_combo)
@@ -787,7 +865,7 @@ class PipelineLauncher(QMainWindow):
 
         # Electrodos por implant (bloques dinámicos)
         electrodes_lbl = QLabel("Electrodos a estimular por implant:")
-        electrodes_lbl.setStyleSheet("color: #c9d1e0; font-size: 12px;")
+        electrodes_lbl.setStyleSheet("color: #c9d1e0; font-size: 14px;")
         map_lay.addWidget(electrodes_lbl)
 
         # Contenedor scroll para los bloques de implant
@@ -809,7 +887,7 @@ class PipelineLauncher(QMainWindow):
         self._implant_electrode_edits = {}  # {implant_id: QLineEdit}
 
         no_csv_lbl = QLabel("Carga un CSV para ver los implants disponibles")
-        no_csv_lbl.setStyleSheet("color: #4a5568; font-size: 11px; padding: 8px;")
+        no_csv_lbl.setStyleSheet("color: #4a5568; font-size: 13px; padding: 8px;")
         self._implant_electrodes_layout.insertWidget(0, no_csv_lbl)
         self._implant_no_csv_lbl = no_csv_lbl
 
@@ -908,7 +986,7 @@ class PipelineLauncher(QMainWindow):
 
         # ── Electrodos disponibles (desde CSV) ─────────────────────────
         avail_lbl = QLabel("Electrodos disponibles:")
-        avail_lbl.setStyleSheet("color: #c9d1e0; font-size: 12px; margin-top: 6px;")
+        avail_lbl.setStyleSheet("color: #c9d1e0; font-size: 14px; margin-top: 6px;")
         esel_lay.addWidget(avail_lbl)
 
         self._std_electrodes_scroll = QScrollArea()
@@ -923,7 +1001,7 @@ class PipelineLauncher(QMainWindow):
         self._std_electrodes_scroll.setWidget(self._std_electrodes_container)
 
         _std_no_csv_lbl = QLabel("Carga un CSV para ver los electrodos disponibles")
-        _std_no_csv_lbl.setStyleSheet("color: #4a5568; font-size: 11px; padding: 8px;")
+        _std_no_csv_lbl.setStyleSheet("color: #4a5568; font-size: 13px; padding: 8px;")
         self._std_electrodes_layout.insertWidget(0, _std_no_csv_lbl)
 
         esel_lay.addWidget(self._std_electrodes_scroll)
@@ -1083,7 +1161,7 @@ class PipelineLauncher(QMainWindow):
         hint = QLabel(
             "Train: datos usados para entrenar. Test: experimento nuevo para evaluar generalizacion."
         )
-        hint.setStyleSheet("color: #4a5568; font-size: 11px;")
+        hint.setStyleSheet("color: #4a5568; font-size: 13px;")
         lay.addWidget(hint)
 
         # Resultados
@@ -1104,7 +1182,7 @@ class PipelineLauncher(QMainWindow):
         self._dataset_text.setReadOnly(True)
         self._dataset_text.setMinimumHeight(220)
         self._dataset_text.setStyleSheet(
-            "font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 12px;"
+            "font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 14px;"
         )
         summary_layout.addWidget(self._dataset_text)
         left_layout.addWidget(summary_box)
@@ -1117,7 +1195,7 @@ class PipelineLauncher(QMainWindow):
         self._metrics_text.setReadOnly(True)
         self._metrics_text.setMinimumHeight(220)
         self._metrics_text.setStyleSheet(
-            "font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 12px;"
+            "font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 14px;"
         )
         metrics_layout.addWidget(self._metrics_text)
         left_layout.addWidget(metrics_box)
@@ -1215,7 +1293,7 @@ class PipelineLauncher(QMainWindow):
             "Genera el mapa corregido y descarga el CSV optimizado."
         )
         desc.setWordWrap(True)
-        desc.setStyleSheet("color: #4a5568; font-size: 11px;")
+        desc.setStyleSheet("color: #4a5568; font-size: 13px;")
         lay.addWidget(desc)
 
         # Controles: CSV + modelo + botón generar
@@ -1224,7 +1302,7 @@ class PipelineLauncher(QMainWindow):
 
         cg.addWidget(QLabel("CSV:"))
         self._opt_csv_label = QLabel("(usar CSV activo del pipeline)")
-        self._opt_csv_label.setStyleSheet("color: #f39c12; font-size: 11px;")
+        self._opt_csv_label.setStyleSheet("color: #f39c12; font-size: 13px;")
         cg.addWidget(self._opt_csv_label, stretch=1)
 
         browse_btn = QPushButton("Examinar...")
@@ -1298,10 +1376,10 @@ class PipelineLauncher(QMainWindow):
         ]:
             row = QHBoxLayout()
             dot = QLabel("●")
-            dot.setStyleSheet(f"color: {color}; font-size: 16px;")
+            dot.setStyleSheet(f"color: {color}; font-size: 18px;")
             dot.setFixedWidth(20)
             lbl = QLabel(label)
-            lbl.setStyleSheet("color: #c9d1e0; font-size: 12px;")
+            lbl.setStyleSheet("color: #c9d1e0; font-size: 14px;")
             row.addWidget(dot)
             row.addWidget(lbl)
             row.addStretch()
@@ -1365,7 +1443,10 @@ class PipelineLauncher(QMainWindow):
         # Directorio inicial: config/ del simulador (donde ya hay CSVs copiados)
         start_dir = str(CSV_DEST_DIR) if CSV_DEST_DIR.exists() else str(PHOSLAB_DIR)
         path, _ = QFileDialog.getOpenFileName(
-            self, "Seleccionar CSV de phosLab", start_dir, "CSV Files (*.csv)"
+            self,
+            "Seleccionar Campos Receptivos (Receptive Fields)",
+            start_dir,
+            "CSV Files (*.csv)",
         )
         if path:
             self._handle_csv(path)
@@ -1373,7 +1454,11 @@ class PipelineLauncher(QMainWindow):
     def _handle_csv(self, src_path: str):
         src = Path(src_path)
         dst = CSV_DEST_DIR / src.name
-        if src != dst:
+        try:
+            same_file = src.resolve() == dst.resolve()
+        except OSError:
+            same_file = src == dst
+        if not same_file:
             try:
                 shutil.copy2(src, dst)
             except Exception as e:
@@ -1381,12 +1466,16 @@ class PipelineLauncher(QMainWindow):
                 return
 
         self._current_csv = str(dst)
-        self._implant_data = read_implant_ids_from_csv(self._current_csv)
+        try:
+            self._implant_data = read_implant_ids_from_csv(self._current_csv)
+        except Exception as e:
+            self._log_msg(f"Error leyendo CSV: {e}", "error")
+            return
 
         # Actualizar UI
         self._csv_label.setText(f"CSV: {src.name}")
         self._params_csv_label.setText(src.name)
-        self._params_csv_label.setStyleSheet("color: #00ffa0; font-size: 11px;")
+        self._params_csv_label.setStyleSheet("color: #00ffa0; font-size: 13px;")
 
         # Rellenar lista de implant IDs
         self._implant_list.clear()
@@ -1408,7 +1497,7 @@ class PipelineLauncher(QMainWindow):
         self._log_msg(f"CSV cargado: {src.name} — {len(self._implant_data)} implant(s)")
         self._mark_step(1, True)
         self._update_step_states()
-        self._watcher_icon.setStyleSheet("color: #00ffa0; font-size: 14px;")
+        self._watcher_icon.setStyleSheet("color: #00ffa0; font-size: 16px;")
 
     def _launch_simulator(self):
         if not self._current_csv:
@@ -1545,11 +1634,16 @@ class PipelineLauncher(QMainWindow):
     # ──────────────────────────────────────────────────────────────────────
 
     def _start_csv_watcher(self):
-        watch_dir = PHOSLAB_DIR / "src"
+        watch_dir = PHOSLAB_DIR / "data" / "exported_RFs"
+        if not watch_dir.exists():
+            watch_dir = PHOSLAB_DIR / "src"
         if not watch_dir.exists():
             watch_dir = PHOSLAB_DIR
         self._csv_watcher = CsvWatcher(watch_dir, CSV_DEST_DIR)
         self._csv_watcher.csv_detected.connect(self._handle_csv)
+        self._csv_watcher.watch_error.connect(
+            lambda msg: self._log_msg(msg, "error")
+        )
         self._csv_watcher.start()
         self._set_status("watcher", True)
         self._watcher_path.setText(
@@ -1642,7 +1736,7 @@ class PipelineLauncher(QMainWindow):
             self._implant_data = read_implant_ids_from_csv(csv_path)
             self._csv_label.setText(f"CSV: {Path(csv_path).name}")
             self._params_csv_label.setText(Path(csv_path).name)
-            self._params_csv_label.setStyleSheet("color: #00ffa0; font-size: 11px;")
+            self._params_csv_label.setStyleSheet("color: #00ffa0; font-size: 13px;")
             self._implant_list.clear()
             for iid, indices in self._implant_data.items():
                 item = QListWidgetItem(
@@ -1838,7 +1932,7 @@ class PipelineLauncher(QMainWindow):
 
         if not self._implant_data:
             no_csv = QLabel("Carga un CSV para ver los implants disponibles")
-            no_csv.setStyleSheet("color: #4a5568; font-size: 11px; padding: 8px;")
+            no_csv.setStyleSheet("color: #4a5568; font-size: 13px; padding: 8px;")
             self._implant_electrodes_layout.insertWidget(0, no_csv)
             return
 
@@ -1854,7 +1948,7 @@ class PipelineLauncher(QMainWindow):
 
             hdr = QHBoxLayout()
             id_lbl = QLabel(f"Implant: {iid}")
-            id_lbl.setStyleSheet("color: #818cf8; font-size: 12px; font-weight: 500;")
+            id_lbl.setStyleSheet("color: #818cf8; font-size: 14px; font-weight: 500;")
             hdr.addWidget(id_lbl)
             hdr.addStretch()
             all_btn = QPushButton("Todos")
@@ -1862,7 +1956,7 @@ class PipelineLauncher(QMainWindow):
             all_btn.setStyleSheet(
                 "QPushButton { background: rgba(99,102,241,0.1); border: 0.5px solid "
                 "rgba(99,102,241,0.3); border-radius: 4px; color: #818cf8; "
-                "padding: 2px 6px; font-size: 11px; }"
+                "padding: 2px 6px; font-size: 13px; }"
             )
             hdr.addWidget(all_btn)
             bl.addLayout(hdr)
@@ -1874,20 +1968,20 @@ class PipelineLauncher(QMainWindow):
             )
             edit.setStyleSheet(
                 "background:#0f1623; border:0.5px solid rgba(100,120,200,0.3); "
-                "border-radius:4px; color:#c9d1e0; padding:3px 6px; font-size:12px;"
+                "border-radius:4px; color:#c9d1e0; padding:3px 6px; font-size:14px;"
             )
             count_lbl = QLabel("0 electrodos")
             count_lbl.setFixedWidth(100)
-            count_lbl.setStyleSheet("color: #4a5568; font-size: 11px;")
+            count_lbl.setStyleSheet("color: #4a5568; font-size: 13px;")
 
             def _on_text_changed(text, lbl=count_lbl):
                 try:
                     idxs = [int(x.strip()) for x in text.split(",") if x.strip()]
                     lbl.setText(f"{len(idxs)} electrodo{'s' if len(idxs)!=1 else ''}")
-                    lbl.setStyleSheet("color: #27ae60; font-size: 11px;")
+                    lbl.setStyleSheet("color: #27ae60; font-size: 13px;")
                 except ValueError:
                     lbl.setText("formato inválido")
-                    lbl.setStyleSheet("color: #e74c3c; font-size: 11px;")
+                    lbl.setStyleSheet("color: #e74c3c; font-size: 13px;")
 
             edit.textChanged.connect(_on_text_changed)
             all_btn.clicked.connect(
@@ -1903,7 +1997,7 @@ class PipelineLauncher(QMainWindow):
             hint = QLabel(
                 f"Disponibles: {', '.join(str(x) for x in available_indices)}"
             )
-            hint.setStyleSheet("color: #374151; font-size: 10px;")
+            hint.setStyleSheet("color: #374151; font-size: 12px;")
             hint.setWordWrap(True)
             bl.addWidget(hint)
 
@@ -1924,7 +2018,7 @@ class PipelineLauncher(QMainWindow):
 
         if not self._implant_data:
             no_csv = QLabel("Carga un CSV para ver los electrodos disponibles")
-            no_csv.setStyleSheet("color: #4a5568; font-size: 11px; padding: 8px;")
+            no_csv.setStyleSheet("color: #4a5568; font-size: 13px; padding: 8px;")
             self._std_electrodes_layout.insertWidget(0, no_csv)
             return
 
@@ -1940,10 +2034,10 @@ class PipelineLauncher(QMainWindow):
 
             hdr = QHBoxLayout()
             id_lbl = QLabel(f"Implant: {iid}")
-            id_lbl.setStyleSheet("color: #818cf8; font-size: 12px; font-weight: 500;")
+            id_lbl.setStyleSheet("color: #818cf8; font-size: 14px; font-weight: 500;")
             hdr.addWidget(id_lbl)
             count_lbl = QLabel(f"{len(available_indices)} electrodos")
-            count_lbl.setStyleSheet("color: #27ae60; font-size: 11px;")
+            count_lbl.setStyleSheet("color: #27ae60; font-size: 13px;")
             hdr.addStretch()
             hdr.addWidget(count_lbl)
             bl.addLayout(hdr)
@@ -1951,7 +2045,7 @@ class PipelineLauncher(QMainWindow):
             hint = QLabel(
                 f"Disponibles: {', '.join(str(x) for x in available_indices)}"
             )
-            hint.setStyleSheet("color: #6b7280; font-size: 10px;")
+            hint.setStyleSheet("color: #6b7280; font-size: 12px;")
             hint.setWordWrap(True)
             bl.addWidget(hint)
 
@@ -2222,7 +2316,7 @@ class PipelineLauncher(QMainWindow):
         if path:
             self._opt_csv_path = path
             self._opt_csv_label.setText(Path(path).name)
-            self._opt_csv_label.setStyleSheet("color: #27ae60; font-size: 11px;")
+            self._opt_csv_label.setStyleSheet("color: #27ae60; font-size: 13px;")
 
     def _run_generate_map(self):
         csv_path = self._opt_csv_path or self._current_csv
@@ -2374,6 +2468,7 @@ class PipelineLauncher(QMainWindow):
         if idx >= len(self._step_widgets):
             return
         card = self._step_widgets[idx]
+        has_logo = getattr(card, "_logo_label", None) is not None
         if done:
             card.setStyleSheet("""
                 QFrame#card {
@@ -2383,19 +2478,25 @@ class PipelineLauncher(QMainWindow):
                 }
             """)
             card._num_label.setStyleSheet("""
-                border: 1.5px solid #00ffa0; border-radius: 15px;
-                color: #00ffa0; font-size: 12px;
+                border: 2px solid #00ffa0; border-radius: 90px;
+                color: #00ffa0; font-size: 96px;
                 background: rgba(0,255,160,0.12);
             """)
             card._num_label.setText("✓")
+            if has_logo:
+                card._logo_label.hide()
+                card._num_label.show()
         else:
             card.setStyleSheet(
                 "QFrame#card { background: #0f0f0f; border: 0.5px solid rgba(0,200,255,0.15); border-radius: 10px; }"
             )
             card._num_label.setStyleSheet(
-                "border: 1.5px solid #1a1a2e; border-radius: 15px; color: #2d3748; font-size: 12px;"
+                "border: 2px solid #1a1a2e; border-radius: 90px; color: #2d3748; font-size: 72px;"
             )
             card._num_label.setText(str(idx + 1))
+            if has_logo:
+                card._num_label.hide()
+                card._logo_label.show()
         self._step_states[idx] = done
 
     def _update_step_states(self):
@@ -2411,7 +2512,7 @@ class PipelineLauncher(QMainWindow):
             return
         dot, _ = self._status_labels[key]
         dot.setStyleSheet(
-            f"color: {'#00ffa0' if active else '#1a1a1a'}; font-size: 10px;"
+            f"color: {'#00ffa0' if active else '#1a1a1a'}; font-size: 12px;"
         )
 
     # ──────────────────────────────────────────────────────────────────────

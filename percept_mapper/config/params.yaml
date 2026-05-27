@@ -215,6 +215,11 @@ ui:
     frequency_hz: 200
     duration_ms: 30
     volume: 0.25
+debug:
+  # Texto pequeño del contador ISI al pie de pantalla durante el descanso.
+  # Solo para depuración: un contador visible entrena al participante a
+  # anticipar el siguiente estímulo (§6.3 del rigor plan).
+  show_interstim_text: false
 saccade:
   # Ventana de captura tras el estímulo. TODO: sustituir por detección de
   # "regreso al anchor" cuando la calidad del gaze sea suficiente.

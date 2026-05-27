@@ -5432,11 +5432,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dataset",
         choices=["nhp", "human_demo"],
-        default="nhp",
-        help="Dataset to load. 'nhp' is the default and works out of the box. "
-        "'human_demo' requires fsaverage retinotopy maps under "
+        default="human_demo",
+        help="Dataset to load. 'human_demo' is the default and uses fsaverage "
+        "retinotopy maps under "
         "data/human/demo_subject/subjects/<subject>/T1w/<subject>/mri/ "
-        "(the fsaverage subset is shipped in this repo).",
+        "(the fsaverage subset is shipped in this repo). Use 'nhp' for macaque D99.",
     )
     parser.add_argument("--human-subject", default=DEFAULT_HUMAN_SUBJECT)
     parser.add_argument(

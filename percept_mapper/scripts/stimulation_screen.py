@@ -249,30 +249,27 @@ class StimulationScreen:
     def draw(self, screen):
         """Dibuja la pantalla con círculo de anclaje + punto brillante (si está activado).
 
-        Traffic-light state encoding for the anchor:
-          - red FILLED  : stimulation active ("hold still") — distinct from
-                          the empty rings used in other phases.
-          - green ring  : fixation acquired, stim about to fire
-          - white ring  : idle / not looking
+        Traffic-light state encoding for the anchor (siempre solo contorno —
+        nunca rellenado — para no competir visualmente con el fosfeno):
+          - red ring   : stimulation active ("hold still")
+          - green ring : fixation acquired, stim about to fire
+          - white ring : idle / not looking
         """
         screen.fill(self.background_color)
 
         if self.show_phosphene:
             anchor_color = (220, 30, 30)
-            thickness = 0  # filled
         elif self.is_looking:
             anchor_color = (0, 220, 0)
-            thickness = self.circle_thickness
         else:
             anchor_color = (200, 200, 200)
-            thickness = self.circle_thickness
 
         pygame.draw.circle(
             screen,
             anchor_color,
             self.circle_center,
             self.circle_radius,
-            thickness,
+            self.circle_thickness,
         )
 
         # Punto brillante (sólo si la fase de stim lo ha activado).

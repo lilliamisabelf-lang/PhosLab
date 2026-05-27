@@ -297,6 +297,10 @@ POSTSTIMULATION_MS = timing_config["poststimulation_ms"]
 INTERSTIMULATION_MS = timing_config["interstimulation_ms"]
 MAX_FIXATION_WAIT_MS = timing_config["max_fixation_wait_ms"]
 
+# Debug toggles cargados perezosamente. Se rellenan al iniciar main() desde
+# `config` (que se carga ahí). Default False: no debug noise por defecto.
+DEBUG_SHOW_INTERSTIM_TEXT = False
+
 # endregion
 
 
@@ -601,6 +605,13 @@ Ejemplos de uso:
 
     with open(config_path, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
+
+    # Debug toggles (módulo-globales para que run_interstimulation, etc.,
+    # los puedan leer sin pasarlos por parámetro).
+    global DEBUG_SHOW_INTERSTIM_TEXT
+    DEBUG_SHOW_INTERSTIM_TEXT = bool(
+        (config.get("debug") or {}).get("show_interstim_text", False)
+    )
 
     # Extraer parámetros de pantalla
     screen_config = config["screen"]
@@ -2359,8 +2370,12 @@ def run_interstimulation(
     print(f"      → (Presiona ESPACIO para saltar el descanso)")
 
     inter_start_time = time.time()
-    font_large = pygame.font.Font(None, 96)
-    font_timer = pygame.font.Font(None, 124)
+    # Texto de ISI desactivado por defecto (§6.3 del rigor plan): un contador
+    # visible entrena al participante a anticipar el siguiente estímulo.
+    # Solo se renderiza si debug.show_interstim_text está activo en params.yaml,
+    # y entonces se muestra pequeño y abajo, fuera del centro.
+    show_text = bool(DEBUG_SHOW_INTERSTIM_TEXT)
+    font_small = pygame.font.Font(None, 22) if show_text else None
 
     while True:
         elapsed_ms = (time.time() - inter_start_time) * 1000
@@ -2370,28 +2385,16 @@ def run_interstimulation(
             if not webcam_viewer.update():
                 print("      ⚠ Ventana de webcam cerrada")
 
-        # Pantalla negra
         screen.fill((0, 0, 0))
 
-        # Texto principal con número de punto
-        main_text = (
-            f"Intervalo entre estimulaciones - Punto {current_point}/{total_points}"
-        )
-        main_surface = font_large.render(main_text, True, (255, 255, 255))
-        main_rect = main_surface.get_rect(
-            center=(screen.get_width() // 2, screen.get_height() // 2 - 100)
-        )
-        screen.blit(main_surface, main_rect)
-
-        # Temporizador en vivo con decimales
-        remaining_s = (INTERSTIMULATION_MS - elapsed_ms) / 1000
-        if remaining_s > 0:
-            timer_text = f"{remaining_s:.1f}s"
-            timer_surface = font_timer.render(timer_text, True, (200, 200, 200))
-            timer_rect = timer_surface.get_rect(
-                center=(screen.get_width() // 2, screen.get_height() // 2 + 50)
+        if show_text and font_small is not None:
+            remaining_s = max(0.0, (INTERSTIMULATION_MS - elapsed_ms) / 1000)
+            dbg = f"[debug] ISI {current_point}/{total_points} · {remaining_s:.1f}s"
+            dbg_surface = font_small.render(dbg, True, (120, 120, 120))
+            dbg_rect = dbg_surface.get_rect(
+                center=(screen.get_width() // 2, screen.get_height() - 24)
             )
-            screen.blit(timer_surface, timer_rect)
+            screen.blit(dbg_surface, dbg_rect)
 
         # Comprobar tiempo transcurrido
         if elapsed_ms >= INTERSTIMULATION_MS:
