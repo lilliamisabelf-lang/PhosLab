@@ -45,6 +45,7 @@ jobs:
           uv run --project percept_mapper python percept_mapper/scripts/saccade_smoke_test.py
           uv run --project percept_mapper python percept_mapper/scripts/response_capture_smoke_test.py
           uv run --project percept_mapper python percept_mapper/scripts/learning/cv_smoke_test.py
+          uv run --project percept_mapper python percept_mapper/scripts/plots/plots_smoke_test.py
 
       - name: Property-based tests (hypothesis)
         run: |
@@ -52,3 +53,7 @@ jobs:
           uv run --project percept_mapper python percept_mapper/scripts/saccade_extractors_property_test.py
           uv run --project percept_mapper python percept_mapper/scripts/schemas_property_test.py
           uv run --project percept_mapper python percept_mapper/scripts/stats/stats_property_test.py
+
+      - name: Integration tests
+        run: |
+          uv run --project percept_mapper python percept_mapper/scripts/mapping_analyzer_integration_test.py
