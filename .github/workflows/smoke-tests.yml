@@ -55,9 +55,14 @@ jobs:
           uv run --project percept_mapper python percept_mapper/scripts/stats/stats_property_test.py
           uv run --project percept_mapper python percept_mapper/scripts/protocol_property_test.py
 
-      - name: Default protocol validates
+      - name: Default protocol validates + drift detector
         run: |
           uv run --project percept_mapper python percept_mapper/scripts/validate_protocol.py
+          uv run --project percept_mapper python percept_mapper/scripts/protocol_drift_test.py
+
+      - name: Phase-runner contract tests
+        run: |
+          uv run --project percept_mapper python percept_mapper/scripts/phase_runner_test.py
 
       - name: Integration tests
         run: |
