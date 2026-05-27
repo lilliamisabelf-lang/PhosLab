@@ -3,7 +3,7 @@ name = "simulador-protesis-cortical"
 version = "1.0.0"
 description = "Simulador de Prótesis Cortical Visual — plataforma de experimentos psicofísicos con fosfenos"
 readme = "README.md"
-requires-python = ">=3.10,<3.12"
+requires-python = ">=3.11,<3.12"
 dependencies = [
     "pygame>=2.5.0",
     "opencv-python>=4.8.0",
@@ -24,6 +24,13 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 include = ["core*", "config*", "demo*"]
+
+[dependency-groups]
+# Dev-only tools. `uv sync --project percept_mapper --group dev` installs them.
+# Hypothesis powers the property-based tests in scripts/*_property_test.py.
+dev = [
+    "hypothesis>=6.100",
+]
 
 [[tool.uv.index]]
 name = "pytorch-cpu"

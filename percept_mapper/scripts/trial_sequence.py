@@ -15,7 +15,9 @@ metadata so any session is reproducible from the saved JSON.
 
 from __future__ import annotations
 
+import heapq
 import random
+from collections import defaultdict
 from dataclasses import dataclass, asdict
 from typing import Iterable
 
@@ -137,31 +139,75 @@ def build_trial_list(
 
 
 def _avoid_immediate_repeats(
-    trials: list[tuple[int, int]], rng: random.Random, max_passes: int = 8
+    trials: list[tuple[int, int]], rng: random.Random
 ) -> list[tuple[int, int]]:
-    """Swap adjacent (electrode, rep) pairs to break runs of the same
-    electrode. Best-effort: if one electrode dominates more than half the
-    list, some adjacent repeats are unavoidable and will remain."""
-    trials = list(trials)
+    """Reorder trials so no two consecutive items share an electrode.
+
+    Correct whenever the constraint is feasible: no electrode contributes
+    more than ceil(n/2) trials. Implementation is the standard "task
+    scheduling with cooldown=1" algorithm — at each step we place the
+    electrode with the most remaining trials, except we never place the
+    same electrode twice in a row.
+
+    Ties (multiple electrodes with the same remaining count) are broken
+    with a fresh RNG draw, and the within-bucket rep order is shuffled
+    up-front. Together those keep the output pseudo-randomized within
+    the constraint rather than collapsing to a single canonical ordering.
+
+    When the constraint is infeasible (one electrode strictly dominates),
+    falls back to best-effort: the dominant electrode necessarily repeats
+    on some adjacent pairs.
+
+    Earlier attempts: greedy local-swap (could give up while a valid
+    arrangement existed) → rejection sampling (low accept rate when the
+    constraint is tight, e.g. only ~0.8% of permutations valid for
+    2 electrodes × 5 reps). Both caught by the property test.
+    """
     n = len(trials)
-    for _ in range(max_passes):
-        runs = [
-            i for i in range(1, n) if trials[i][0] == trials[i - 1][0]
-        ]
-        if not runs:
-            return trials
-        for i in runs:
-            candidates = [
-                j for j in range(n)
-                if j not in (i - 1, i, i + 1 if i + 1 < n else -1)
-                and trials[j][0] != trials[i][0]
-                and (j == 0 or trials[j - 1][0] != trials[i][0])
-                and (j == n - 1 or trials[j + 1][0] != trials[i][0])
-            ]
-            if candidates:
-                j = rng.choice(candidates)
-                trials[i], trials[j] = trials[j], trials[i]
-    return trials
+    if n < 2:
+        return list(trials)
+
+    buckets: dict[int, list[tuple[int, int]]] = defaultdict(list)
+    for t in trials:
+        buckets[t[0]].append(t)
+    for items in buckets.values():
+        rng.shuffle(items)
+
+    # Max-heap by remaining count: (-count, random_tiebreak, electrode, items_list).
+    heap = [
+        (-len(items), rng.random(), electrode, items)
+        for electrode, items in buckets.items()
+    ]
+    heapq.heapify(heap)
+
+    result: list[tuple[int, int]] = []
+    last_electrode: int | None = None
+
+    while heap:
+        top = heapq.heappop(heap)
+        _, _, electrode, items = top
+        if electrode == last_electrode:
+            if not heap:
+                # Infeasible — emit and accept the adjacent repeat.
+                result.append(items.pop())
+                last_electrode = electrode
+                if items:
+                    heapq.heappush(heap, (-len(items), rng.random(), electrode, items))
+                continue
+            second = heapq.heappop(heap)
+            _, _, e2, items2 = second
+            result.append(items2.pop())
+            last_electrode = e2
+            if items2:
+                heapq.heappush(heap, (-len(items2), rng.random(), e2, items2))
+            heapq.heappush(heap, top)
+        else:
+            result.append(items.pop())
+            last_electrode = electrode
+            if items:
+                heapq.heappush(heap, (-len(items), rng.random(), electrode, items))
+
+    return result
 
 
 def summary(trials: list[Trial]) -> dict:

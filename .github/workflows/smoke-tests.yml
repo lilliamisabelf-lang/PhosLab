@@ -1,0 +1,52 @@
+name: smoke-tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "percept_mapper/**"
+      - "pyproject.toml"
+      - ".python-version"
+      - ".github/workflows/smoke-tests.yml"
+  pull_request:
+    paths:
+      - "percept_mapper/**"
+      - "pyproject.toml"
+      - ".python-version"
+      - ".github/workflows/smoke-tests.yml"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SDL_VIDEODRIVER: dummy
+      SDL_AUDIODRIVER: dummy
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-dependency-glob: "**/uv.lock"
+
+      - name: Pin Python from .python-version
+        run: uv python install
+
+      - name: Sync percept_mapper (with dev group)
+        run: uv sync --project percept_mapper --group dev
+
+      - name: Example-based smoke tests
+        run: |
+          uv run --project percept_mapper python percept_mapper/scripts/trial_sequence_smoke_test.py
+          uv run --project percept_mapper python percept_mapper/scripts/saccade_smoke_test.py
+          uv run --project percept_mapper python percept_mapper/scripts/response_capture_smoke_test.py
+          uv run --project percept_mapper python percept_mapper/scripts/learning/cv_smoke_test.py
+
+      - name: Property-based tests (hypothesis)
+        run: |
+          uv run --project percept_mapper python percept_mapper/scripts/trial_sequence_property_test.py
+          uv run --project percept_mapper python percept_mapper/scripts/saccade_extractors_property_test.py
