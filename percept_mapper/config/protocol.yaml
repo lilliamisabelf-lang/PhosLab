@@ -1,0 +1,61 @@
+# Phosphene-mapping experiment protocol.
+#
+# This file captures what main.py currently runs, expressed as data.
+# It is documentation today and the input to a future thin runner
+# (Layer 3 step 3c of RESEARCH_GRADE_REFACTOR_PLAN.md).
+#
+# Validate with:
+#   uv run --project percept_mapper python percept_mapper/scripts/validate_protocol.py
+#
+# Schema is defined in scripts/protocol.py — keep this file in sync.
+
+schema_version: 1
+name: phosphene_mapping_default
+version: "1.0"
+description: |
+  Default mapping protocol used by main.py. On every trial:
+    1. Participant fixates the anchor for 200 ms continuously.
+    2. Stimulation phase (400 ms) renders the simulated phosphene; if
+       the participant breaks fixation, the trial is retried.
+    3. 100 ms poststim hold with the anchor visible.
+    4. Response phase (saccade or drawing depending on response_mode)
+       captures the participant's report.
+
+# Selects the response screen. In main.py this is the `response_mode`
+# field in params.yaml; mirrored here so the protocol is self-describing.
+response_mode: saccade
+
+trial_sequence:
+  randomize: true
+  random_seed: null            # null => generate at run time, record in metadata
+  catch_trial_rate: 0.15
+  no_immediate_repeat: true
+  num_practice_trials: 2
+  isi_jitter_ms: 200
+
+# Phases run in order on every trial. The runner dispatches `screen` to a
+# concrete screen object and `gate` to a wait condition.
+phases:
+  - name: prestim
+    screen: anchor
+    gate: continuous_fixation_ms
+    value: 200
+    on_fixation_lost: retry_phase
+
+  - name: stim
+    screen: stimulation
+    gate: time_or_lost_fixation_ms
+    value: 400
+    on_fixation_lost: retry_phase
+
+  - name: poststim
+    screen: anchor
+    gate: time_or_lost_fixation_ms
+    value: 100
+    on_fixation_lost: retry_phase
+
+  - name: response
+    screen: saccade
+    gate: response_finished
+    value: 1500                # saccade.capture_duration_ms for soft timeout
+    on_fixation_lost: continue

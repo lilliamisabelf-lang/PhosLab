@@ -53,6 +53,11 @@ jobs:
           uv run --project percept_mapper python percept_mapper/scripts/saccade_extractors_property_test.py
           uv run --project percept_mapper python percept_mapper/scripts/schemas_property_test.py
           uv run --project percept_mapper python percept_mapper/scripts/stats/stats_property_test.py
+          uv run --project percept_mapper python percept_mapper/scripts/protocol_property_test.py
+
+      - name: Default protocol validates
+        run: |
+          uv run --project percept_mapper python percept_mapper/scripts/validate_protocol.py
 
       - name: Integration tests
         run: |
