@@ -21,109 +21,16 @@ from matplotlib.patches import Ellipse
 from scripts.response_capture import resolve_response_features
 from scripts.schemas import ElectrodeAnalysisResult
 
-try:
-    from scipy.stats import chi2
-except Exception:  # pragma: no cover
-    chi2 = None
-
-
-def _robust_sigma_mad(values: np.ndarray) -> float:
-    """Estimador robusto de sigma usando MAD (Normal-consistente)."""
-    values = np.asarray(values, dtype=float)
-    if values.size == 0:
-        return float("nan")
-    median = np.median(values)
-    mad = np.median(np.abs(values - median))
-    return float(1.4826 * mad)
-
-
-def _trimmed_mean(values: np.ndarray, proportion_to_cut: float = 0.1) -> float:
-    values = np.asarray(values, dtype=float)
-    if values.size == 0:
-        return float("nan")
-    proportion_to_cut = float(np.clip(proportion_to_cut, 0.0, 0.49))
-    sorted_vals = np.sort(values)
-    k = int(np.floor(sorted_vals.size * proportion_to_cut))
-    if sorted_vals.size - 2 * k <= 0:
-        return float(np.mean(sorted_vals))
-    return float(np.mean(sorted_vals[k : sorted_vals.size - k]))
-
-
-def _tukey_boxplot_stats(values: np.ndarray) -> dict:
-    """Estadísticos de caja y bigotes (Tukey, 1.5*IQR)."""
-    values = np.asarray(values, dtype=float)
-    values = values[np.isfinite(values)]
-    if values.size == 0:
-        return {
-            "n": 0,
-            "q1": None,
-            "median": None,
-            "q3": None,
-            "iqr": None,
-            "whisker_low": None,
-            "whisker_high": None,
-            "outliers": [],
-        }
-
-    q1, median, q3 = np.percentile(values, [25, 50, 75])
-    iqr = q3 - q1
-    low_fence = q1 - 1.5 * iqr
-    high_fence = q3 + 1.5 * iqr
-
-    inliers = values[(values >= low_fence) & (values <= high_fence)]
-    if inliers.size == 0:
-        whisker_low = float(np.min(values))
-        whisker_high = float(np.max(values))
-    else:
-        whisker_low = float(np.min(inliers))
-        whisker_high = float(np.max(inliers))
-
-    outliers = values[(values < whisker_low) | (values > whisker_high)]
-
-    return {
-        "n": int(values.size),
-        "q1": float(q1),
-        "median": float(median),
-        "q3": float(q3),
-        "iqr": float(iqr),
-        "whisker_low": float(whisker_low),
-        "whisker_high": float(whisker_high),
-        "outliers": [float(v) for v in outliers.tolist()],
-    }
-
-
-def _distance_deg(
-    dx_px: np.ndarray, dy_px: np.ndarray, px_per_deg_x: float, px_per_deg_y: float
-) -> np.ndarray:
-    """Distancia radial en grados, respetando anisotropía px/deg (X,Y)."""
-    dx_deg = dx_px / float(px_per_deg_x)
-    dy_deg = dy_px / float(px_per_deg_y)
-    return np.hypot(dx_deg, dy_deg)
-
-
-def _ellipse_from_cov(
-    cov: np.ndarray, confidence: float
-) -> tuple[float, float, float] | None:
-    """Devuelve (width, height, angle_deg) para un Ellipse en coordenadas del plano."""
-    if chi2 is None:
-        return None
-    cov = np.asarray(cov, dtype=float)
-    if cov.shape != (2, 2) or not np.all(np.isfinite(cov)):
-        return None
-
-    # Regularización mínima por estabilidad numérica
-    cov = cov + np.eye(2) * 1e-9
-
-    eigvals, eigvecs = np.linalg.eigh(cov)
-    order = np.argsort(eigvals)[::-1]
-    eigvals = eigvals[order]
-    eigvecs = eigvecs[:, order]
-
-    scale = float(np.sqrt(chi2.ppf(confidence, df=2)))
-    width = 2.0 * scale * float(np.sqrt(max(eigvals[0], 0.0)))
-    height = 2.0 * scale * float(np.sqrt(max(eigvals[1], 0.0)))
-    angle = float(np.degrees(np.arctan2(eigvecs[1, 0], eigvecs[0, 0])))
-    return width, height, angle
+# Stat helpers extracted to scripts.stats so they're importable from
+# Jupyter without pulling in matplotlib / PIL / the analyzer class.
+# Keep the underscore aliases so internal callers in this file don't churn.
+from scripts.stats import (
+    distance_deg as _distance_deg,
+    ellipse_from_cov as _ellipse_from_cov,
+    robust_sigma_mad as _robust_sigma_mad,
+    trimmed_mean as _trimmed_mean,
+    tukey_boxplot_stats as _tukey_boxplot_stats,
+)
 
 
 class PhospheneMappingAnalyzer:
