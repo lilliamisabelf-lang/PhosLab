@@ -37,7 +37,7 @@ phosphene_mapping:
   # (interstimulation_ms - isi_jitter_ms, interstimulation_ms + isi_jitter_ms).
   # Breaks anticipation of the next stim onset.
   isi_jitter_ms: 200
-input_mode: wacom # pupil | wacom | mouse
+input_mode: pupil # pupil | wacom | mouse
 drawing_input: both   # mouse | tablet | both — pygame no distingue ratón vs stylus, así que solo afecta UI
 response_mode: saccade  # drawing | saccade — cómo el participante reporta la posición del fosfeno percibido
 screen:
