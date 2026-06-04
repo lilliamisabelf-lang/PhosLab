@@ -5,12 +5,13 @@ experiment:
 experiment_mode: standard
 phosphene_mapping:
   electrodes_by_implant:
-  - implant_id: fbd72e394d36
+  - implant_id: 66842a432a5b
     electrode_index:
-    - 80
-    - 40
-    - 61
-  num_repetitions: 7
+    - 1
+    - 2
+    - 3
+    - 10
+  num_repetitions: 10
   experiment_name: mapeo_multiples_electrodos
   interstimulation_between_reps: true
   enabled: true
@@ -20,26 +21,15 @@ phosphene_mapping:
   save_eyetracking_data: true
   save_stimulation_metadata: true
   save_stimulation_currents_uA: true
-  # ---- Trial sequence: randomization, catch trials, practice ----
-  # When randomize=true, build a global (electrode, rep) trial list and
-  # shuffle with `random_seed` (null => non-deterministic RNG, but the
-  # realized seed is saved in metadata for reproducibility).
-  # `catch_trial_rate` is the fraction of catch trials (no stimulation)
-  # interleaved with the rest — used to measure false-positive rate.
-  # `num_practice_trials` adds K trials at the session start without
-  # saving any artifacts (round-robin over the electrode list).
   randomize: true
   random_seed: null
   catch_trial_rate: 0.15
   no_immediate_repeat: true
   num_practice_trials: 2
-  # Jitter on the interstimulation interval. Real ISI is uniform in
-  # (interstimulation_ms - isi_jitter_ms, interstimulation_ms + isi_jitter_ms).
-  # Breaks anticipation of the next stim onset.
   isi_jitter_ms: 200
-input_mode: pupil # pupil | wacom | mouse
-drawing_input: both   # mouse | tablet | both — pygame no distingue ratón vs stylus, así que solo afecta UI
-response_mode: saccade  # drawing | saccade — cómo el participante reporta la posición del fosfeno percibido
+input_mode: mouse
+drawing_input: both
+response_mode: drawing
 screen:
   width: 1920
   height: 1080
@@ -60,7 +50,7 @@ screen:
     thickness: 3
     tolerance_radius: 50
 timing:
-  prestimulation: 200
+  prestimulation: 193
   stimulation: 400
   poststimulation: 100
   interstimulation: 500
@@ -70,7 +60,7 @@ stimulation:
   frequency: 50
   default_current_uA: 90
   stimulation_currents_uA:
-  - 30.0
+  - 90.0
   stimulation_currents_standard_uA:
   - 90.0
 eye_tracker:
@@ -100,6 +90,7 @@ eye_tracker:
     sma:
       window: 10
 drawing_tablet:
+  allow_empty: true
   width: 800
   height: 800
   background_color:
@@ -119,18 +110,9 @@ drawing_tablet:
     - 255
     - 255
     font_size: 24
-  # Confinar el cursor al monitor seleccionado mientras la pantalla de dibujo
-  # está activa. Se libera al confirmar (ENTER). NO arregla el mapeo del
-  # driver Wacom (eso se hace en Wacom Center → Mapping → Display): si el
-  # Wacom envía coordenadas a otro monitor y este clip las rechaza, el
-  # cursor colapsa al borde y la mitad de la tableta queda inservible.
-  # Deja `enabled: false` salvo que el Wacom ya esté mapeado a un solo
-  # monitor y quieras esto como red de seguridad para el ratón.
   cursor_clip:
     enabled: false
-    monitor: primary   # primary | 0 | 1 | ... | none
-  # Per-mode overrides (opcional). Si la clave coincide con `drawing_input`,
-  # estos valores ganan al `brush`/cursor_clip generales por dispositivo.
+    monitor: primary
   mouse:
     brush:
       size: 2
@@ -138,7 +120,7 @@ drawing_tablet:
   tablet:
     brush:
       size: 4
-    hide_cursor: false   # poner true si el driver Wacom ya pinta su propio cursor
+    hide_cursor: false
   both:
     brush:
       size: 3
@@ -150,12 +132,10 @@ logging:
   save_drawing: true
   filename_format: experiment_{timestamp}
 retinotopic_mapping:
-
-
   array_type: shanks_10x32
   implant_id_filter: all
   coordinate_source: phoslab_csv
-  coords_csv_path: C:\Users\admin\PhosLab\implant_explorer\data\exported_RFs\export_rf_test.csv
+  coords_csv_path: C:/Users/lilli/Desktop/PhosLab/percept_mapper/config/exported_rf_20260603_155324.csv
   coordinate_files:
     shanks_10x16: config/coords_shanks_10x16.yaml
     shanks_10x32: config/coords_shanks_10x32.yaml
@@ -192,7 +172,7 @@ learning:
 pupil:
   address: 127.0.0.1
   port: 50020
-  surface_name: Surface 2
+  surface_name: phoslab_screen
   min_confidence: 0.7
   max_sample_age_s: 0.25
   one_euro:
@@ -203,44 +183,34 @@ pupil:
 apriltag_overlay:
   enabled: true
   png_dir: percept_mapper/assets/apriltags
-  tag_files: [tag_0.png, tag_1.png, tag_2.png, tag_3.png]
+  tag_files:
+  - tag_0.png
+  - tag_1.png
+  - tag_2.png
+  - tag_3.png
   tag_size_px: 300
   margin_px: 30
 ui:
-  # Soft low tick confirming fixation was acquired (mirrors the green
-  # anchor transition). Edge-triggered: fires only on each low→high
-  # transition of is_looking, not every frame.
   fixation_tick:
     enabled: true
     frequency_hz: 200
     duration_ms: 30
     volume: 0.25
 debug:
-  # Texto pequeño del contador ISI al pie de pantalla durante el descanso.
-  # Solo para depuración: un contador visible entrena al participante a
-  # anticipar el siguiente estímulo (§6.3 del rigor plan).
   show_interstim_text: false
 saccade:
-  # Ventana de captura tras el estímulo. TODO: sustituir por detección de
-  # "regreso al anchor" cuando la calidad del gaze sea suficiente.
   capture_duration_ms: 1500
-  # Método de extracción del punto-respuesta a partir del trazo de gaze:
-  #   idt_first_fixation -> centroide de la primera fijación estable tras el
-  #                         saccade (recomendado; gold standard en literatura)
-  #   peak_distance      -> muestra más alejada del anchor (baseline barato)
-  #   velocity_endpoint  -> primer aterrizaje tras el saccade (basado en velocidad)
   extraction: idt_first_fixation
   idt:
-    dispersion_px: 60       # ≈1° a 60 cm en monitor 2560x1440
+    dispersion_px: 60
     min_duration_ms: 100
-    skip_anchor_radius_px: 40   # ignorar fijaciones aún en el anchor central
+    skip_anchor_radius_px: 40
   velocity:
     onset_threshold_px_s: 1500
     settle_threshold_px_s: 300
     smoothing_window: 5
-  min_response_distance_px: 30   # respuestas más cercanas al anchor son inválidas
-  # Política de reintento silencioso al fallar la extracción
-  on_failure: rerun_max_3        # skip | rerun | rerun_max_<N>
+  min_response_distance_px: 30
+  on_failure: rerun_max_3
   show_gaze_trace: true
   audio_cue:
     enabled: true

@@ -21,6 +21,7 @@ class DrawingTablet:
         instructions_text=None,
         hide_cursor=False,
         cursor_clip_rect=None,
+        allow_empty=False,
     ):
         """
         Inicializa la tablet de dibujo.
@@ -38,6 +39,7 @@ class DrawingTablet:
             hide_cursor: Si True, oculta el cursor del sistema durante el
                   dibujo (útil en modo tablet si el stylus muestra su propio
                   indicador en pantalla).
+            allow_empty: Si True, permite confirmar con ENTER aunque no haya trazos.
         """
         print(f"[DrawingTablet] Inicializando (mode={mode})...")
 
@@ -47,6 +49,7 @@ class DrawingTablet:
         self.hide_cursor = bool(hide_cursor)
         self._cursor_clip_rect = cursor_clip_rect
         self._cursor_clip_active = False
+        self.allow_empty = bool(allow_empty)
 
         # Colores
         self.BLACK = (0, 0, 0)
@@ -75,6 +78,7 @@ class DrawingTablet:
         self.strokes = []  # Lista de trazos
         self.current_stroke = []  # Trazo actual
         self.finished = False
+        self.last_status = "unknown"
         self._cursor_prev_visible = None
 
         # Fuente para título
@@ -121,6 +125,13 @@ class DrawingTablet:
                             f"[DrawingTablet] Dibujo confirmado ({len(self.strokes)} trazos)"
                         )
                         self.finished = True
+                        self.last_status = "ok"
+                        self._release_cursor_clip()
+                        return (True, self.canvas.copy())
+                    if self.allow_empty:
+                        print("[DrawingTablet] Confirmando dibujo vacio")
+                        self.finished = True
+                        self.last_status = "empty"
                         self._release_cursor_clip()
                         return (True, self.canvas.copy())
                     else:
@@ -185,6 +196,7 @@ class DrawingTablet:
         self.current_stroke = []
         self.drawing = False
         self.finished = False
+        self.last_status = "unknown"
         self._apply_cursor_clip()
         print("[DrawingTablet] Reseteado para nuevo dibujo")
 
@@ -200,6 +212,7 @@ class DrawingTablet:
             return
         try:
             from scripts.cursor_clip import clip_cursor
+
             if clip_cursor(self._cursor_clip_rect):
                 self._cursor_clip_active = True
                 print(f"[DrawingTablet] Cursor confinado a {self._cursor_clip_rect}")
@@ -211,6 +224,7 @@ class DrawingTablet:
             return
         try:
             from scripts.cursor_clip import clip_cursor
+
             clip_cursor(None)
         except Exception as e:
             print(f"[DrawingTablet] ⚠ no se pudo liberar cursor clip: {e}")

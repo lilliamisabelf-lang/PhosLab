@@ -48,6 +48,7 @@ def _display_flip(screen=None):
             _APRILTAG_OVERLAY.draw(target)
     pygame.display.flip()
 
+
 # ============================================
 # HELPERS: corrientes por electrodo (sparse)
 # ============================================
@@ -586,8 +587,8 @@ Ejemplos de uso:
         type=str,
         default=None,
         help="Reanudar una sesión: ruta al directorio mapping_experiments/mapping_*/. "
-             "Lee session_metadata.json y salta trials cuyo trial_idx ya tiene "
-             "artefactos guardados.",
+        "Lee session_metadata.json y salta trials cuyo trial_idx ya tiene "
+        "artefactos guardados.",
     )
 
     args = parser.parse_args()
@@ -692,9 +693,7 @@ Ejemplos de uso:
             # En modo ventana dejamos margen para la barra de título / bordes.
             SCREEN_WIDTH = min(SCREEN_WIDTH, int(native_width * 0.95))
             SCREEN_HEIGHT = min(SCREEN_HEIGHT, int(native_height * 0.92))
-        print(
-            f"[INIT] Tamaño adaptativo de ventana: {SCREEN_WIDTH}x{SCREEN_HEIGHT}"
-        )
+        print(f"[INIT] Tamaño adaptativo de ventana: {SCREEN_WIDTH}x{SCREEN_HEIGHT}")
 
     if FULLSCREEN:
         screen = pygame.display.set_mode(
@@ -709,6 +708,7 @@ Ejemplos de uso:
     # AprilTag corner overlay (siempre visible en cada frame) para Pupil Surface Tracker
     global _APRILTAG_OVERLAY
     from scripts.apriltag_overlay import from_config as _build_apriltag_overlay
+
     try:
         _APRILTAG_OVERLAY = _build_apriltag_overlay(config)
     except Exception as e:
@@ -771,10 +771,14 @@ Ejemplos de uso:
             print(str(e))
             print("=" * 70)
             if not bool(pupil_cfg.get("allow_mouse_fallback", False)):
-                print("✗ No se inicia el experimento sin Pupil. Activa pupil.allow_mouse_fallback solo para pruebas.")
+                print(
+                    "✗ No se inicia el experimento sin Pupil. Activa pupil.allow_mouse_fallback solo para pruebas."
+                )
                 cleanup_and_exit(None, webcam_viewer)
                 return
-            print("⚠ Cayendo a modo mouse por configuración pupil.allow_mouse_fallback=true.")
+            print(
+                "⚠ Cayendo a modo mouse por configuración pupil.allow_mouse_fallback=true."
+            )
             tracker = MouseTracker()
     else:
         tracker = MouseTracker()
@@ -813,6 +817,7 @@ Ejemplos de uso:
     ui_cfg = config.get("ui", {}) or {}
     try:
         from scripts.audio_cue import make_fixation_tick
+
         fixation_tick = make_fixation_tick(ui_cfg.get("fixation_tick"))
         if fixation_tick is not None:
             print("[INIT] Fixation tick activado")
@@ -825,7 +830,9 @@ Ejemplos de uso:
     drawing_tablet_cfg = config.get("drawing_tablet", {}) or {}
     tablet_brush_cfg = drawing_tablet_cfg.get("brush", {}) or {}
     brush_size = tablet_brush_cfg.get("size", 5)  # Default: 5
-    brush_color = tuple(tablet_brush_cfg.get("color", [255, 255, 0]))  # Default: amarillo
+    brush_color = tuple(
+        tablet_brush_cfg.get("color", [255, 255, 0])
+    )  # Default: amarillo
 
     # Modo de entrada de dibujo: 'mouse' | 'tablet' | 'both' (default both).
     # pygame trata ratón y stylus como el mismo dispositivo, así que el flag
@@ -833,7 +840,7 @@ Ejemplos de uso:
     # opcional de tamaño de pincel por modo en drawing_tablet.{mode}.brush.size.
     drawing_input = (config.get("drawing_input") or "both").lower()
     mode_override = drawing_tablet_cfg.get(drawing_input, {}) or {}
-    mode_brush = (mode_override.get("brush") or {})
+    mode_brush = mode_override.get("brush") or {}
     if "size" in mode_brush:
         brush_size = mode_brush["size"]
     if "color" in mode_brush:
@@ -843,17 +850,21 @@ Ejemplos de uso:
         # Default config string is too generic; let mode pick the wording.
         instructions_text = None
     hide_cursor = bool(mode_override.get("hide_cursor", False))
+    allow_empty = bool(
+        mode_override.get("allow_empty", drawing_tablet_cfg.get("allow_empty", False))
+    )
 
     # Cursor clipping (multi-monitor): mantener el puntero en un único monitor
     # mientras la pantalla de dibujo esté activa. Default: monitor primario.
     clip_cfg = drawing_tablet_cfg.get("cursor_clip") or {}
-    mode_clip_cfg = (mode_override.get("cursor_clip") or {})
+    mode_clip_cfg = mode_override.get("cursor_clip") or {}
     clip_enabled = bool(mode_clip_cfg.get("enabled", clip_cfg.get("enabled", True)))
     clip_monitor = mode_clip_cfg.get("monitor", clip_cfg.get("monitor", "primary"))
     cursor_clip_rect = None
     if clip_enabled:
         try:
             from scripts.cursor_clip import resolve_target_rect
+
             cursor_clip_rect = resolve_target_rect(clip_monitor)
         except Exception as e:
             print(f"[INIT] ⚠ cursor_clip no disponible: {e}")
@@ -875,6 +886,7 @@ Ejemplos de uso:
             return None
         try:
             from scripts.audio_cue import from_config as _ac_from_config
+
             return _ac_from_config(cue_cfg)
         except Exception as e:
             print(f"[INIT] ⚠ audio_cue no disponible: {e}")
@@ -882,6 +894,7 @@ Ejemplos de uso:
 
     if response_mode == "saccade":
         from scripts.saccade_screen import SaccadeScreen
+
         saccade_cfg = config.get("saccade", {}) or {}
         idt_cfg = saccade_cfg.get("idt", {}) or {}
         vel_cfg = saccade_cfg.get("velocity", {}) or {}
@@ -930,6 +943,7 @@ Ejemplos de uso:
             instructions_text=instructions_text,
             hide_cursor=hide_cursor,
             cursor_clip_rect=cursor_clip_rect,
+            allow_empty=allow_empty,
         )
         response_capture = DrawingResponseCapture(response_screen)
 
@@ -1118,11 +1132,11 @@ Ejemplos de uso:
         )
 
     else:
-            # MODO STANDARD: Los electrodos son los de electrode_selection
-            mapper.configure_electrodes_from_selection(
-                electrode_config["electrode_selection"]
-            )
-            print(f"[STANDARD] Electrodos según electrode_selection configurados")
+        # MODO STANDARD: Los electrodos son los de electrode_selection
+        mapper.configure_electrodes_from_selection(
+            electrode_config["electrode_selection"]
+        )
+        print(f"[STANDARD] Electrodos según electrode_selection configurados")
 
     # Obtener posiciones de fosfenos
     PHOSPHENE_POSITIONS = mapper.get_active_phosphene_positions()
@@ -1171,7 +1185,9 @@ Ejemplos de uso:
                 return
             session_meta_path = resume_dir / "session_metadata.json"
             if not session_meta_path.exists():
-                print(f"✗ ERROR: {session_meta_path} no encontrado — no se puede reanudar")
+                print(
+                    f"✗ ERROR: {session_meta_path} no encontrado — no se puede reanudar"
+                )
                 return
             with open(session_meta_path, encoding="utf-8") as f:
                 resumed_session = SessionMetadata.from_dict(json.load(f))
@@ -1216,7 +1232,9 @@ Ejemplos de uso:
             try:
                 phosphene_position = mapper.get_phosphene_position(electrode_index)
             except ValueError:
-                print(f"[SKIP] Electrodo {electrode_index}: posición no disponible en el CSV")
+                print(
+                    f"[SKIP] Electrodo {electrode_index}: posición no disponible en el CSV"
+                )
                 continue
 
             current_uA = _select_current_uA(
@@ -1291,10 +1309,14 @@ Ejemplos de uso:
             no_repeat = bool(tsc.no_immediate_repeat)
             num_practice = int(tsc.num_practice_trials)
             isi_jitter_ms = float(tsc.isi_jitter_ms)
-            print(f"[RESUME] Usando seed original = {realized_seed} (orden idéntico al de la sesión original)")
+            print(
+                f"[RESUME] Usando seed original = {realized_seed} (orden idéntico al de la sesión original)"
+            )
         else:
             seed_cfg = mapping_config.get("random_seed")
-            realized_seed = int(seed_cfg) if seed_cfg is not None else _secrets.randbits(32)
+            realized_seed = (
+                int(seed_cfg) if seed_cfg is not None else _secrets.randbits(32)
+            )
             catch_rate = float(mapping_config.get("catch_trial_rate", 0.0))
             do_randomize = bool(mapping_config.get("randomize", True))
             no_repeat = bool(mapping_config.get("no_immediate_repeat", True))
@@ -1313,7 +1335,9 @@ Ejemplos de uso:
         ts = trial_summary(trials)
         print("=" * 70)
         print(f"TRIAL SEQUENCE: {ts}  seed={realized_seed}")
-        print(f"  randomize={do_randomize}  catch_rate={catch_rate}  practice={num_practice}")
+        print(
+            f"  randomize={do_randomize}  catch_rate={catch_rate}  practice={num_practice}"
+        )
         print(f"  isi_jitter_ms={isi_jitter_ms}")
         print("=" * 70)
         print()
@@ -1334,9 +1358,13 @@ Ejemplos de uso:
                 summary=ts,
                 trial_order=[t.to_dict() for t in trials],
             )
-            with open(multi_experiment_dir / "session_metadata.json", "w", encoding="utf-8") as f:
+            with open(
+                multi_experiment_dir / "session_metadata.json", "w", encoding="utf-8"
+            ) as f:
                 json.dump(session_record.to_dict(), f, indent=2, ensure_ascii=False)
-            print(f"✓ Trial order guardado: {multi_experiment_dir / 'session_metadata.json'}")
+            print(
+                f"✓ Trial order guardado: {multi_experiment_dir / 'session_metadata.json'}"
+            )
             print()
 
         # ============================================
@@ -1426,11 +1454,13 @@ Ejemplos de uso:
                     dash_real_ok += 1
             real_rate = (
                 f"{dash_real_ok}/{dash_real_total} ({100.0*dash_real_ok/max(1,dash_real_total):.0f}%)"
-                if dash_real_total else "0/0"
+                if dash_real_total
+                else "0/0"
             )
             catch_rate_str = (
                 f"{dash_catch_response}/{dash_catch_total} ({100.0*dash_catch_response/max(1,dash_catch_total):.0f}%)"
-                if dash_catch_total else "0/0"
+                if dash_catch_total
+                else "0/0"
             )
             print(
                 f"      [DASH] trial {trial_pos+1}/{len(trials)} "
@@ -1441,9 +1471,15 @@ Ejemplos de uso:
             # Inter-trial break con jitter, salvo en el último trial
             if trial_pos < len(trials) - 1:
                 next_trial = trials[trial_pos + 1]
-                next_electrode = next_trial.electrode_index or valid_electrode_indices[0]
+                next_electrode = (
+                    next_trial.electrode_index or valid_electrode_indices[0]
+                )
                 next_exp = exp_by_electrode[next_electrode]
-                jitter = isi_rng.uniform(-isi_jitter_ms, isi_jitter_ms) if isi_jitter_ms > 0 else 0.0
+                jitter = (
+                    isi_rng.uniform(-isi_jitter_ms, isi_jitter_ms)
+                    if isi_jitter_ms > 0
+                    else 0.0
+                )
                 duration_ms = max(0.0, INTERSTIMULATION_MS + jitter)
                 if not next_exp._run_interstimulation_mapping(
                     trial_pos + 1, len(trials), duration_ms=duration_ms

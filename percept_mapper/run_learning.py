@@ -395,9 +395,9 @@ def main():
             f"95% CI=({cv_result.bootstrap_ci_low:.3f}, {cv_result.bootstrap_ci_high:.3f})"
         )
         if cv_result.bootstrap_p_value is not None and cv_result.bootstrap_p_value < 0.05:
-            print("  → Mejora estadísticamente significativa al 5%.")
+            print("   Mejora estadísticamente significativa al 5%.")
         else:
-            print("  → Mejora NO estadísticamente significativa al 5%.")
+            print("   Mejora NO estadísticamente significativa al 5%.")
         cv_payload = cv_result.to_dict()
     elif args.cv:
         print(f"\nWARN: dataset (N={pred.shape[0]}) demasiado pequeño para {args.cv}-fold CV; CV omitido.")

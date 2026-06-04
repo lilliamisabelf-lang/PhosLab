@@ -57,13 +57,15 @@ class DrawingResponseCapture:
     def reset(self):
         self._canvas = None
         self.response_screen.reset()
+        self.last_status = "unknown"
 
     def update(self, screen, events) -> bool:
         finished, output = self.response_screen.update(screen, events)
         if not finished:
             return False
         self._canvas = output
-        self.last_status = "ok"
+        status = getattr(self.response_screen, "last_status", None)
+        self.last_status = status if status and status != "unknown" else "ok"
         return True
 
     def save_result(
@@ -82,7 +84,7 @@ class DrawingResponseCapture:
         pygame.image.save(self._canvas, str(output_dir / filename))
         return ResponseResult(
             mode="drawing",
-            status="ok",
+            status=self.last_status or "ok",
             response_file=filename,
             response_file_type="png",
         )
