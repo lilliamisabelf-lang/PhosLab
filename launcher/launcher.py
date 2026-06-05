@@ -541,7 +541,7 @@ class PipelineLauncher(QMainWindow):
         nav_items = [
             ("▶  Lanzador", 0),
             ("  Parámetros", 1),
-            ("  analysis", 2),
+            ("  Análisis", 2),
             ("  Aprendizaje", 3),
             ("  Mapa optimizado", 4),
         ]
@@ -638,10 +638,10 @@ class PipelineLauncher(QMainWindow):
             ),
             (
                 "4",
-                "analysis",
+                "Análisis",
                 "Ver resultados del experimento completado",
                 lambda: self._show_page(2),
-                "analysis",
+                "Análisis",
                 "analysis.png",
             ),
             (

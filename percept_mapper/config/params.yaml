@@ -2,7 +2,7 @@ experiment:
   name: Cortical_Prosthesis_Test
   version: '1.0'
   researcher: Lily
-experiment_mode: standard
+experiment_mode: mapping
 phosphene_mapping:
   electrodes_by_implant:
   - implant_id: 66842a432a5b
@@ -27,7 +27,7 @@ phosphene_mapping:
   no_immediate_repeat: true
   num_practice_trials: 2
   isi_jitter_ms: 200
-input_mode: mouse
+input_mode: pupil
 drawing_input: both
 response_mode: drawing
 screen:
