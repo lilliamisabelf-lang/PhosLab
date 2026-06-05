@@ -570,7 +570,7 @@ class PipelineLauncher(QMainWindow):
         # Status pills
         self._status_labels = {}
         for key, label in [
-            ("phoslab", "phosLab"),
+            ("phoslab", "PhosLab"),
             ("watcher", "CSV watcher"),
             ("simulador", "Simulador"),
             ("learning", "Aprendizaje"),
@@ -1260,9 +1260,17 @@ class PipelineLauncher(QMainWindow):
         results_split.setSizes([520, 760])
         rg.addWidget(results_split)
 
+        actions_row = QHBoxLayout()
         refresh_learn_btn = QPushButton("↻ Cargar resultados")
         refresh_learn_btn.clicked.connect(self._refresh_learning)
-        rg.addWidget(refresh_learn_btn)
+        actions_row.addWidget(refresh_learn_btn)
+
+        export_learn_btn = QPushButton("Guardar learning_results (.zip)")
+        export_learn_btn.setObjectName("btn_amber")
+        export_learn_btn.clicked.connect(self._export_learning_zip)
+        actions_row.addWidget(export_learn_btn)
+        actions_row.addStretch()
+        rg.addLayout(actions_row)
 
         lay.addWidget(results_grp, stretch=1)
         self._refresh_learning_experiments()
@@ -1370,7 +1378,7 @@ class PipelineLauncher(QMainWindow):
         leg_grp = QGroupBox("Leyenda")
         lg = QVBoxLayout(leg_grp)
         for color, label in [
-            ("#9ca3af", "Original (CSV phosLab)"),
+            ("#9ca3af", "Original (CSV PhosLab)"),
             ("#00b4ff", "Corregido — Bayesiano"),
             ("#00ffa0", "Corregido — Neural"),
         ]:
@@ -1435,8 +1443,8 @@ class PipelineLauncher(QMainWindow):
             ["uv", "run", "python", str(entry)],
             cwd=str(PHOSLAB_DIR),
         )
-        self._set_status("phoslab", True)
-        self._log_msg("phosLab lanzado")
+        self._set_status("Phoslab", True)
+        self._log_msg("PhosLab lanzado")
         self._mark_step(0, True)
 
     def _select_csv_manual(self):
@@ -2228,6 +2236,41 @@ class PipelineLauncher(QMainWindow):
                 btn.setIcon(QIcon())
                 btn.setText(f"Sin imagen: {fname}")
                 btn.setProperty("image_path", None)
+
+    def _export_learning_zip(self):
+        if not LEARNING_DIR.exists():
+            QMessageBox.warning(
+                self,
+                "Exportar",
+                "No existe la carpeta learning_results.",
+            )
+            return
+
+        results_dir = SIMULADOR_DIR / "results"
+        results_dir.mkdir(parents=True, exist_ok=True)
+
+        default_name = f"learning_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+        default_path = str(results_dir / default_name)
+        out_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Guardar learning_results (.zip)",
+            default_path,
+            "ZIP Files (*.zip)",
+        )
+        if not out_path:
+            return
+
+        out = Path(out_path)
+        base_name = out.with_suffix("")
+        try:
+            shutil.make_archive(
+                str(base_name),
+                "zip",
+                root_dir=str(LEARNING_DIR),
+            )
+            self._log_msg(f"OK: ZIP guardado: {base_name.name}.zip", "ok")
+        except Exception as exc:
+            QMessageBox.critical(self, "Exportar", f"No se pudo crear el ZIP: {exc}")
 
     def _refresh_learning_experiments(self):
         if not hasattr(self, "_test_exp_combo"):
