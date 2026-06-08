@@ -90,8 +90,7 @@ class CsvWatcher(QThread):
         while self._running:
             current = self._snapshot()
             changed = [
-                name for name, sig in current.items()
-                if self._known.get(name) != sig
+                name for name, sig in current.items() if self._known.get(name) != sig
             ]
             for name in sorted(changed):
                 self._copy_csv(self.watch_dir / name)
@@ -665,14 +664,14 @@ class PipelineLauncher(QMainWindow):
         steps_widget.setLayout(steps_row)
         steps_scroll = QScrollArea()
         steps_scroll.setWidgetResizable(True)
-        steps_scroll.setHorizontalScrollBarPolicy(
-            Qt.ScrollBarPolicy.ScrollBarAsNeeded
-        )
+        steps_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         steps_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         steps_scroll.setFrameShape(QFrame.Shape.NoFrame)
         steps_scroll.setFixedHeight(360)
         steps_scroll.setWidget(steps_widget)
-        steps_scroll.setStyleSheet("QScrollArea { border: none; background: transparent; }")
+        steps_scroll.setStyleSheet(
+            "QScrollArea { border: none; background: transparent; }"
+        )
         lay.addWidget(steps_scroll)
 
         # CSV watcher status
@@ -720,7 +719,8 @@ class PipelineLauncher(QMainWindow):
         if logo_path and logo_path.exists():
             logo_label = QLabel()
             pix = QPixmap(str(logo_path)).scaled(
-                ICON_SIZE, ICON_SIZE,
+                ICON_SIZE,
+                ICON_SIZE,
                 Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation,
             )
@@ -814,8 +814,17 @@ class PipelineLauncher(QMainWindow):
         self._input_mode_combo.setFixedWidth(120)
         inp_lay.addWidget(QLabel("Dispositivo de entrada:"))
         inp_lay.addWidget(self._input_mode_combo)
+
+        self._calibrate_btn = QPushButton("Calibrar gaze")
+        self._calibrate_btn.setFixedWidth(130)
+        self._calibrate_btn.setVisible(False)
+        self._calibrate_btn.clicked.connect(self._run_gaze_calibration)
+        inp_lay.addWidget(self._calibrate_btn)
+
         inp_lay.addStretch()
         ilay.addWidget(input_grp)
+
+        self._input_mode_combo.currentTextChanged.connect(self._on_input_mode_changed)
 
         # ── 4. Corriente default ───────────────────────────────────────
         curr_grp = QGroupBox("Corriente default")
@@ -884,7 +893,8 @@ class PipelineLauncher(QMainWindow):
         map_lay.addWidget(self._implant_electrodes_scroll)
 
         # Dict que guarda los QLineEdit por implant_id
-        self._implant_electrode_edits = {}  # {implant_id: QLineEdit}
+        self._implant_electrode_edits = {}  # {implant_id: QLineEdit} — mapping
+        self._std_implant_electrode_edits = {}  # {implant_id: QLineEdit} — standard
 
         no_csv_lbl = QLabel("Carga un CSV para ver los implants disponibles")
         no_csv_lbl.setStyleSheet("color: #4a5568; font-size: 13px; padding: 8px;")
@@ -1129,6 +1139,12 @@ class PipelineLauncher(QMainWindow):
         )
         self._learn_scope_combo.setFixedWidth(160)
         model_row.addWidget(self._learn_scope_combo)
+        model_row.addSpacing(16)
+        model_row.addWidget(QLabel("Datos:"))
+        self._learn_input_mode_combo = QComboBox()
+        self._learn_input_mode_combo.addItems(["all", "pupil", "gaze", "mouse"])
+        self._learn_input_mode_combo.setFixedWidth(100)
+        model_row.addWidget(self._learn_input_mode_combo)
         model_row.addStretch()
         run_btn = QPushButton("▶  Ejecutar aprendizaje")
         run_btn.setObjectName("btn_green")
@@ -1554,6 +1570,7 @@ class PipelineLauncher(QMainWindow):
     def _run_learning(self):
         model = self._learn_combo.currentText()
         scope = self._learn_scope_combo.currentText()
+        input_mode = self._learn_input_mode_combo.currentText()
         test_mode = self._test_mode_combo.currentText()
         test_source = self._test_source_combo.currentText()
         test_experiment = ""
@@ -1573,6 +1590,8 @@ class PipelineLauncher(QMainWindow):
             model,
             "--scope",
             scope,
+            "--input-mode",
+            input_mode,
             "--test-mode",
             test_mode,
             "--test-source",
@@ -1649,9 +1668,7 @@ class PipelineLauncher(QMainWindow):
             watch_dir = PHOSLAB_DIR
         self._csv_watcher = CsvWatcher(watch_dir, CSV_DEST_DIR)
         self._csv_watcher.csv_detected.connect(self._handle_csv)
-        self._csv_watcher.watch_error.connect(
-            lambda msg: self._log_msg(msg, "error")
-        )
+        self._csv_watcher.watch_error.connect(lambda msg: self._log_msg(msg, "error"))
         self._csv_watcher.start()
         self._set_status("watcher", True)
         self._watcher_path.setText(
@@ -1840,6 +1857,29 @@ class PipelineLauncher(QMainWindow):
                     self._log_msg("WARN: No se pudo parsear corrientes mapping", "warn")
 
         else:  # standard
+            # Electrodos por implante (igual que mapping)
+            electrodes_by_implant = []
+            for iid, edit in self._std_implant_electrode_edits.items():
+                text = edit.text().strip()
+                if not text:
+                    continue
+                try:
+                    indices = [int(x.strip()) for x in text.split(",") if x.strip()]
+                    if indices:
+                        electrodes_by_implant.append(
+                            {"implant_id": iid, "electrode_index": indices}
+                        )
+                except ValueError:
+                    self._log_msg(
+                        f"WARN: Formato de índices inválido para implant {iid} (standard)",
+                        "warn",
+                    )
+            if electrodes_by_implant:
+                updates.setdefault("retinotopic_mapping", {})
+                updates["retinotopic_mapping"][
+                    "electrodes_by_implant"
+                ] = electrodes_by_implant
+
             esel_mode = self._esel_combo.currentText()
             esel = {"mode": esel_mode}
             if esel_mode == "range":
@@ -2012,17 +2052,38 @@ class PipelineLauncher(QMainWindow):
             self._implant_electrodes_layout.insertWidget(i, block)
             self._implant_electrode_edits[iid] = edit
 
+    def _on_input_mode_changed(self, mode: str):
+        self._calibrate_btn.setVisible(mode == "gaze")
+
+    def _run_gaze_calibration(self):
+        """Lanza la calibración de 5 puntos del eye tracker en un proceso separado."""
+        calib_script = SIMULADOR_DIR / "calibrate_gaze.py"
+        if not calib_script.exists():
+            from PyQt6.QtWidgets import QMessageBox
+
+            QMessageBox.warning(
+                self,
+                "Calibración",
+                f"No se encontró el script de calibración:\n{calib_script}",
+            )
+            return
+        subprocess.Popen(
+            ["uv", "run", "python", str(calib_script)],
+            cwd=str(SIMULADOR_DIR),
+        )
+
     def _on_mode_changed(self, mode: str):
         self._mapping_grp.setVisible(mode == "mapping")
         self._standard_grp.setVisible(mode == "standard")
 
     def _rebuild_std_electrode_info(self):
-        """Reconstruye el panel de electrodos disponibles en el modo Standard."""
-        # Limpiar layout anterior (excepto el stretch final)
+        """Reconstruye el panel de electrodos por implant en modo Standard."""
         while self._std_electrodes_layout.count() > 1:
             item = self._std_electrodes_layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
+
+        self._std_implant_electrode_edits = {}
 
         if not self._implant_data:
             no_csv = QLabel("Carga un CSV para ver los electrodos disponibles")
@@ -2037,18 +2098,54 @@ class PipelineLauncher(QMainWindow):
                 "border: 0.5px solid rgba(100,120,200,0.2); border-radius: 6px; }"
             )
             bl = QVBoxLayout(block)
-            bl.setContentsMargins(10, 6, 10, 6)
-            bl.setSpacing(3)
+            bl.setContentsMargins(10, 8, 10, 8)
+            bl.setSpacing(4)
 
             hdr = QHBoxLayout()
             id_lbl = QLabel(f"Implant: {iid}")
             id_lbl.setStyleSheet("color: #818cf8; font-size: 14px; font-weight: 500;")
             hdr.addWidget(id_lbl)
-            count_lbl = QLabel(f"{len(available_indices)} electrodos")
-            count_lbl.setStyleSheet("color: #27ae60; font-size: 13px;")
             hdr.addStretch()
-            hdr.addWidget(count_lbl)
+            all_btn = QPushButton("Todos")
+            all_btn.setFixedWidth(60)
+            all_btn.setStyleSheet(
+                "QPushButton { background: rgba(99,102,241,0.1); border: 0.5px solid "
+                "rgba(99,102,241,0.3); border-radius: 4px; color: #818cf8; "
+                "padding: 2px 6px; font-size: 13px; }"
+            )
+            hdr.addWidget(all_btn)
             bl.addLayout(hdr)
+
+            input_row = QHBoxLayout()
+            edit = QLineEdit()
+            edit.setPlaceholderText(
+                f"ej: {','.join(str(x) for x in available_indices[:5])}{',...' if len(available_indices)>5 else ''}"
+            )
+            edit.setStyleSheet(
+                "background:#0f1623; border:0.5px solid rgba(100,120,200,0.3); "
+                "border-radius:4px; color:#c9d1e0; padding:3px 6px; font-size:14px;"
+            )
+            count_lbl = QLabel("0 electrodos")
+            count_lbl.setFixedWidth(100)
+            count_lbl.setStyleSheet("color: #4a5568; font-size: 13px;")
+
+            def _on_text_changed(text, lbl=count_lbl):
+                try:
+                    idxs = [int(x.strip()) for x in text.split(",") if x.strip()]
+                    lbl.setText(f"{len(idxs)} electrodo{'s' if len(idxs)!=1 else ''}")
+                    lbl.setStyleSheet("color: #27ae60; font-size: 13px;")
+                except ValueError:
+                    lbl.setText("formato inválido")
+                    lbl.setStyleSheet("color: #e74c3c; font-size: 13px;")
+
+            edit.textChanged.connect(_on_text_changed)
+
+            all_indices_str = ",".join(str(x) for x in available_indices)
+            all_btn.clicked.connect(lambda _, e=edit, s=all_indices_str: e.setText(s))
+
+            input_row.addWidget(edit)
+            input_row.addWidget(count_lbl)
+            bl.addLayout(input_row)
 
             hint = QLabel(
                 f"Disponibles: {', '.join(str(x) for x in available_indices)}"
@@ -2057,6 +2154,7 @@ class PipelineLauncher(QMainWindow):
             hint.setWordWrap(True)
             bl.addWidget(hint)
 
+            self._std_implant_electrode_edits[iid] = edit
             self._std_electrodes_layout.insertWidget(i, block)
 
     def _on_esel_changed(self, mode: str):
@@ -2249,7 +2347,9 @@ class PipelineLauncher(QMainWindow):
         results_dir = SIMULADOR_DIR / "results"
         results_dir.mkdir(parents=True, exist_ok=True)
 
-        default_name = f"learning_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+        default_name = (
+            f"learning_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+        )
         default_path = str(results_dir / default_name)
         out_path, _ = QFileDialog.getSaveFileName(
             self,
