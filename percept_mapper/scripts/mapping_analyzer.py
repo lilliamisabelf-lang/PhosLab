@@ -344,10 +344,71 @@ class PhospheneMappingAnalyzer:
             )
             print(f"✓ Centroide: ({centroid[0]:.1f}, {centroid[1]:.1f})")
 
-        # Verificar que hay suficientes repeticiones válidas
+        # Sin repeticiones válidas: el electrodo no produjo ninguna respuesta
+        # utilizable (p.ej. periferia no percibida, o todas las repeticiones
+        # confirmadas vacías con allow_empty). Antes se devolvía None, lo que
+        # hacía DESAPARECER el electrodo por completo del análisis y del mapa
+        # consolidado. Ahora guardamos un registro explícito "no_response" para
+        # que quede visible y trazable.
         if len(centroids) == 0:
-            print("\n✗ ERROR: No se encontraron repeticiones válidas")
-            return None
+            print(
+                f"\n⚠ Electrodo {self.electrode_index} SIN RESPUESTA: "
+                f"0/{self.num_repetitions} repeticiones válidas (todas vacías/inválidas)"
+            )
+            reps = self.metadata.get("repetitions") or []
+            if reps and reps[0].get("position") is not None:
+                stim_pos = np.array(reps[0]["position"], dtype=float)
+            else:
+                stim_pos = np.array([np.nan, np.nan])
+            stim_pos_deg = self._px_to_deg(stim_pos[0], stim_pos[1])
+            results = {
+                "electrode_index": self.electrode_index,
+                "status": "no_response",
+                "num_total_repetitions": self.num_repetitions,
+                "num_valid_repetitions": 0,
+                "num_invalid_repetitions": self.num_repetitions,
+                "centroids": [],
+                "centroids_deg": [],
+                "valid_repetitions": [],
+                "per_repetition": [],
+                "mean_position": None,
+                "mean_position_deg": None,
+                "stimulation_position": stim_pos.tolist(),
+                "stimulation_position_deg": [
+                    float(stim_pos_deg[0]),
+                    float(stim_pos_deg[1]),
+                ],
+                "per_repetition_metrics": [],
+                "catch_trial_stats": {
+                    "n_total": catch_total,
+                    "n_with_response": catch_with_response,
+                    "response_rate": (
+                        float(catch_with_response) / float(catch_total)
+                        if catch_total > 0
+                        else None
+                    ),
+                },
+            }
+            results_file = self.electrode_dir / "analysis_results.json"
+            with open(results_file, "w", encoding="utf-8") as f:
+                json.dump(results, f, indent=2, ensure_ascii=False)
+            # CSV con solo cabecera, para que el electrodo siga apareciendo en
+            # los listados aunque no tenga filas de repetición.
+            table_file = self.electrode_dir / "analysis_repetitions.csv"
+            with open(table_file, "w", newline="", encoding="utf-8") as f:
+                csv.DictWriter(
+                    f,
+                    fieldnames=[
+                        "electrode_index", "repetition_number",
+                        "centroid_x_px", "centroid_y_px",
+                        "centroid_x_deg", "centroid_y_deg",
+                        "n_pixels", "fill_ratio",
+                        "dx_to_stim_px", "dy_to_stim_px", "distance_to_stim_px",
+                        "dx_to_stim_deg", "dy_to_stim_deg", "distance_to_stim_deg",
+                    ],
+                ).writeheader()
+            print(f"✓ Registro 'no_response' guardado en: {results_file.name}")
+            return ElectrodeAnalysisResult.from_dict(results).to_dict()
 
         # Calcular estadísticas
         centroids = np.array(centroids)
@@ -404,6 +465,7 @@ class PhospheneMappingAnalyzer:
         # Resultados
         results = {
             "electrode_index": self.electrode_index,
+            "status": "ok",
             "num_total_repetitions": self.num_repetitions,
             "num_valid_repetitions": len(centroids),
             "num_invalid_repetitions": num_invalid,
@@ -842,7 +904,9 @@ def analyze_electrode(electrode_dir, visualize=True):
     analyzer = PhospheneMappingAnalyzer(electrode_dir)
     results = analyzer.analyze_electrode_repetitions()
 
-    if results and visualize:
+    # Solo se visualiza si hay una posición media (los registros "no_response"
+    # no tienen centroide que dibujar).
+    if results and results.get("mean_position") and visualize:
         analyzer.visualize_results(results)
         analyzer.visualize_boxplots(results)
 

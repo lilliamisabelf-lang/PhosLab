@@ -254,6 +254,30 @@ class DynaphosMapper:
         # ============================================
         self.active_electrodes = np.zeros(self.num_electrodes, dtype=bool)
 
+        # ── Electrodos con coordenadas válidas (no-NaN) ─────────────────────
+        # El array está indexado por electrode_index para preservar la
+        # correspondencia con el electrodo físico, así que cualquier índice
+        # ausente en el CSV queda como NaN ("fantasma"). Casos típicos: un CSV
+        # 1-based deja el índice 0 vacío (n = max_id + 1); una selección
+        # dispersa (p.ej. electrodos 40, 61, 80) deja huecos. Estos NaN NO son
+        # electrodos reales: se excluyen de los conteos y de TODA selección
+        # automática.
+        self.valid_electrode_indices = self._get_valid_electrode_indices()
+        self.num_valid_electrodes = len(self.valid_electrode_indices)
+        n_missing = self.num_electrodes - self.num_valid_electrodes
+        if n_missing > 0:
+            valid_set = set(self.valid_electrode_indices)
+            missing = [i for i in range(self.num_electrodes) if i not in valid_set]
+            print(
+                f"                 ⚠ {n_missing} índice(s) sin coordenadas en el "
+                f"CSV (fantasma, se ignoran): "
+                f"{missing[:12]}{'...' if len(missing) > 12 else ''}"
+            )
+            print(
+                f"                 Electrodos reales (con coordenadas): "
+                f"{self.num_valid_electrodes}"
+            )
+
         # ============================================
         # 7. INICIALIZAR SIMULADOR DE FOSFENOS (opcional)
         # ============================================
@@ -536,34 +560,37 @@ class DynaphosMapper:
             self.set_active_electrodes(indices)
 
         elif mode == "pattern":
-            # Modo pattern: usar patrones predefinidos
+            # Modo pattern: usar patrones predefinidos. Todos los patrones
+            # operan SOLO sobre electrodos con coordenadas válidas para no
+            # seleccionar nunca un índice fantasma (NaN), que reventaría al
+            # pedir su posición.
             pattern = selection_config.get("pattern", "random")
             n_electrodes = selection_config.get("n_electrodes", 10)
 
+            valid = list(self.valid_electrode_indices)
+            n_take = min(n_electrodes, len(valid))
+
             if pattern == "random":
                 # N electrodos aleatorios
-                indices = random.sample(
-                    range(self.num_electrodes), min(n_electrodes, self.num_electrodes)
-                )
+                indices = random.sample(valid, n_take)
             elif pattern == "grid":
-                # Patrón de rejilla: cada N electrodos
-                step = max(1, self.num_electrodes // n_electrodes)
-                indices = list(range(0, self.num_electrodes, step))[:n_electrodes]
-            elif pattern == "center":
-                # Electrodos centrales (menor excentricidad)
+                # Patrón de rejilla: cada N electrodos válidos
+                step = max(1, len(valid) // n_electrodes) if n_electrodes else 1
+                indices = valid[::step][:n_electrodes]
+            elif pattern in ("center", "periphery"):
+                # Centrales (menor excentricidad) o periféricos (mayor).
+                # Se ordena solo entre electrodos válidos.
                 visual_x, visual_y = self.visual_coords_deg
-                eccentricities = np.sqrt(visual_x**2 + visual_y**2)
-                indices = np.argsort(eccentricities)[:n_electrodes].tolist()
-            elif pattern == "periphery":
-                # Electrodos periféricos (mayor excentricidad)
-                visual_x, visual_y = self.visual_coords_deg
-                eccentricities = np.sqrt(visual_x**2 + visual_y**2)
-                indices = np.argsort(eccentricities)[-n_electrodes:].tolist()
+                ecc = np.sqrt(np.asarray(visual_x) ** 2 + np.asarray(visual_y) ** 2)
+                valid_sorted = sorted(valid, key=lambda i: float(ecc[i]))
+                indices = (
+                    valid_sorted[:n_electrodes]
+                    if pattern == "center"
+                    else valid_sorted[-n_electrodes:]
+                )
             else:
                 print(f"⚠ WARNING: Patrón '{pattern}' no reconocido, usando 'random'")
-                indices = random.sample(
-                    range(self.num_electrodes), min(n_electrodes, self.num_electrodes)
-                )
+                indices = random.sample(valid, n_take)
 
             self.set_active_electrodes(indices)
 

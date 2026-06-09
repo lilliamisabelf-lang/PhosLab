@@ -102,11 +102,13 @@ class MultiElectrodeAnalyzer:
             "num_electrodes": len(electrode_dirs),
             "electrodes": {},
             "mean_positions": {},
+            "no_response_electrodes": [],
         }
 
         # Analizar cada electrodo
         all_mean_positions = []
-        all_electrode_indices = []
+        all_electrode_indices = []  # todos los electrodos procesados (para log)
+        valid_indices = []          # solo los que aportan posición; alineado con all_mean_positions
 
         for electrode_dir in electrode_dirs:
             electrode_index = int(electrode_dir.name.split("_")[1])
@@ -121,18 +123,32 @@ class MultiElectrodeAnalyzer:
                 analyzer = PhospheneMappingAnalyzer(electrode_dir)
                 results = analyzer.analyze_electrode_repetitions()
 
-                if results:
-                    # Guardar resultados individuales en consolidated
+                if results and results.get("mean_position"):
+                    # Electrodo con respuesta utilizable
                     consolidated_results["electrodes"][str(electrode_index)] = results
 
-                    # Extraer posición promedio
+                    # Extraer posición promedio (índice alineado con valid_indices)
                     mean_pos = np.array(
                         [results["mean_position"]["x"], results["mean_position"]["y"]]
                     )
                     all_mean_positions.append(mean_pos)
+                    valid_indices.append(electrode_index)
 
                     print(
                         f"\n✓ Electrodo {electrode_index:03d} analizado correctamente"
+                    )
+
+                elif results and results.get("status") == "no_response":
+                    # El electrodo no produjo respuesta (todas las repeticiones
+                    # vacías). Se registra aparte para que sea VISIBLE en el
+                    # reporte, pero NO entra en el mapa ni en las distancias
+                    # (no tiene centroide).
+                    consolidated_results["no_response_electrodes"].append(
+                        electrode_index
+                    )
+                    print(
+                        f"\n⚠ Electrodo {electrode_index:03d}: SIN RESPUESTA "
+                        f"(no_response) — excluido del mapa y de las distancias"
                     )
 
                 else:
@@ -154,12 +170,16 @@ class MultiElectrodeAnalyzer:
             print("=" * 70 + "\n")
 
             print(f"Electrodos procesados: {all_electrode_indices}")
+            print(f"Con posición promedio: {valid_indices}")
             print(f"Posiciones promedio obtenidas: {len(all_mean_positions)}\n")
 
-            # Calcular distancias entre pares de electrodos
+            # Calcular distancias entre pares de electrodos. Se recorre
+            # valid_indices (no all_electrode_indices) porque all_mean_positions
+            # solo contiene los electrodos con respuesta: usar el listado
+            # completo desalineaba índices y posiciones.
             print("Distancias entre posiciones promedio:")
-            for i, idx_i in enumerate(all_electrode_indices):
-                for j, idx_j in enumerate(all_electrode_indices):
+            for i, idx_i in enumerate(valid_indices):
+                for j, idx_j in enumerate(valid_indices):
                     if i < j:
                         pos_i = all_mean_positions[i]
                         pos_j = all_mean_positions[j]
@@ -180,7 +200,7 @@ class MultiElectrodeAnalyzer:
 
             consolidated_results["mean_positions"] = {
                 str(idx): {"x": float(pos[0]), "y": float(pos[1])}
-                for idx, pos in zip(all_electrode_indices, all_mean_positions)
+                for idx, pos in zip(valid_indices, all_mean_positions)
             }
 
         # Guardar resultados consolidados
@@ -360,9 +380,15 @@ class MultiElectrodeAnalyzer:
         # Configuración
         ax.set_xlabel("X (píxeles)", fontsize=12)
         ax.set_ylabel("Y (píxeles)", fontsize=12)
-        ax.set_title(
+        title = (
             f"Mapa Consolidado - {len(electrode_indices)} Electrodos\n"
-            f"Electrodos: {electrode_indices}",
+            f"Electrodos: {electrode_indices}"
+        )
+        no_resp = sorted(consolidated_results.get("no_response_electrodes", []))
+        if no_resp:
+            title += f"\nSin respuesta (no mostrados): {no_resp}"
+        ax.set_title(
+            title,
             fontsize=14,
             fontweight="bold",
         )
@@ -397,12 +423,24 @@ class MultiElectrodeAnalyzer:
             "",
             f"Experimento: {consolidated_results['experiment_name']}",
             f"Número de electrodos: {consolidated_results['num_electrodes']}",
+            f"Con respuesta: {len(consolidated_results.get('electrodes', {}))}  |  "
+            f"Sin respuesta: {len(consolidated_results.get('no_response_electrodes', []))}",
             "",
             "-" * 70,
             "RESULTADOS POR ELECTRODO",
             "-" * 70,
             "",
         ]
+
+        no_resp = sorted(consolidated_results.get("no_response_electrodes", []))
+        if no_resp:
+            report_lines.extend(
+                [
+                    f"⚠ ELECTRODOS SIN RESPUESTA ({len(no_resp)}): {no_resp}",
+                    "  (todas las repeticiones vacías — excluidos del mapa y de las distancias)",
+                    "",
+                ]
+            )
 
         for electrode_idx_str in sorted(
             consolidated_results["electrodes"].keys(), key=lambda x: int(x)
