@@ -1615,6 +1615,40 @@ class PipelineLauncher(QMainWindow):
             self._scr_append("\n✓ La configuración coincide con el monitor (±10%).")
             self._log_msg("Comprobación de pantalla OK", "ok")
 
+        # Feedback de la excentricidad MÁXIMA visible (depende de la distancia
+        # de visionado) + coherencia de vf_scope_deg con la geometría real.
+        dist_cm = scr.get("dist_to_screen_cm")
+        cfg_vf = scr.get("vf_scope_deg")
+        fov = target.half_fov_deg(dist_cm) if (res and dist_cm) else None
+        if fov is not None:
+            coherent = round(fov["min"], 2)
+            self._scr_append(f"\nMáx. excentricidad a {dist_cm} cm:")
+            self._scr_append(
+                f"  anillo completo {coherent}° (lado corto)  |  "
+                f"horizontal ±{fov['h']:.1f}°  |  esquina {fov['corner']:.1f}°"
+            )
+            if isinstance(cfg_vf, str) and cfg_vf.strip().lower() in {
+                "auto", "physical", "screen", "max"
+            }:
+                self._scr_append(f"  vf_scope_deg: {cfg_vf} → se deriva a {coherent}°")
+            else:
+                self._scr_append(
+                    f"  vf_scope_deg coherente (físico) = {coherent}°   "
+                    f"(config: {cfg_vf if cfg_vf is not None else '—'})"
+                )
+                try:
+                    if cfg_vf is not None and abs(float(cfg_vf) - coherent) / coherent > 0.05:
+                        self._scr_append(
+                            f"  ⚠ vf_scope_deg={cfg_vf}° no coincide con el máximo "
+                            f"físico ({coherent}°). Pon vf_scope_deg: auto para calibrarlo."
+                        )
+                except (TypeError, ValueError):
+                    pass
+        elif res and not dist_cm:
+            self._scr_append(
+                "\n(define dist_to_screen_cm en params para ver la excentricidad máxima)"
+            )
+
         self._scr_override_btn.setEnabled(res is not None or diag is not None)
 
     def _override_screen_params(self):

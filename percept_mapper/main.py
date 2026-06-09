@@ -84,6 +84,64 @@ def _set_mapping_debug_marker(stimulation_screen):
     overlay.set_phosphene(px, deg, ecc, polar, electrode_index=idx)
 
 
+def _assert_phosphenes_onscreen(mapper, screen_w, screen_h, vf_scope_deg, allow_offscreen):
+    """Feasibility gate antes de lanzar: si algún electrodo ACTIVO cae fuera de
+    la pantalla con la geometría actual, su fosfeno sería invisible (y se
+    registraría como si se hubiera mostrado). Por defecto se ABORTA listando los
+    electrodos afectados; con screen.allow_offscreen: true solo se avisa.
+
+    Con el mapeo isotrópico anclado al lado corto, el ecc máximo visible en
+    CUALQUIER ángulo es ~vf_scope_deg (el meridiano del lado corto es el límite).
+    """
+    offscreen = []
+    for idx, is_active in enumerate(mapper.active_electrodes):
+        if not is_active:
+            continue
+        try:
+            px = mapper.get_phosphene_position(idx)
+        except Exception:
+            px = None
+        if px is None:
+            continue
+        x, y = float(px[0]), float(px[1])
+        if 0 <= x < screen_w and 0 <= y < screen_h:
+            continue
+        ecc = None
+        try:
+            ecc = mapper.get_electrode_info(idx).get("eccentricity_deg")
+        except Exception:
+            pass
+        offscreen.append((idx, x, y, ecc))
+
+    if not offscreen:
+        return
+
+    head = (
+        f"FOSFENOS FUERA DE PANTALLA: con vf_scope_deg={vf_scope_deg:g}°, "
+        f"{len(offscreen)} de los electrodos seleccionados caen fuera de "
+        f"{screen_w}x{screen_h} y NO serían visibles:"
+    )
+    body = [
+        f"    electrodo {idx}: px=({x:.0f},{y:.0f})"
+        + (f", ecc={ecc:.1f}°" if ecc is not None else "")
+        for idx, x, y, ecc in offscreen
+    ]
+    tail = (
+        f"  El ecc máximo visible (en cualquier ángulo) con esta geometría es "
+        f"~{vf_scope_deg:g}°. Soluciones: sube vf_scope_deg (o ponlo a 'auto'), "
+        f"acerca la pantalla, o reduce la excentricidad de los electrodos.\n"
+        f"  Para ejecutar igualmente: screen.allow_offscreen: true"
+    )
+    msg = "\n".join([head, *body, tail])
+
+    if allow_offscreen:
+        print("[INIT] ⚠ " + msg)
+        print("[INIT] allow_offscreen=true → se ejecuta de todas formas.")
+        return
+    print("[INIT] ✗ " + msg)
+    raise SystemExit(1)
+
+
 # ============================================
 # HELPERS: corrientes por electrodo (sparse)
 # ============================================
@@ -1042,12 +1100,12 @@ Ejemplos de uso:
     # Crear mapper con dropout
     screen_cfg = config.get("screen", {})
 
-    # Convenio único de FOV (pipeline):
-    # - vf_scope_deg representa el semiancho (rango [-vf_scope_deg, +vf_scope_deg]).
-    # - assumed_fov_total_deg = 2 * vf_scope_deg
-    # - Se asume simetría X/Y (misma amplitud en ambos ejes).
-    vf_scope_deg = screen_cfg.get("vf_scope_deg")
-
+    # Convenio de FOV (pipeline): vf_scope_deg es el semiancho que se mapea al
+    # lado MENOR de la pantalla (ppd = min(W,H)/(2*vf_scope_deg), isotrópico).
+    # Para que los grados sean FÍSICAMENTE reales, vf_scope_deg debe igualar el
+    # half-FOV físico del lado corto a la distancia de visionado. Pon
+    # `vf_scope_deg: auto` y se deriva solo de la geometría + dist_to_screen_cm
+    # (no puede desfasarse); con un número, se avisa si es incoherente.
     def _as_float_or_none(v):
         if v is None:
             return None
@@ -1056,13 +1114,50 @@ Ejemplos de uso:
         except (TypeError, ValueError):
             return None
 
-    vf_scope_deg = _as_float_or_none(vf_scope_deg)
-    if vf_scope_deg is not None:
-        vf_scope_deg = abs(vf_scope_deg)
+    _vf_raw = screen_cfg.get("vf_scope_deg")
+    _vf_auto = _vf_raw is None or (
+        isinstance(_vf_raw, str)
+        and _vf_raw.strip().lower() in {"auto", "physical", "screen", "max"}
+    )
+    _phys_vf = None
+    try:
+        from scripts.screen_detect import coherent_vf_scope_deg
 
-    # Default histórico: 30° total => vf_scope_deg=15
-    if vf_scope_deg is None:
-        vf_scope_deg = 15.0
+        _phys_vf = coherent_vf_scope_deg(
+            screen_cfg.get("width"),
+            screen_cfg.get("height"),
+            screen_cfg.get("screen_diagonal_inches"),
+            screen_cfg.get("dist_to_screen_cm"),
+        )
+    except Exception:
+        _phys_vf = None
+
+    _dist = screen_cfg.get("dist_to_screen_cm")
+    if _vf_auto:
+        if _phys_vf is not None:
+            vf_scope_deg = _phys_vf
+            print(
+                f"[INIT] vf_scope_deg=auto → {vf_scope_deg:g}° "
+                f"(half-FOV físico del lado corto a {_dist}cm)"
+            )
+        else:
+            vf_scope_deg = 15.0
+            print(
+                "[INIT] ⚠ vf_scope_deg=auto pero falta geometría física "
+                "(width/height/screen_diagonal_inches/dist_to_screen_cm); usando 15°"
+            )
+    else:
+        vf_scope_deg = _as_float_or_none(_vf_raw)
+        if vf_scope_deg is not None:
+            vf_scope_deg = abs(vf_scope_deg)
+        if vf_scope_deg is None:  # Default histórico: 30° total => 15
+            vf_scope_deg = 15.0
+        if _phys_vf and abs(vf_scope_deg - _phys_vf) / _phys_vf > 0.05:
+            print(
+                f"[INIT] ⚠ vf_scope_deg={vf_scope_deg:g}° no coincide con el half-FOV "
+                f"físico del lado corto a {_dist}cm (~{_phys_vf:g}°). "
+                f"Pon `vf_scope_deg: auto` para calibrarlo automáticamente."
+            )
 
     # fuente de coordenadas
     coords_source = electrode_config.get("coordinate_source", "dynaphos_yaml")
@@ -1214,6 +1309,16 @@ Ejemplos de uso:
 
     print(f"       ✓ Fosfenos generados: {NUM_PHOSPHENES}")
     print()
+
+    # Feasibility gate: ningún fosfeno seleccionado debe caer fuera de pantalla.
+    # Aborta por defecto (override: screen.allow_offscreen: true).
+    _assert_phosphenes_onscreen(
+        mapper,
+        actual_width,
+        actual_height,
+        vf_scope_deg,
+        bool(screen_cfg.get("allow_offscreen", False)),
+    )
 
     if experiment_mode == "mapping":
         # ============================================

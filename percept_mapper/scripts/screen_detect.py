@@ -15,9 +15,10 @@ What is detected:
 - physical size (cm)        — Windows: EDID via WMI; elsewhere best-effort
 - diagonal (inches)         — derived from physical size
 
-The core px/deg mapping does NOT use the diagonal (it uses
-`screen_width / (2 * vf_scope_deg)`), so detection is about keeping the
-recorded physical geometry honest, not about changing stimulus positions.
+The detected geometry also feeds `physical_fov_deg` / `coherent_vf_scope_deg`,
+which derive the physically-correct `vf_scope_deg` (the shorter-side half-FOV
+at the viewing distance) so the deg↔px mapping `min(W,H) / (2 * vf_scope_deg)`
+stays coherent with the real screen instead of relying on a hand-typed value.
 
 CLI:
     python -m scripts.screen_detect            # print detected geometry + diff
@@ -70,6 +71,57 @@ class DisplayInfo:
         tag = " [primary]" if self.is_primary else ""
         name = self.name or "Unknown"
         return f"Monitor {self.index}{tag}: {name} — {res}, {phys}"
+
+    def half_fov_deg(self, dist_cm: float) -> dict | None:
+        """Half-FOV this display subtends at `dist_cm` (see `physical_fov_deg`)."""
+        if not self.resolution_px:
+            return None
+        return physical_fov_deg(
+            self.resolution_px[0], self.resolution_px[1],
+            self.diagonal_inches, dist_cm,
+        )
+
+
+# ── Physical field-of-view geometry ───────────────────────────────────────
+
+def physical_fov_deg(width_px, height_px, diagonal_inches, dist_cm) -> dict | None:
+    """Half-FOV (degrees) the screen subtends at `dist_cm`, from first principles.
+
+    Panel pixels are square, so the physical aspect equals the pixel aspect;
+    physical width/height are recovered from the diagonal + resolution. Returns
+    a dict of HALF-angles {'h','v','corner','min'} (deg), or None if any input
+    is missing. `min` is the shorter-side half-FOV — the largest full
+    iso-eccentricity ring that fits, and the physically-coherent vf_scope_deg.
+    """
+    try:
+        w, h = float(width_px), float(height_px)
+        diag_cm = float(diagonal_inches) * 2.54
+        dist = float(dist_cm)
+    except (TypeError, ValueError):
+        return None
+    if not (w > 0 and h > 0 and diag_cm > 0 and dist > 0):
+        return None
+    diag_px = math.hypot(w, h)
+    width_cm = diag_cm * w / diag_px
+    height_cm = diag_cm * h / diag_px
+
+    def half(size_cm: float) -> float:
+        return math.degrees(math.atan((size_cm / 2.0) / dist))
+
+    h_fov, v_fov = half(width_cm), half(height_cm)
+    return {
+        "h": h_fov,
+        "v": v_fov,
+        "corner": math.degrees(math.atan((diag_cm / 2.0) / dist)),
+        "min": min(h_fov, v_fov),
+    }
+
+
+def coherent_vf_scope_deg(width_px, height_px, diagonal_inches, dist_cm) -> float | None:
+    """vf_scope_deg that makes the isotropic deg→px mapping physically true:
+    the shorter-side half-FOV at `dist_cm`. None if geometry is unavailable."""
+    fov = physical_fov_deg(width_px, height_px, diagonal_inches, dist_cm)
+    return None if fov is None else round(fov["min"], 2)
 
 
 # ── Detection ────────────────────────────────────────────────────────────
@@ -363,6 +415,36 @@ def main(argv: list[str] | None = None) -> int:
           f"{f'{det_diag:.2f}' if det_diag else 'n/a'}\"")
     if det_diag and cfg_diag and abs(float(cfg_diag) - det_diag) / det_diag > 0.10:
         print("  ⚠ configured diagonal is off by >10% from the real display")
+
+    # vf_scope coherence: the physically-correct value depends on viewing
+    # distance (manual) + the detected geometry.
+    dist_cm = screen_cfg.get("dist_to_screen_cm")
+    cfg_vf = screen_cfg.get("vf_scope_deg")
+    fov = target.half_fov_deg(dist_cm) if (target.resolution_px and dist_cm) else None
+    if fov is not None:
+        coherent = round(fov["min"], 2)
+        if isinstance(cfg_vf, str):
+            cfg_vf_disp = cfg_vf
+        elif cfg_vf is not None:
+            cfg_vf_disp = f"{cfg_vf}°"
+        else:
+            cfg_vf_disp = "(unset)"
+        print(f"  vf_scope:   config {cfg_vf_disp}  →  physical (short side) "
+              f"{coherent}°   [screen reaches ±{fov['h']:.1f}° H, ±{fov['v']:.1f}° V "
+              f"at {dist_cm}cm]")
+        print(f"  max ecc:    full ring {coherent}° (short side)  |  "
+              f"horizontal ±{fov['h']:.1f}°  |  corner {fov['corner']:.1f}°   "
+              f"(at {dist_cm}cm)")
+        try:
+            cfg_vf_f = float(cfg_vf)
+            if abs(cfg_vf_f - coherent) / coherent > 0.05:
+                print(f"  ⚠ vf_scope_deg={cfg_vf}° is incoherent with the screen at "
+                      f"{dist_cm}cm — set `vf_scope_deg: auto` to derive it physically")
+        except (TypeError, ValueError):
+            pass
+    else:
+        print("  vf_scope:   need width/height/diagonal + dist_to_screen_cm to "
+              "compute the physical value")
 
     if args.write:
         if target.diagonal_inches is None and target.resolution_px is None:
