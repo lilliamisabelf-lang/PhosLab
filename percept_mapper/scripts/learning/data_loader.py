@@ -33,6 +33,7 @@ class PhospheneDataLoader:
         logs_dir="logs",
         mapping_experiments=None,
         logs_experiments=None,
+        input_mode=None,
     ):
         self.mapping_dir = Path(mapping_dir)
         self.logs_dir = Path(logs_dir)
@@ -42,6 +43,9 @@ class PhospheneDataLoader:
         self.logs_experiments = (
             None if logs_experiments is None else set(logs_experiments)
         )
+        # Filtro por modo de entrada de la sesión (pupil/gaze/mouse).
+        # None o 'all' => sin filtro.
+        self.input_mode = None if input_mode in (None, "all") else str(input_mode)
         self.dataset = []
         self._seen = set()
 
@@ -134,6 +138,14 @@ class PhospheneDataLoader:
         """Extrae filas del dataset desde un electrodo de mapping."""
         rows = []
 
+        # Filtro por modo de entrada de la sesión.
+        if self.input_mode and metadata.get("input_mode") != self.input_mode:
+            return rows
+
+        # Electrodos sin respuesta (status no_response) no aportan centroides.
+        if results.get("status") == "no_response":
+            return rows
+
         electrode_index = results.get("electrode_index")
         electrode_info = metadata.get("electrode_info", {})
         pred_deg = electrode_info.get("visual_position_deg", [None, None])
@@ -186,6 +198,19 @@ class PhospheneDataLoader:
                 continue
             if self.logs_experiments and exp_dir.name not in self.logs_experiments:
                 continue
+
+            # Filtro por modo de entrada: el modo se guarda a nivel de sesión.
+            if self.input_mode:
+                exp_meta_file = exp_dir / "metadata.json"
+                exp_input_mode = None
+                if exp_meta_file.exists():
+                    try:
+                        with open(exp_meta_file, "r", encoding="utf-8") as f:
+                            exp_input_mode = json.load(f).get("input_mode")
+                    except Exception:
+                        exp_input_mode = None
+                if exp_input_mode != self.input_mode:
+                    continue
 
             analysis_dir = exp_dir / "analysis"
             if not analysis_dir.exists():

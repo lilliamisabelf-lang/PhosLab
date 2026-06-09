@@ -139,6 +139,12 @@ def main():
         help="Conjunto de experimentos a usar (default: all)",
     )
     parser.add_argument(
+        "--input-mode",
+        choices=["all", "pupil", "gaze", "mouse"],
+        default="all",
+        help="Filtra observaciones por modo de entrada de la sesión (default: all)",
+    )
+    parser.add_argument(
         "--test-mode",
         choices=["none", "last", "select"],
         default="none",
@@ -193,6 +199,7 @@ def main():
     print("=" * 60)
     print(f"Modelo seleccionado: {args.model}")
     print(f"Scope dataset (train): {args.scope}")
+    print(f"Modo de entrada (datos): {args.input_mode}")
     print(f"Test mode: {args.test_mode}")
 
     mapping_path = Path(mapping_dir)
@@ -221,6 +228,7 @@ def main():
         logs_dir=logs_dir,
         mapping_experiments=mapping_filter,
         logs_experiments=logs_filter,
+        input_mode=args.input_mode,
     )
     dataset = loader.load_all()
 
@@ -245,6 +253,7 @@ def main():
             logs_dir=logs_dir,
             mapping_experiments=test_mapping_filter,
             logs_experiments=test_logs_filter,
+            input_mode=args.input_mode,
         )
         test_dataset = test_loader.load_all()
         if test_dataset:
