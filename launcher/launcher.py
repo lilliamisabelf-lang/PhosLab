@@ -512,6 +512,7 @@ class PipelineLauncher(QMainWindow):
         self._stack.addWidget(self._build_page_analysis())  # 2
         self._stack.addWidget(self._build_page_learning())  # 3
         self._stack.addWidget(self._build_page_optimized_map())  # 4
+        self._stack.addWidget(self._build_page_screen())  # 5
         root.addWidget(self._stack, stretch=1)
 
     def _build_sidebar(self):
@@ -543,6 +544,7 @@ class PipelineLauncher(QMainWindow):
             ("  Análisis", 2),
             ("  Aprendizaje", 3),
             ("  Mapa optimizado", 4),
+            ("  Pantalla", 5),
         ]
         self._nav_btns = []
         for label, idx in nav_items:
@@ -1440,6 +1442,215 @@ class PipelineLauncher(QMainWindow):
     # ──────────────────────────────────────────────────────────────────────
     # NAVEGACIÓN
     # ──────────────────────────────────────────────────────────────────────
+
+    # ── PÁGINA COMPROBACIÓN DE PANTALLA ────────────────────────────────────
+
+    def _build_page_screen(self):
+        w = QWidget()
+        lay = QVBoxLayout(w)
+        lay.setContentsMargins(24, 24, 24, 24)
+        lay.setSpacing(12)
+
+        title = QLabel("Comprobación de pantalla")
+        title.setObjectName("title")
+        lay.addWidget(title)
+
+        hint = QLabel(
+            "Detecta la geometría real del monitor (resolución y tamaño físico vía "
+            "EDID) y la compara con el bloque screen: de params.yaml. El mapeo "
+            "px/grado usa width/vf_scope, pero screen_diagonal_inches alimenta "
+            "validate_eye_tracker — conviene que sea correcto."
+        )
+        hint.setWordWrap(True)
+        hint.setStyleSheet("color: #4a5568; font-size: 13px;")
+        lay.addWidget(hint)
+
+        # Botones
+        btn_row = QHBoxLayout()
+        detect_btn = QPushButton("🔍  Detectar pantalla")
+        detect_btn.setObjectName("btn_green")
+        detect_btn.clicked.connect(self._run_screen_check)
+        btn_row.addWidget(detect_btn)
+        self._scr_override_btn = QPushButton(
+            "Sobrescribir params.yaml con valores detectados"
+        )
+        self._scr_override_btn.setObjectName("btn_amber")
+        self._scr_override_btn.setEnabled(False)
+        self._scr_override_btn.clicked.connect(self._override_screen_params)
+        btn_row.addWidget(self._scr_override_btn)
+        btn_row.addStretch()
+        lay.addLayout(btn_row)
+
+        # Tabla comparativa: params.yaml vs detectado
+        cmp_grp = QGroupBox("params.yaml  vs  monitor detectado")
+        grid = QGridLayout(cmp_grp)
+        grid.setHorizontalSpacing(28)
+        grid.setVerticalSpacing(8)
+
+        def _hdr(text):
+            l = QLabel(text)
+            l.setStyleSheet("color:#00d4ff; font-weight:600;")
+            return l
+
+        def _val():
+            l = QLabel("—")
+            l.setStyleSheet(
+                "font-family:'Cascadia Code','Consolas',monospace; color:#e9ecf5;"
+            )
+            return l
+
+        grid.addWidget(_hdr("Parámetro"), 0, 0)
+        grid.addWidget(_hdr("En params.yaml"), 0, 1)
+        grid.addWidget(_hdr("Detectado"), 0, 2)
+
+        rows = [
+            ("Resolución (px)", "res"),
+            ('Diagonal (")', "diag"),
+            ("Tamaño físico (cm)", "phys"),
+            ("Monitor", "name"),
+        ]
+        self._scr_cur = {}
+        self._scr_det = {}
+        for r, (label, key) in enumerate(rows, start=1):
+            grid.addWidget(QLabel(label), r, 0)
+            cur, det = _val(), _val()
+            grid.addWidget(cur, r, 1)
+            grid.addWidget(det, r, 2)
+            self._scr_cur[key] = cur
+            self._scr_det[key] = det
+        lay.addWidget(cmp_grp)
+
+        # Salida
+        out_grp = QGroupBox("Salida")
+        og = QVBoxLayout(out_grp)
+        self._scr_output = QTextEdit()
+        self._scr_output.setReadOnly(True)
+        self._scr_output.setStyleSheet(
+            "font-family:'Cascadia Code','Consolas',monospace; font-size:13px;"
+            "background:#0a0f1a; color:#9fb3c8;"
+            "border:0.5px solid rgba(100,120,200,0.15);"
+        )
+        og.addWidget(self._scr_output)
+        lay.addWidget(out_grp, stretch=1)
+
+        self._scr_detected = None
+        self._refresh_screen_current()
+        return w
+
+    def _scr_append(self, text=""):
+        for line in str(text).split("\n"):
+            self._scr_output.append(line)
+        self._scr_output.moveCursor(QTextCursor.MoveOperation.End)
+
+    def _refresh_screen_current(self):
+        """Rellena la columna 'En params.yaml' con los valores actuales."""
+        scr = load_yaml_safe(PARAMS_YAML).get("screen", {}) or {}
+        w, h = scr.get("width"), scr.get("height")
+        self._scr_cur["res"].setText(f"{w}x{h}" if w and h else "—")
+        diag = scr.get("screen_diagonal_inches")
+        self._scr_cur["diag"].setText(str(diag) if diag is not None else "—")
+        self._scr_cur["phys"].setText("—")  # params.yaml no guarda cm
+        self._scr_cur["name"].setText("—")
+
+    def _run_screen_check(self):
+        self._scr_output.clear()
+        self._scr_append("Detectando monitores…")
+        self._scr_output.repaint()
+
+        try:
+            import sys as _sys
+
+            if str(SIMULADOR_DIR) not in _sys.path:
+                _sys.path.insert(0, str(SIMULADOR_DIR))
+            from scripts.screen_detect import detect_displays, primary_display
+        except Exception as e:
+            self._scr_append(f"✗ No se pudo importar screen_detect: {e}")
+            self._log_msg(f"screen_detect no disponible: {e}", "error")
+            return
+
+        try:
+            displays = detect_displays()
+        except Exception as e:
+            self._scr_append(f"✗ Error de detección: {e}")
+            self._log_msg(f"Error detectando pantalla: {e}", "error")
+            return
+
+        if not displays:
+            self._scr_append("✗ No se detectaron monitores.")
+            self._log_msg("No se detectaron monitores", "warn")
+            return
+
+        for d in displays:
+            self._scr_append("  " + d.describe())
+
+        target = primary_display(displays)
+        self._scr_detected = target
+
+        res = target.resolution_px
+        self._scr_det["res"].setText(f"{res[0]}x{res[1]}" if res else "—")
+        diag = target.diagonal_inches
+        self._scr_det["diag"].setText(f"{diag:.2f}" if diag else "n/a")
+        if target.width_cm and target.height_cm:
+            self._scr_det["phys"].setText(
+                f"{target.width_cm:.1f} x {target.height_cm:.1f}"
+            )
+        else:
+            self._scr_det["phys"].setText("n/a")
+        self._scr_det["name"].setText(target.name or "Unknown")
+
+        self._refresh_screen_current()
+
+        scr = load_yaml_safe(PARAMS_YAML).get("screen", {}) or {}
+        cfg_diag = scr.get("screen_diagonal_inches")
+        stale = bool(
+            diag and cfg_diag and abs(float(cfg_diag) - diag) / diag > 0.10
+        )
+        if stale:
+            self._scr_append(
+                f'\n⚠ screen_diagonal_inches={cfg_diag} no coincide con el monitor '
+                f'real (~{diag:.1f}"). Pulsa "Sobrescribir" para corregirlo.'
+            )
+            self._log_msg("Pantalla: diagonal del config desfasada (>10%)", "warn")
+        else:
+            self._scr_append("\n✓ La configuración coincide con el monitor (±10%).")
+            self._log_msg("Comprobación de pantalla OK", "ok")
+
+        self._scr_override_btn.setEnabled(res is not None or diag is not None)
+
+    def _override_screen_params(self):
+        target = getattr(self, "_scr_detected", None)
+        if target is None:
+            self._scr_append("Primero ejecuta 'Detectar pantalla'.")
+            return
+        if not PARAMS_YAML.exists():
+            self._log_msg("params.yaml no encontrado", "error")
+            return
+
+        before = load_yaml_safe(PARAMS_YAML).get("screen", {}) or {}
+        screen_updates = {}
+        if target.resolution_px:
+            screen_updates["width"] = int(target.resolution_px[0])
+            screen_updates["height"] = int(target.resolution_px[1])
+        if target.diagonal_inches:
+            screen_updates["screen_diagonal_inches"] = round(
+                float(target.diagonal_inches), 2
+            )
+        if not screen_updates:
+            self._scr_append("Nada que escribir (sin geometría detectada).")
+            return
+
+        save_yaml_partial(PARAMS_YAML, {"screen": screen_updates})
+
+        self._scr_append("\nparams.yaml actualizado (bloque screen):")
+        for k, new in screen_updates.items():
+            old = before.get(k, "—")
+            self._scr_append(f"  {k}: {old} → {new}")
+        self._log_msg(
+            "params.yaml: bloque screen actualizado con valores detectados", "ok"
+        )
+
+        # La columna 'actual' ahora refleja los nuevos valores.
+        self._refresh_screen_current()
 
     def _show_page(self, idx: int):
         self._stack.setCurrentIndex(idx)
