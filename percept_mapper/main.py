@@ -1515,6 +1515,7 @@ Ejemplos de uso:
         if webcam_viewer:
             webcam_viewer.release()
 
+        consolidated_analysis_failed = False
         if SAVE_RESULTS:
             try:
                 from scripts.multi_electrode_analyzer import MultiElectrodeAnalyzer
@@ -1540,9 +1541,11 @@ Ejemplos de uso:
 
                 else:
                     print("⚠ No se pudieron generar resultados consolidados")
+                    consolidated_analysis_failed = True
 
             except Exception as e:
                 print(f"✗ ERROR en análisis consolidado: {e}")
+                consolidated_analysis_failed = True
                 import traceback
 
                 traceback.print_exc()
@@ -1579,6 +1582,9 @@ Ejemplos de uso:
             clock.tick(10)
 
         pygame.quit()
+        if consolidated_analysis_failed:
+            print("\n[ERROR] Programa finalizado con errores en el análisis consolidado")
+            sys.exit(1)
         print("\n[INFO] Programa finalizado")
         return
 

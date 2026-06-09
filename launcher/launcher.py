@@ -1537,6 +1537,7 @@ class PipelineLauncher(QMainWindow):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
         )
+        self._sim_had_error = False
         self._set_status("simulador", True)
         self._log_msg("Simulador lanzado — experimento en curso…")
         self._mark_step(2, False)  # Pendiente hasta que termine
@@ -1552,13 +1553,20 @@ class PipelineLauncher(QMainWindow):
         if "no encontrado en CSV" in line.lower() or "not found in csv" in line.lower():
             self._log_msg(f"WARN: {line}", "warn")
         elif "error" in line.lower():
+            self._sim_had_error = True
             self._log_msg(line, "error")
 
     def _on_sim_finished(self, returncode: int):
-        if returncode == 0:
+        if returncode == 0 and not getattr(self, "_sim_had_error", False):
             self._log_msg("OK: Experimento completado correctamente", "ok")
             self._mark_step(2, True)
             self._mark_step(3, True)
+            self._refresh_analysis()
+        elif returncode == 0:
+            self._log_msg(
+                "ERROR: El simulador terminó, pero se detectaron errores durante el análisis",
+                "error",
+            )
             self._refresh_analysis()
         else:
             self._log_msg(
