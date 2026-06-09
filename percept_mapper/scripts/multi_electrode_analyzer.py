@@ -53,23 +53,52 @@ class MultiElectrodeAnalyzer:
         self.consolidated_dir = self.experiment_dir / "consolidated_analysis"
         self.consolidated_dir.mkdir(parents=True, exist_ok=True)
 
-        # Parámetros de visualización (igual que en phosphene_mapping.py)
+        # Geometría px↔grados. Estos son solo VALORES POR DEFECTO; la geometría
+        # real (resolución, centro y px/grado ISOTRÓPICO) se adopta en
+        # analyze_all_electrodes desde los metadatos del primer electrodo
+        # (ver _adopt_geometry), evitando estos hardcodeados que asumían
+        # 1920×1080. Convenio pipeline: vf_scope_deg = semiancho (max ecc).
         self.screen_width = 1920
         self.screen_height = 1080
         self.screen_center = (960, 540)
-
-        # Parámetros de conversión píxeles → grados
-        # Convenio pipeline: vf_scope_deg es el semiancho (max ecc). Default histórico: 15°.
         self.vf_scope_deg = 15
-        self.fov_x_deg = [-self.vf_scope_deg, self.vf_scope_deg]
-        self.fov_y_deg = [-self.vf_scope_deg, self.vf_scope_deg]
+        # Escala ISOTRÓPICA anclada al lado menor (mismo criterio que el mapper):
+        # un grado ocupa los mismos píxeles en X e Y (los píxeles son cuadrados).
+        ppd = float(min(self.screen_width, self.screen_height)) / (2.0 * self.vf_scope_deg)
+        self.pixels_per_degree_x = ppd
+        self.pixels_per_degree_y = ppd
+        self.fov_x_deg = [-(self.screen_width / 2.0) / ppd, (self.screen_width / 2.0) / ppd]
+        self.fov_y_deg = [-(self.screen_height / 2.0) / ppd, (self.screen_height / 2.0) / ppd]
         self.fov_width_deg = self.fov_x_deg[1] - self.fov_x_deg[0]
         self.fov_height_deg = self.fov_y_deg[1] - self.fov_y_deg[0]
-        self.pixels_per_degree_x = self.screen_width / self.fov_width_deg
-        self.pixels_per_degree_y = self.screen_height / self.fov_height_deg
+        self._geometry_locked = False
 
         print(f"[MultiElectrodeAnalyzer] Experimento: {self.experiment_dir.name}")
         print(f"                         Carpeta consolidada: {self.consolidated_dir}")
+
+    def _adopt_geometry(self, analyzer):
+        """Adopta la geometría real (resolución, centro, px/grado isotrópico) del
+        analizador de un electrodo, leída de sus metadatos de sesión. Se invoca
+        una sola vez (primer electrodo válido) para que las distancias
+        consolidadas y el mapa usen la escala correcta de la sesión en lugar de
+        los valores por defecto hardcodeados."""
+        if self._geometry_locked:
+            return
+        try:
+            self.pixels_per_degree_x = float(analyzer.pixels_per_degree_x)
+            self.pixels_per_degree_y = float(analyzer.pixels_per_degree_y)
+            self.screen_width = int(analyzer.screen_width)
+            self.screen_height = int(analyzer.screen_height)
+            self.screen_center = tuple(analyzer.screen_center)
+        except (AttributeError, TypeError, ValueError):
+            return
+        self._geometry_locked = True
+        print(
+            f"                         Geometría adoptada de metadatos: "
+            f"{self.pixels_per_degree_x:.2f} px/° (X), "
+            f"{self.pixels_per_degree_y:.2f} px/° (Y), "
+            f"{self.screen_width}×{self.screen_height}"
+        )
 
     def analyze_all_electrodes(self):
         """
@@ -121,6 +150,9 @@ class MultiElectrodeAnalyzer:
             try:
                 # Usar el analizador individual
                 analyzer = PhospheneMappingAnalyzer(electrode_dir)
+                # Heredar la geometría real de la sesión (px/grado isotrópico,
+                # resolución y centro) del primer electrodo analizado.
+                self._adopt_geometry(analyzer)
                 results = analyzer.analyze_electrode_repetitions()
 
                 if results and results.get("mean_position"):

@@ -22,6 +22,10 @@ import yaml
 
 _ACTIVE_RESPONSE_SCREEN = None
 _APRILTAG_OVERLAY = None
+# Overlay de MAPPING DEBUG MODE (rejilla + marcador de fosfeno). None salvo que
+# debug.mapping_debug_mode esté activo. Se dibuja en cada _display_flip, así
+# que aparece en todas las fases (prestim/stim/poststim/drawing).
+_MAPPING_DEBUG_OVERLAY = None
 
 
 def _set_active_response_screen(response_screen):
@@ -42,11 +46,42 @@ def _close_response_screen(response_screen=None):
 
 
 def _display_flip(screen=None):
-    if _APRILTAG_OVERLAY is not None:
-        target = screen or pygame.display.get_surface()
-        if target is not None:
+    target = screen or pygame.display.get_surface()
+    if target is not None:
+        # La rejilla de debug va primero (fondo); los AprilTags de las esquinas
+        # quedan por encima para no perder el surface tracking.
+        if _MAPPING_DEBUG_OVERLAY is not None:
+            _MAPPING_DEBUG_OVERLAY.draw(target)
+        if _APRILTAG_OVERLAY is not None:
             _APRILTAG_OVERLAY.draw(target)
     pygame.display.flip()
+
+
+def _set_mapping_debug_marker(stimulation_screen):
+    """Fija el marcador del overlay de debug en la posición del fosfeno actual.
+    No-op si el debug está desactivado o es un catch trial (sin fosfeno)."""
+    overlay = _MAPPING_DEBUG_OVERLAY
+    if overlay is None or not getattr(stimulation_screen, "show_phosphene", False):
+        return
+    px = stimulation_screen.phosphene_position
+    mapper = getattr(stimulation_screen, "dynaphos_mapper", None)
+    idx = getattr(stimulation_screen, "active_electrode_index", None)
+    deg = ecc = polar = None
+    if mapper is not None and idx is not None:
+        try:
+            info = mapper.get_electrode_info(idx)
+            deg = info["visual_position_deg"]
+            ecc = info.get("eccentricity_deg")
+            polar = float(np.degrees(np.arctan2(deg[1], deg[0])))
+        except Exception:
+            deg = ecc = polar = None
+    if ecc is None:  # fallback: derivar de px con la geometría del overlay
+        dx = (px[0] - overlay.cx) / max(overlay.ppd_x, 1e-6)
+        dy = -(px[1] - overlay.cy) / max(overlay.ppd_y, 1e-6)
+        deg = (dx, dy)
+        ecc = float(np.hypot(dx, dy))
+        polar = float(np.degrees(np.arctan2(dy, dx)))
+    overlay.set_phosphene(px, deg, ecc, polar, electrode_index=idx)
 
 
 # ============================================
@@ -264,6 +299,7 @@ from core.mouse_tracker import MouseTracker
 from core.pupil_tracker import PupilTracker
 from scripts.anchor_screen import AnchorScreen
 from scripts.stimulation_screen import StimulationScreen
+from scripts.debug_overlay import MappingDebugOverlay
 from scripts.tablet import DrawingTablet
 from scripts.webcam_viewer import WebcamViewer
 from scripts.dynaphos_adapter import (
@@ -679,6 +715,27 @@ Ejemplos de uso:
     native_height = display_info.current_h
     print(f"[INIT] Resolución nativa del monitor: {native_width}x{native_height}")
 
+    # Aviso best-effort si la geometría física del config está desfasada
+    # respecto al monitor real (típico al copiar params.yaml entre PCs). No
+    # cambia el comportamiento: el mapeo px/deg usa width/vf_scope, pero
+    # screen_diagonal_inches alimenta validate_eye_tracker. Corrige con:
+    #   python -m scripts.screen_detect --write
+    try:
+        from scripts.screen_detect import detect_displays, primary_display
+
+        _disp = primary_display(detect_displays())
+        _cfg_diag = screen_config.get("screen_diagonal_inches")
+        if _disp is not None and _disp.diagonal_inches and _cfg_diag:
+            _det = _disp.diagonal_inches
+            if abs(float(_cfg_diag) - _det) / _det > 0.10:
+                print(
+                    f"[INIT] ⚠ screen_diagonal_inches={_cfg_diag} no coincide con el "
+                    f"monitor detectado (~{_det:.1f}\"). "
+                    f"Ejecuta: python -m scripts.screen_detect --write"
+                )
+    except Exception:
+        pass  # detección best-effort; nunca debe romper el arranque
+
     # Tamaño de ventana adaptativo: por defecto la ventana se ajusta a la
     # pantalla actual para funcionar en distintos PCs y monitores. Se puede
     # desactivar poniendo `screen.adaptive: false` en params.yaml para usar
@@ -1029,6 +1086,19 @@ Ejemplos de uso:
         implant_id_filter=implant_id_filter,
     )
 
+    # MAPPING DEBUG MODE: rejilla + marcador de fosfeno. Se construye desde la
+    # geometría del mapper (mismo px/grado y centro que las posiciones de los
+    # fosfenos) para que la rejilla quede alineada con los marcadores.
+    global _MAPPING_DEBUG_OVERLAY
+    _MAPPING_DEBUG_OVERLAY = MappingDebugOverlay.from_config_and_mapper(
+        config, mapper, (actual_width, actual_height)
+    )
+    if _MAPPING_DEBUG_OVERLAY is not None:
+        print(
+            "[INIT] 🔧 MAPPING DEBUG MODE activo "
+            f"(anillos cada {_MAPPING_DEBUG_OVERLAY.ring_step_deg:g}°)"
+        )
+
     print(f"       ✓ Mapper inicializado")
     display_metadata = mapper.get_display_metadata()
     print()
@@ -1261,6 +1331,7 @@ Ejemplos de uso:
                 gaze_trace=gaze_trace,
                 display_info=display_metadata,
                 apriltag_overlay=_APRILTAG_OVERLAY,
+                debug_overlay=_MAPPING_DEBUG_OVERLAY,
                 timing_config={
                     "prestimulation_ms": PRESTIMULATION_MS,
                     "stimulation_ms": STIMULATION_MS,
@@ -2147,6 +2218,11 @@ def run_prestimulation(
     # eternos cuando el participante no puede fijar — no un fallback que
     # deje pasar el stim sin fijación.
     print("[1/4] PRESTIMULATION: Esperando fijación...")
+
+    # Nuevo trial: limpiar el marcador del trial anterior (la rejilla de debug
+    # permanece; el marcador reaparece al disparar el siguiente fosfeno).
+    if _MAPPING_DEBUG_OVERLAY is not None:
+        _MAPPING_DEBUG_OVERLAY.clear()
     print(
         f"      (target=center, tolerance={anchor_screen.tolerance_radius}px, needed={PRESTIMULATION_MS}ms)"
     )
@@ -2249,6 +2325,9 @@ def run_stimulation(
 
     # ⭐ ACTIVAR el punto brillante (solo aquí, después de prestimulation exitosa)
     stimulation_screen.set_show_phosphene(True)
+    # Debug: fijar el marcador en la posición del fosfeno (persiste hasta el
+    # próximo prestim, cubriendo poststim y la fase de respuesta).
+    _set_mapping_debug_marker(stimulation_screen)
 
     stim_start_time = time.time()
     phosphene_metadata["events"]["stim_start"] = datetime.now().isoformat()

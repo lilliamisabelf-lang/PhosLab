@@ -229,19 +229,39 @@ class DynaphosMapper:
         # - assumed_fov_total_deg = 2 * vf_scope_deg
         # NOTA: vf_scope_deg ya fue normalizado arriba para fijar run.view_angle.
 
-        self.fov_x_deg = [-(vf_scope_deg), (vf_scope_deg)]
-        self.fov_y_deg = [-(vf_scope_deg), (vf_scope_deg)]
+        # ── Escala grados→píxeles: ISOTRÓPICA ───────────────────────────────
+        # Los píxeles del panel son cuadrados, así que un grado de ángulo visual
+        # DEBE ocupar el mismo nº de píxeles en X e Y. Escalar cada eje por
+        # separado (width/FOV vs height/FOV) en una pantalla no cuadrada deforma
+        # el campo: los fosfenos caen en ángulos polares equivocados y los
+        # contornos de iso-excentricidad (círculos reales) se dibujan como
+        # elipses con el aspect ratio de la pantalla. Una sola escala px/grado
+        # corrige ambas cosas.
+        #
+        # Anclamos al lado MENOR de la pantalla para que TODO el rango
+        # ±vf_scope_deg quepa sin recorte en ambos ejes; el lado mayor queda con
+        # margen sin usar (preferible a recortar fosfenos cerca del meridiano
+        # corto).
+        fov_total_deg = 2.0 * vf_scope_deg
+        pixels_per_degree = float(min(screen_width, screen_height)) / fov_total_deg
+        self.pixels_per_degree_x = pixels_per_degree
+        self.pixels_per_degree_y = pixels_per_degree
 
-        # Calcular píxeles por grado
-        fov_width_deg = self.fov_x_deg[1] - self.fov_x_deg[0]
-        fov_height_deg = self.fov_y_deg[1] - self.fov_y_deg[0]
+        # FOV realmente VISIBLE por eje: difiere entre X e Y por el aspect ratio
+        # aunque la escala px/grado sea única. Se reporta en los metadatos para
+        # que el analizador conozca el campo cubierto.
+        half_w_deg = (screen_width / 2.0) / pixels_per_degree
+        half_h_deg = (screen_height / 2.0) / pixels_per_degree
+        self.fov_x_deg = [-half_w_deg, half_w_deg]
+        self.fov_y_deg = [-half_h_deg, half_h_deg]
 
-        self.pixels_per_degree_x = screen_width / fov_width_deg
-        self.pixels_per_degree_y = screen_height / fov_height_deg
-
-        print(f"                 Campo visual: {fov_width_deg}° × {fov_height_deg}°")
         print(
-            f"                 Escala: {self.pixels_per_degree_x:.1f} px/grado (X), {self.pixels_per_degree_y:.1f} px/grado (Y)"
+            f"                 Escala: {pixels_per_degree:.2f} px/grado "
+            f"(isotrópica, anclada al lado menor de la pantalla)"
+        )
+        print(
+            f"                 Campo visible: ±{half_w_deg:.1f}° (X) × ±{half_h_deg:.1f}° (Y) "
+            f"| max ecc de diseño ±{vf_scope_deg:g}°"
         )
 
         # ============================================

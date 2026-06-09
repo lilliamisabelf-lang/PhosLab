@@ -40,6 +40,7 @@ class PhospheneMappingExperiment:
         experiment_name="default",
         experiment_dir=None,
         apriltag_overlay=None,
+        debug_overlay=None,
     ):
         """
         Inicializa un experimento de mapeo de fosfenos
@@ -75,6 +76,7 @@ class PhospheneMappingExperiment:
         self.gaze_trace = gaze_trace
         self.display_info = display_info
         self.apriltag_overlay = apriltag_overlay
+        self.debug_overlay = debug_overlay
         self.timing_config = timing_config
         self.electrode_index = electrode_index
         self.electrode_info = electrode_info
@@ -398,6 +400,11 @@ class PhospheneMappingExperiment:
             self.clock.tick(60)
 
     def _display_flip(self):
+        # Rejilla + marcador de debug primero (fondo), AprilTags por encima.
+        # Se dibuja sobre la pantalla (display), nunca sobre el canvas de la
+        # tablet, así que los PNG de respuesta guardados quedan limpios.
+        if self.debug_overlay is not None:
+            self.debug_overlay.draw(self.screen)
         if self.apriltag_overlay is not None:
             self.apriltag_overlay.draw(self.screen)
         pygame.display.flip()
