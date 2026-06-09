@@ -65,6 +65,13 @@ Todo el flujo se puede controlar desde el lanzador grafico.
 - percept_mapper/logs/: resultados del modo standard y analisis por experimento.
 - percept_mapper/learning_results/: modelos y metricas de aprendizaje.
 
+## Guias de configuracion (pantalla y hardware)
+Guias detalladas en `percept_mapper/`:
+- [Pantalla y campo visual](percept_mapper/SCREEN_SETUP.md) — mapeo grados↔pixeles, `vf_scope_deg: auto`, detector de pantalla y bloqueo de fosfenos fuera de pantalla.
+- [Eye tracker Pupil Core](percept_mapper/PUPIL_SETUP.md)
+- [Respuesta por sacada](percept_mapper/SACCADE_SETUP.md)
+- [Tableta Wacom](percept_mapper/WACOM_SETUP.md)
+
 ## Flujo del pipeline paso a paso
 ### 1) Generacion de coordenadas (implant_explorer / phosLab)
 Se define el implante y se exporta un CSV con las coordenadas de los electrodos. El lanzador vigila la carpeta de implant_explorer y copia el CSV a percept_mapper/config/.
