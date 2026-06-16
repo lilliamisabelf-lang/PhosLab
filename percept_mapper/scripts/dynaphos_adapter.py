@@ -700,9 +700,19 @@ class DynaphosMapper:
             visual_deg_x[electrode_index] ** 2 + visual_deg_y[electrode_index] ** 2
         )
 
+        # Identidad de implante (solo disponible si las coordenadas vienen de un
+        # CSV phosLab con columna implant_id; None en modo Dynaphos YAML o CSV
+        # de un único implante sin esa columna).
+        index_map = getattr(self, "_electrode_index_map", {})
+        implant_id, implant_local_index = index_map.get(electrode_index, (None, None))
+
         # Convertir a tipos Python para que sea JSON-serializable (evitar numpy.float64, etc.)
         return {
             "index": int(electrode_index),
+            "implant_id": implant_id,
+            "implant_local_index": (
+                None if implant_local_index is None else int(implant_local_index)
+            ),
             "cortex_position_mm": (
                 None
                 if cortex_x is None

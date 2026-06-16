@@ -5,13 +5,12 @@ experiment:
 experiment_mode: mapping
 phosphene_mapping:
   electrodes_by_implant:
-  - implant_id: 66842a432a5b
+  - implant_id: 696e3e00f0fe
     electrode_index:
     - 1
     - 2
     - 3
-    - 10
-  num_repetitions: 10
+  num_repetitions: 2
   experiment_name: mapeo_multiples_electrodos
   interstimulation_between_reps: true
   enabled: true
@@ -27,20 +26,20 @@ phosphene_mapping:
   no_immediate_repeat: true
   num_practice_trials: 2
   isi_jitter_ms: 200
-input_mode: pupil
+input_mode: gaze
 drawing_input: both
 response_mode: drawing
 screen:
-  width: 1920
-  height: 1080
+  width: 1536
+  height: 864
   fullscreen: true
   background_color:
   - 0
   - 0
   - 0
-  screen_diagonal_inches: 13.3
+  screen_diagonal_inches: 15.33
   dist_to_screen_cm: 60
-  vf_scope_deg: 15
+  vf_scope_deg: 9.04
   anchor_circle:
     radius: 50
     color:
@@ -49,6 +48,7 @@ screen:
     - 0
     thickness: 3
     tolerance_radius: 50
+  monitor_index: 0
 timing:
   prestimulation: 193
   stimulation: 400
@@ -135,7 +135,7 @@ retinotopic_mapping:
   array_type: shanks_10x32
   implant_id_filter: all
   coordinate_source: phoslab_csv
-  coords_csv_path: C:/Users/lilli/Desktop/PhosLab/percept_mapper/config/exported_rf_20260603_155324.csv
+  coords_csv_path: C:/PhosLab/percept_mapper/config/synthetic_4ecc_4el.csv
   coordinate_files:
     shanks_10x16: config/coords_shanks_10x16.yaml
     shanks_10x32: config/coords_shanks_10x32.yaml
@@ -181,7 +181,7 @@ pupil:
     beta: 0.001
     d_cutoff: 1.0
 apriltag_overlay:
-  enabled: true
+  enabled: false
   png_dir: percept_mapper/assets/apriltags
   tag_files:
   - tag_0.png

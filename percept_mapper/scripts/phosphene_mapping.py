@@ -41,6 +41,7 @@ class PhospheneMappingExperiment:
         experiment_dir=None,
         apriltag_overlay=None,
         debug_overlay=None,
+        input_mode="mouse",
     ):
         """
         Inicializa un experimento de mapeo de fosfenos
@@ -60,6 +61,8 @@ class PhospheneMappingExperiment:
             experiment_name: Nombre descriptivo del experimento
             experiment_dir: Si se proporciona, usa esta carpeta en lugar de crear una nueva
                             (usado en modo multi-electrodo para evitar carpetas duplicadas)
+            input_mode: 'mouse' | 'gaze' | 'pupil' — modo de entrada de la sesión,
+                        guardado en el metadata para el filtro de aprendizaje.
         """
         print(
             f"\n[PhospheneMappingExperiment] Inicializando mapeo de electrodo {electrode_index}"
@@ -82,6 +85,7 @@ class PhospheneMappingExperiment:
         self.electrode_info = electrode_info
         self.num_repetitions = num_repetitions
         self.experiment_name = experiment_name
+        self.input_mode = input_mode
 
         # Crear carpeta del experimento de mapeo
         experiment_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -107,6 +111,7 @@ class PhospheneMappingExperiment:
             "electrode_index": electrode_index,
             "electrode_info": electrode_info,
             "display": display_info,
+            "input_mode": input_mode,
             "num_repetitions": num_repetitions,
             "timing": timing_config,
             "repetitions": [],  # Se llenará con datos de cada repetición

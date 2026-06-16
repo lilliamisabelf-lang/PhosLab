@@ -15,6 +15,7 @@ venv/
 **/logs/
 **/mapping_experiments/
 **/learning_results/
+percept_mapper/config/gaze_calibration.json
 
 # Tool caches
 .pytest_cache/

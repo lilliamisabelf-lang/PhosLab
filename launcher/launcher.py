@@ -1481,6 +1481,19 @@ class PipelineLauncher(QMainWindow):
         btn_row.addStretch()
         lay.addLayout(btn_row)
 
+        # Selector de monitor (se puebla tras "Detectar pantalla")
+        sel_row = QHBoxLayout()
+        sel_row.addWidget(QLabel("Monitor para la simulación:"))
+        self._scr_monitor_combo = QComboBox()
+        self._scr_monitor_combo.setMinimumWidth(320)
+        self._scr_monitor_combo.setEnabled(False)
+        self._scr_monitor_combo.currentIndexChanged.connect(self._on_monitor_selected)
+        sel_row.addWidget(self._scr_monitor_combo)
+        sel_row.addStretch()
+        lay.addLayout(sel_row)
+
+        self._scr_all_displays = []   # lista de DisplayInfo tras la detección
+
         # Tabla comparativa: params.yaml vs detectado
         cmp_grp = QGroupBox("params.yaml  vs  monitor detectado")
         grid = QGridLayout(cmp_grp)
@@ -1583,7 +1596,23 @@ class PipelineLauncher(QMainWindow):
         for d in displays:
             self._scr_append("  " + d.describe())
 
-        target = primary_display(displays)
+        # Guardar lista y poblar combo
+        self._scr_all_displays = displays
+        self._scr_monitor_combo.blockSignals(True)
+        self._scr_monitor_combo.clear()
+        primary_idx = 0
+        for i, d in enumerate(displays):
+            tag = " [primary]" if d.is_primary else ""
+            res = f"{d.resolution_px[0]}x{d.resolution_px[1]}" if d.resolution_px else "?"
+            label = f"Monitor {d.index}{tag}: {d.name or 'Unknown'} — {res}"
+            self._scr_monitor_combo.addItem(label)
+            if d.is_primary:
+                primary_idx = i
+        self._scr_monitor_combo.setCurrentIndex(primary_idx)
+        self._scr_monitor_combo.setEnabled(True)
+        self._scr_monitor_combo.blockSignals(False)
+
+        target = displays[primary_idx]
         self._scr_detected = target
 
         res = target.resolution_px
@@ -1669,7 +1698,18 @@ class PipelineLauncher(QMainWindow):
             screen_updates["screen_diagonal_inches"] = round(
                 float(target.diagonal_inches), 2
             )
-        if not screen_updates:
+        # Guardar el índice del monitor seleccionado para que main.py use el correcto
+        screen_updates["monitor_index"] = int(target.index)
+
+        # Recalcular vf_scope_deg según la geometría física del monitor seleccionado
+        current_cfg = load_yaml_safe(PARAMS_YAML).get("screen", {}) or {}
+        dist_cm = current_cfg.get("dist_to_screen_cm")
+        if dist_cm and target.resolution_px and target.diagonal_inches:
+            fov = target.half_fov_deg(float(dist_cm))
+            if fov is not None:
+                screen_updates["vf_scope_deg"] = round(fov["min"], 2)
+
+        if not any(k in screen_updates for k in ("width", "screen_diagonal_inches")):
             self._scr_append("Nada que escribir (sin geometría detectada).")
             return
 
@@ -1685,6 +1725,27 @@ class PipelineLauncher(QMainWindow):
 
         # La columna 'actual' ahora refleja los nuevos valores.
         self._refresh_screen_current()
+
+    def _on_monitor_selected(self, combo_idx: int):
+        """Actualiza la tabla y self._scr_detected cuando el usuario elige otro monitor."""
+        displays = getattr(self, "_scr_all_displays", [])
+        if not displays or combo_idx < 0 or combo_idx >= len(displays):
+            return
+        target = displays[combo_idx]
+        self._scr_detected = target
+
+        res = target.resolution_px
+        self._scr_det["res"].setText(f"{res[0]}x{res[1]}" if res else "—")
+        diag = target.diagonal_inches
+        self._scr_det["diag"].setText(f"{diag:.2f}" if diag else "n/a")
+        if target.width_cm and target.height_cm:
+            self._scr_det["phys"].setText(
+                f"{target.width_cm:.1f} x {target.height_cm:.1f}"
+            )
+        else:
+            self._scr_det["phys"].setText("n/a")
+        self._scr_det["name"].setText(target.name or "Unknown")
+        self._scr_override_btn.setEnabled(res is not None or diag is not None)
 
     def _show_page(self, idx: int):
         self._stack.setCurrentIndex(idx)
@@ -2309,7 +2370,7 @@ class PipelineLauncher(QMainWindow):
         self._calibrate_btn.setVisible(mode == "gaze")
 
     def _run_gaze_calibration(self):
-        """Lanza la calibración de 5 puntos del eye tracker en un proceso separado."""
+        """Lanza la calibración de 9 puntos del eye tracker en un proceso separado."""
         calib_script = SIMULADOR_DIR / "calibrate_gaze.py"
         if not calib_script.exists():
             from PyQt6.QtWidgets import QMessageBox
@@ -2531,14 +2592,86 @@ class PipelineLauncher(QMainWindow):
         self._exp_detail.clear()
         self._refresh_analysis()
 
-    def _populate_tree(self, parent_item, root_path: Path):
+    def _populate_tree(self, parent_item, root_path: Path, implant_codes=None):
         for child in sorted(root_path.iterdir()):
             if not child.is_dir():
                 continue
-            item = QTreeWidgetItem([child.name])
+            label = child.name
+            if child.name.startswith("electrode_") and implant_codes:
+                label = self._electrode_tree_label(child, implant_codes)
+            item = QTreeWidgetItem([label])
             item.setData(0, Qt.ItemDataRole.UserRole, str(child))
             parent_item.addChild(item)
-            self._populate_tree(item, child)
+
+            child_codes = implant_codes
+            if not child.name.startswith("electrode_") and self._has_electrode_subdirs(child):
+                child_codes = self._build_implant_codes(child)
+                if child_codes:
+                    legend = "\n".join(f"{c} = {i}" for i, c in child_codes.items())
+                    item.setToolTip(0, legend)
+
+            self._populate_tree(item, child, implant_codes=child_codes)
+
+    def _has_electrode_subdirs(self, path: Path) -> bool:
+        return any(
+            c.is_dir() and c.name.startswith("electrode_") for c in path.iterdir()
+        )
+
+    def _build_implant_codes(self, experiment_dir: Path) -> dict:
+        """Asigna un código corto (A, B, C...) a cada implant_id distinto
+        encontrado en las carpetas electrode_<idx> de un experimento, en
+        orden de aparición. Devuelve {} si solo hay un implante (o ninguno
+        con implant_id conocido) — en ese caso no hace falta codificar nada."""
+        import string
+
+        seen = []
+        for child in sorted(experiment_dir.iterdir()):
+            if not (child.is_dir() and child.name.startswith("electrode_")):
+                continue
+            meta_file = child / "metadata.json"
+            if not meta_file.exists():
+                continue
+            try:
+                with open(meta_file, encoding="utf-8") as f:
+                    meta = json.load(f)
+            except Exception:
+                continue
+            implant_id = (meta.get("electrode_info") or {}).get("implant_id")
+            if implant_id is not None and implant_id not in seen:
+                seen.append(implant_id)
+        if len(seen) < 2:
+            return {}
+        return {imp: string.ascii_uppercase[i] for i, imp in enumerate(seen)}
+
+    def _electrode_tree_label(self, electrode_dir: Path, implant_codes: dict) -> str:
+        """Etiqueta legible para una carpeta electrode_<idx_global>.
+
+        El nombre de la carpeta sigue usando el índice global (no se toca,
+        lo necesita multi_electrode_analyzer.py para cruzar resultados).
+        Aquí solo se añade, a la derecha, el índice LOCAL dentro de su
+        implante + un código corto (A/B/C...) en vez del implant_id
+        completo — leídos de metadata.json — para que un experimento con
+        varios implantes no se vea como una lista de índices sin relación
+        entre sí (p.ej. "069, 139, 230, 232, 332") cuando en realidad son
+        electrodo 69 de 3 implantes distintos y electrodo 71 de otros 2.
+        El código de cada implante se puede consultar en el tooltip de la
+        carpeta del experimento.
+        """
+        meta_file = electrode_dir / "metadata.json"
+        if not meta_file.exists():
+            return electrode_dir.name
+        try:
+            with open(meta_file, encoding="utf-8") as f:
+                meta = json.load(f)
+        except Exception:
+            return electrode_dir.name
+        info = meta.get("electrode_info") or {}
+        implant_id = info.get("implant_id")
+        local_idx = info.get("implant_local_index")
+        code = implant_codes.get(implant_id)
+        if implant_id is None or code is None:
+            return electrode_dir.name
+        return f"{electrode_dir.name}   [{local_idx}:{code}]"
 
     # ──────────────────────────────────────────────────────────────────────
     # APRENDIZAJE

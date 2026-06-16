@@ -1437,6 +1437,7 @@ Ejemplos de uso:
                 display_info=display_metadata,
                 apriltag_overlay=_APRILTAG_OVERLAY,
                 debug_overlay=_MAPPING_DEBUG_OVERLAY,
+                input_mode=input_mode,
                 timing_config={
                     "prestimulation_ms": PRESTIMULATION_MS,
                     "stimulation_ms": STIMULATION_MS,
@@ -1789,6 +1790,7 @@ Ejemplos de uso:
         "num_phosphenes": NUM_PHOSPHENES,  # Número de fosfenos activados (de Dynaphos)
         "phosphene_positions": PHOSPHENE_POSITIONS,  # Posiciones calculadas por Dynaphos
         "display": display_metadata,
+        "input_mode": input_mode,
         "timing": {
             "prestimulation_ms": PRESTIMULATION_MS,
             "stimulation_ms": STIMULATION_MS,

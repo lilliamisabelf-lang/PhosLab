@@ -149,10 +149,35 @@ def plot_error_vs_ecc(results: dict, out: Path, rings: dict[int, float]) -> None
     return {k: (float(np.mean(groups[k])), float(np.std(groups[k], ddof=1))) for k in eccs}
 
 
+def _implant_labels(elec_ids: list[int], results: dict) -> tuple[dict[int, str], dict[str, str]]:
+    """Per-electrode plot labels + a short-code legend for multi-implant CSVs.
+
+    With a single implant (or YAML mode, where implant_id is None) this is a
+    no-op: labels are just the global index, as before. With 2+ implants,
+    labels become "<code>:<local_index>" (e.g. "B:67") so the implant origin
+    is visible directly on the plot instead of requiring the offset table.
+    """
+    implant_of = {e: results["electrodes"][str(e)].get("implant_id") for e in elec_ids}
+    unique_implants = list(dict.fromkeys(v for v in implant_of.values() if v is not None))
+    if len(unique_implants) < 2:
+        return {e: str(e) for e in elec_ids}, {}
+
+    import string
+    codes = {imp: string.ascii_uppercase[i] for i, imp in enumerate(unique_implants)}
+    label_of = {}
+    for e in elec_ids:
+        imp = implant_of[e]
+        local = results["electrodes"][str(e)].get("implant_local_index")
+        label_of[e] = f"{codes[imp]}:{local}" if imp is not None else str(e)
+    legend = {code: imp for imp, code in codes.items()}
+    return label_of, legend
+
+
 def plot_true_vs_measured(results: dict, out: Path, rings: dict[int, float]) -> None:
     fig, ax = plt.subplots(figsize=(9, 9))
     elec_ids = sorted((int(k) for k in results["electrodes"]), key=int)
     cmap = plt.cm.tab20(np.linspace(0, 1, len(elec_ids)))
+    label_of, implant_legend = _implant_labels(elec_ids, results)
 
     eccs_seen = set(rings.values())
     max_r = 1.0
@@ -175,7 +200,7 @@ def plot_true_vs_measured(results: dict, out: Path, rings: dict[int, float]) -> 
         ax.errorbar(mx, my, xerr=sx, yerr=sy, fmt="o", ms=9, color=c,
                     ecolor=c, elinewidth=1.4, capsize=3, mec="black", mew=0.6,
                     zorder=5)
-        ax.annotate(str(e), (mx, my), textcoords="offset points", xytext=(7, 5),
+        ax.annotate(label_of[e], (mx, my), textcoords="offset points", xytext=(7, 5),
                     fontsize=8, color="black")
 
     # iso-eccentricity reference rings + axes
@@ -195,6 +220,11 @@ def plot_true_vs_measured(results: dict, out: Path, rings: dict[int, float]) -> 
     ax.set_title(f"True (stimulus) vs measured (mean +/-1 SD) positions\n{results['experiment_name']}",
                  fontsize=12, fontweight="bold")
     ax.grid(alpha=0.2)
+    if implant_legend:
+        legend_txt = "\n".join(f"{code} = {imp}" for code, imp in sorted(implant_legend.items()))
+        ax.text(0.02, 0.02, legend_txt, transform=ax.transAxes, fontsize=7,
+                color="#555555", va="bottom", ha="left",
+                bbox=dict(boxstyle="round", fc="white", ec="#cccccc", alpha=0.85))
     from matplotlib.lines import Line2D
     ax.legend(handles=[
         Line2D([], [], marker="s", ls="", mfc="none", mec="black", label="true (stimulus)"),

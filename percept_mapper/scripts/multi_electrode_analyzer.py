@@ -155,6 +155,13 @@ class MultiElectrodeAnalyzer:
                 self._adopt_geometry(analyzer)
                 results = analyzer.analyze_electrode_repetitions()
 
+                # Propagar identidad de implante (si el CSV combina varios)
+                # desde metadata.json hasta el resultado consolidado.
+                if results:
+                    electrode_info = analyzer.metadata.get("electrode_info") or {}
+                    results["implant_id"] = electrode_info.get("implant_id")
+                    results["implant_local_index"] = electrode_info.get("implant_local_index")
+
                 if results and results.get("mean_position"):
                     # Electrodo con respuesta utilizable
                     consolidated_results["electrodes"][str(electrode_index)] = results

@@ -147,6 +147,7 @@ class SaccadeScreen:
         # Capture one sample this frame
         now = time.monotonic()
         elapsed = now - self._capture_start_t
+        self._refresh_gaze()
         pt = self._read_gaze()
         if pt is not None:
             self.samples.append(
@@ -163,6 +164,21 @@ class SaccadeScreen:
         return (False, None)
 
     # ---- helpers ------------------------------------------------------------
+
+    def _refresh_gaze(self):
+        # EyeTracker (webcam/MediaPipe) only refreshes last_smooth_gaze inside
+        # is_looking_at_point(), which prestim/stim/poststim call every frame
+        # but the saccade capture window does not — without this, the gaze
+        # trace freezes at the last anchor-fixation sample for the whole
+        # window. Gated by hasattr so trackers without update_gaze (Pupil's
+        # background thread already stays fresh on its own; mouse fallback
+        # reads pygame directly) are completely untouched.
+        if self.allow_mouse_fallback:
+            return
+        et = self.eye_tracker
+        if et is not None and hasattr(et, "update_gaze"):
+            frame = et.get_frame()
+            et.update_gaze(frame, (self.screen_width, self.screen_height))
 
     def _read_gaze(self):
         # When the user's input mode is mouse/Wacom, allow_mouse_fallback is

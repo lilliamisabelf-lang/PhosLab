@@ -74,6 +74,11 @@ class PhospheneMappingAnalyzer:
         self.electrode_index = self.metadata["electrode_index"]
         self.num_repetitions = self.metadata["num_repetitions"]
 
+        # Identidad de implante (None si CSV de un solo implante / modo YAML)
+        _einfo = self.metadata.get("electrode_info") or {}
+        self.implant_id = _einfo.get("implant_id")
+        self.implant_local_index = _einfo.get("implant_local_index")
+
         def _as_float_or_none(value):
             if value is None:
                 return None
@@ -363,6 +368,8 @@ class PhospheneMappingAnalyzer:
             stim_pos_deg = self._px_to_deg(stim_pos[0], stim_pos[1])
             results = {
                 "electrode_index": self.electrode_index,
+                "implant_id": self.implant_id,
+                "implant_local_index": self.implant_local_index,
                 "status": "no_response",
                 "num_total_repetitions": self.num_repetitions,
                 "num_valid_repetitions": 0,
@@ -465,6 +472,8 @@ class PhospheneMappingAnalyzer:
         # Resultados
         results = {
             "electrode_index": self.electrode_index,
+            "implant_id": self.implant_id,
+            "implant_local_index": self.implant_local_index,
             "status": "ok",
             "num_total_repetitions": self.num_repetitions,
             "num_valid_repetitions": len(centroids),
