@@ -156,6 +156,21 @@ retinotopic_mapping:
     k: 17.0
     a: 0.75
     pixels_per_degree: 60
+  # Error simulado en la posicion MOSTRADA de los fosfenos (experimento del
+  # bayesiano). El mapa que sale de implant_explorer (CSV) es la VERDAD ABSOLUTA y
+  # se conserva intacto como `pred` (visual_position_deg). Aqui se inyecta un error
+  # CONOCIDO en grados sobre la posicion que se DIBUJA en pantalla, de modo que
+  # error = obs - pred ~= bias + ruido. Asi el bayesiano tiene un sesgo real que
+  # detectar y se puede comprobar si recupera `bias_deg`.
+  #   bias_deg:      offset sistematico [x, y] en grados (+x derecha, +y arriba).
+  #   noise_std_deg: ruido gaussiano por electrodo (grados); 0 = sin ruido.
+  #   noise_seed:    semilla del ruido (reproducible/documentable).
+  #   enabled:       false => no se inyecta nada (valores se siguen documentando).
+  simulated_display_error:
+    enabled: false
+    bias_deg: [2.0, 1.0]
+    noise_std_deg: 0.0
+    noise_seed: 42
 learning:
   mapping_dir: mapping_experiments
   logs_dir: logs

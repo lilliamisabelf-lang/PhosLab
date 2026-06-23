@@ -46,6 +46,10 @@ class DynaphosMapper:
         dist_to_screen_cm=None,  # se usan solo de manera conceptual
         vf_scope_deg=None,
         implant_id_filter='all',
+        display_bias_deg=None,
+        display_noise_std_deg=0.0,
+        display_noise_seed=None,
+        display_error_enabled=True,
     ):
         """
         Inicializa el mapeador con Dynaphos
@@ -58,6 +62,21 @@ class DynaphosMapper:
             dynaphos_params_file: Path al params.yaml de Dynaphos (opcional)
             dropout: Probabilidad de dropout (0.0 a 1.0) para desactivar electrodos (opcional)
             implant_id_filter: Filtro para seleccionar coordenadas de un implante específico (opcional)
+            display_bias_deg: Sesgo sistemático conocido [bx, by] en grados a inyectar en
+                              la posición MOSTRADA del fosfeno (la "verdad" del CSV se conserva
+                              intacta como predicción). +x = derecha, +y = arriba.
+            display_noise_std_deg: Desviación típica del ruido gaussiano (grados) aplicado por
+                              electrodo a la posición mostrada (0 = sin ruido).
+            display_noise_seed: Semilla del RNG del ruido (reproducible/documentable).
+            display_error_enabled: Si False, no se inyecta ningún error (bias/ruido) aunque
+                              estén configurados; los valores se siguen documentando en metadata.
+
+        Error simulado (experimento del bayesiano):
+            El mapa que sale de implant_explorer (CSV) es la VERDAD ABSOLUTA y se conserva
+            sin tocar en `get_electrode_info()['visual_position_deg']` (= `pred` del bayesiano).
+            Aquí inyectamos un error CONOCIDO sólo en la posición que se DIBUJA en pantalla, de
+            modo que el participante la representa con error ≈ bias + ruido. Así
+            `error = obs - pred ≈ bias + ruido` y el bayesiano tiene un sesgo real que recuperar.
         """
         if not DYNAPHOS_AVAILABLE:
             raise RuntimeError(
@@ -75,6 +94,28 @@ class DynaphosMapper:
         # que pasaremos a Dynaphos. Esto garantiza determinismo completo.
         self.rng = np.random.default_rng(seed=42)
         self._implant_id_filter = implant_id_filter
+
+        # ── Error simulado en la posición MOSTRADA del fosfeno ───────────────
+        # Se normaliza aquí; se APLICA tras convertir las coordenadas a píxeles
+        # (paso 5b). La verdad del CSV nunca se toca.
+        def _bias_pair(value):
+            if value is None:
+                return [0.0, 0.0]
+            try:
+                bx, by = value
+                return [float(bx), float(by)]
+            except (TypeError, ValueError):
+                return [0.0, 0.0]
+
+        self._display_error_enabled = bool(display_error_enabled)
+        self._display_bias_deg = _bias_pair(display_bias_deg)
+        try:
+            self._display_noise_std_deg = max(0.0, float(display_noise_std_deg))
+        except (TypeError, ValueError):
+            self._display_noise_std_deg = 0.0
+        self._display_noise_seed = (
+            None if display_noise_seed is None else int(display_noise_seed)
+        )
 
         print(f"[DynaphosMapper] Inicializando...")
         print(f"                 Coordenadas: {electrode_coords_file}")
@@ -265,9 +306,16 @@ class DynaphosMapper:
         )
 
         # ============================================
-        # 5. CONVERTIR A PÍXELES
+        # 5. CONVERTIR A PÍXELES (posición VERDADERA, del CSV)
         # ============================================
         self.electrode_positions_visual_px = self._convert_degrees_to_pixels()
+
+        # ============================================
+        # 5b. INYECTAR ERROR SIMULADO EN LA POSICIÓN MOSTRADA
+        # ============================================
+        # `visual_coords_deg` / `electrode_positions_visual_px` = VERDAD (CSV), no se tocan.
+        # Aquí derivamos las variantes MOSTRADAS = verdad + bias + ruido(por electrodo).
+        self._build_displayed_positions()
 
         # ============================================
         # 6. SELECCIÓN DE ELECTRODOS ACTIVOS
@@ -327,6 +375,26 @@ class DynaphosMapper:
             "screen_diagonal_inches": self._screen_diagonal_inches,
             "dist_to_screen_cm": self._dist_to_screen_cm,
             "coord_source": dict(self._coord_source) if self._coord_source else None,
+            # Error simulado inyectado en la posición MOSTRADA. La verdad del CSV
+            # (visual_position_deg) NO se toca y sigue siendo `pred` del bayesiano,
+            # así que el bayesiano debería recuperar `bias_deg` como sesgo posterior.
+            "simulated_display_error": {
+                "enabled": bool(self._display_error_enabled),
+                "bias_deg": [
+                    float(self._display_bias_deg[0]),
+                    float(self._display_bias_deg[1]),
+                ],
+                "noise_std_deg": float(self._display_noise_std_deg),
+                "noise_seed": (
+                    None
+                    if self._display_noise_seed is None
+                    else int(self._display_noise_seed)
+                ),
+                "note": (
+                    "pred (visual_position_deg) = verdad del CSV; "
+                    "obs ~= pred + bias + ruido; el bayesiano deberia recuperar bias_deg"
+                ),
+            },
         }
 
     def get_display_metadata(self):
@@ -506,23 +574,74 @@ class DynaphosMapper:
         }
         return x, y, meta
 
+    def _deg_to_px_arrays(self, x_deg, y_deg):
+        """Convierte arrays de grados (x,y) a píxeles (N, 2).
+
+        Origen en el centro del FOV (igual que la pantalla); Y invertida porque
+        en grados +y = arriba y en píxeles +y = abajo. Los NaN se propagan.
+        """
+        x_deg = np.asarray(x_deg, dtype=np.float64)
+        y_deg = np.asarray(y_deg, dtype=np.float64)
+        x_px = self.screen_center[0] + x_deg * self.pixels_per_degree_x
+        y_px = self.screen_center[1] - y_deg * self.pixels_per_degree_y
+        return np.column_stack([x_px, y_px])
+
     def _convert_degrees_to_pixels(self):
         """
-        Convierte coordenadas visuales de grados a píxeles
+        Convierte coordenadas visuales VERDADERAS (grados) a píxeles
 
         Returns:
             numpy.ndarray: Coordenadas en píxeles (N, 2)
         """
         x_deg, y_deg = self.visual_coords_deg
+        return self._deg_to_px_arrays(x_deg, y_deg)
 
-        # Convertir grados → píxeles
-        # Dynaphos usa origen en centro del FOV, igual que nuestra pantalla
-        x_px = self.screen_center[0] + x_deg * self.pixels_per_degree_x
-        y_px = self.screen_center[1] - y_deg * self.pixels_per_degree_y  # Invertir Y
+    def _build_displayed_positions(self):
+        """Construye las posiciones MOSTRADAS = verdad + error simulado conocido.
 
-        positions_px = np.column_stack([x_px, y_px])
+        El error tiene dos componentes (ambos en grados, +x derecha, +y arriba):
+        - bias: offset sistemático constante para todos los electrodos.
+        - ruido: gaussiano independiente POR ELECTRODO (sembrado → reproducible).
+          La posición del fosfeno se calcula una vez por electrodo y se reutiliza en
+          todas sus repeticiones, así que el ruido es por-electrodo (la variabilidad
+          intra-electrodo la aporta de forma natural el trazo del participante).
 
-        return positions_px
+        Define:
+            self.display_error_deg               (N, 2)  error aplicado por electrodo
+            self.visual_coords_deg_displayed     (x_deg, y_deg) mostrados
+            self.electrode_positions_displayed_px (N, 2) píxeles mostrados
+        """
+        x_true, y_true = self.visual_coords_deg
+        x_true = np.asarray(x_true, dtype=np.float64)
+        y_true = np.asarray(y_true, dtype=np.float64)
+        n = self.num_electrodes
+
+        err = np.zeros((n, 2), dtype=np.float64)
+        if self._display_error_enabled:
+            err[:, 0] += self._display_bias_deg[0]
+            err[:, 1] += self._display_bias_deg[1]
+            if self._display_noise_std_deg > 0.0:
+                noise_rng = np.random.default_rng(self._display_noise_seed)
+                err += noise_rng.normal(
+                    0.0, self._display_noise_std_deg, size=(n, 2)
+                )
+
+        self.display_error_deg = err
+        x_disp = x_true + err[:, 0]
+        y_disp = y_true + err[:, 1]
+        self.visual_coords_deg_displayed = (x_disp, y_disp)
+        self.electrode_positions_displayed_px = self._deg_to_px_arrays(x_disp, y_disp)
+
+        if self._display_error_enabled and (
+            any(b != 0.0 for b in self._display_bias_deg)
+            or self._display_noise_std_deg > 0.0
+        ):
+            print(
+                f"                 [!] ERROR SIMULADO en posicion mostrada: "
+                f"bias=({self._display_bias_deg[0]:+g}, {self._display_bias_deg[1]:+g}) deg "
+                f"ruido_std={self._display_noise_std_deg:g} deg "
+                f"(seed={self._display_noise_seed}). La verdad del CSV se conserva como `pred`."
+            )
 
     def set_active_electrodes(self, electrode_indices):
         """
@@ -636,7 +755,10 @@ class DynaphosMapper:
 
     def get_active_phosphene_positions(self):
         """
-        Obtiene posiciones visuales (píxeles) de electrodos activos
+        Obtiene las posiciones MOSTRADAS (píxeles) de los electrodos activos.
+
+        Devuelve la posición DIBUJADA en pantalla = verdad del CSV + error simulado
+        (bias + ruido). La verdad sin tocar está en `get_electrode_info()`.
 
         Returns:
             list: Lista de tuplas (x, y) en píxeles
@@ -645,7 +767,7 @@ class DynaphosMapper:
         positions = []
 
         for idx in active_indices:
-            x, y = self.electrode_positions_visual_px[idx]
+            x, y = self.electrode_positions_displayed_px[idx]
             if not (np.isfinite(x) and np.isfinite(y)):
                 continue  # Saltar coordenadas no válidas
             positions.append((int(x), int(y)))
@@ -654,7 +776,10 @@ class DynaphosMapper:
 
     def get_phosphene_position(self, electrode_index):
         """
-        Obtiene la posición visual de un electrodo específico
+        Obtiene la posición MOSTRADA de un electrodo específico.
+
+        Es la posición que se DIBUJA en pantalla (verdad del CSV + error simulado).
+        La verdad sin error está en `get_electrode_info()['visual_position_deg/px']`.
 
         Args:
             electrode_index: Índice del electrodo
@@ -667,7 +792,7 @@ class DynaphosMapper:
                 f"Índice de electrodo fuera de rango: {electrode_index} (debe estar entre 0 y {self.num_electrodes-1})"
             )
 
-        x, y = self.electrode_positions_visual_px[electrode_index]
+        x, y = self.electrode_positions_displayed_px[electrode_index]
         if not (np.isfinite(x) and np.isfinite(y)):
             raise ValueError(
                 f"Coordenadas no válidas para electrodo {electrode_index}: (x={x}, y={y})"
@@ -695,9 +820,17 @@ class DynaphosMapper:
         visual_deg_x, visual_deg_y = self.visual_coords_deg
         visual_px = self.electrode_positions_visual_px[electrode_index]
 
-        # Calcular excentricidad
+        # Posición MOSTRADA (verdad + error simulado) y error aplicado.
+        disp_deg_x, disp_deg_y = self.visual_coords_deg_displayed
+        disp_px = self.electrode_positions_displayed_px[electrode_index]
+        applied_err = self.display_error_deg[electrode_index]
+
+        # Calcular excentricidad (de la posición VERDADERA = pred del bayesiano)
         eccentricity_deg = np.sqrt(
             visual_deg_x[electrode_index] ** 2 + visual_deg_y[electrode_index] ** 2
+        )
+        displayed_eccentricity_deg = np.sqrt(
+            disp_deg_x[electrode_index] ** 2 + disp_deg_y[electrode_index] ** 2
         )
 
         # Identidad de implante (solo disponible si las coordenadas vienen de un
@@ -721,12 +854,22 @@ class DynaphosMapper:
                     float(cortex_y[electrode_index]),
                 ]
             ),
+            # VERDAD (CSV / implant_explorer) — esto es `pred` para el bayesiano.
             "visual_position_deg": [
                 float(visual_deg_x[electrode_index]),
                 float(visual_deg_y[electrode_index]),
             ],
             "visual_position_px": [int(visual_px[0]), int(visual_px[1])],
             "eccentricity_deg": float(eccentricity_deg),
+            # MOSTRADA en pantalla = verdad + error simulado (lo que el participante
+            # dibuja). El bayesiano debería recuperar `applied_error_deg` (≈ bias).
+            "displayed_position_deg": [
+                float(disp_deg_x[electrode_index]),
+                float(disp_deg_y[electrode_index]),
+            ],
+            "displayed_position_px": [int(disp_px[0]), int(disp_px[1])],
+            "displayed_eccentricity_deg": float(displayed_eccentricity_deg),
+            "applied_error_deg": [float(applied_err[0]), float(applied_err[1])],
             "is_active": bool(self.active_electrodes[electrode_index]),
         }
 

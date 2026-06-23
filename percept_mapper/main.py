@@ -70,8 +70,10 @@ def _set_mapping_debug_marker(stimulation_screen):
     if mapper is not None and idx is not None:
         try:
             info = mapper.get_electrode_info(idx)
-            deg = info["visual_position_deg"]
-            ecc = info.get("eccentricity_deg")
+            # El marcador se dibuja en la posición MOSTRADA (px con error simulado),
+            # así que se anota con los grados MOSTRADOS para que px y grados coincidan.
+            deg = info.get("displayed_position_deg") or info["visual_position_deg"]
+            ecc = info.get("displayed_eccentricity_deg", info.get("eccentricity_deg"))
             polar = float(np.degrees(np.arctan2(deg[1], deg[0])))
         except Exception:
             deg = ecc = polar = None
@@ -1170,6 +1172,16 @@ Ejemplos de uso:
         coord_file_to_use = coord_file
         print(f"[COORDS] Usando coordenadas de Dynaphos: {coord_file}")
 
+    # Error simulado conocido (bias + ruido) inyectado en la posición MOSTRADA del
+    # fosfeno, para que el bayesiano tenga un sesgo real que aprender. La verdad
+    # del CSV (implant_explorer) se conserva como `pred`. Ver
+    # retinotopic_mapping.simulated_display_error en params.yaml.
+    sim_err_cfg = electrode_config.get("simulated_display_error", {}) or {}
+    display_bias_deg = sim_err_cfg.get("bias_deg", [0.0, 0.0])
+    display_noise_std_deg = sim_err_cfg.get("noise_std_deg", 0.0)
+    display_noise_seed = sim_err_cfg.get("noise_seed", None)
+    display_error_enabled = bool(sim_err_cfg.get("enabled", False))
+
     mapper = DynaphosMapper(
         electrode_coords_file=coord_file_to_use,
         screen_width=actual_width,
@@ -1179,6 +1191,10 @@ Ejemplos de uso:
         dist_to_screen_cm=screen_cfg.get("dist_to_screen_cm"),
         vf_scope_deg=vf_scope_deg,
         implant_id_filter=implant_id_filter,
+        display_bias_deg=display_bias_deg,
+        display_noise_std_deg=display_noise_std_deg,
+        display_noise_seed=display_noise_seed,
+        display_error_enabled=display_error_enabled,
     )
 
     # MAPPING DEBUG MODE: rejilla + marcador de fosfeno. Se construye desde la
