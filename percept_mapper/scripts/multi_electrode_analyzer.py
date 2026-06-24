@@ -19,14 +19,7 @@ matplotlib.use("Agg")  # Backend no interactivo - solo guarda archivos
 import matplotlib.pyplot as plt
 
 from scripts.mapping_analyzer import PhospheneMappingAnalyzer
-
-
-def _distance_deg(
-    dx_px: np.ndarray, dy_px: np.ndarray, px_per_deg_x: float, px_per_deg_y: float
-) -> np.ndarray:
-    dx_deg = dx_px / float(px_per_deg_x)
-    dy_deg = dy_px / float(px_per_deg_y)
-    return np.hypot(dx_deg, dy_deg)
+from scripts.stats import distance_deg
 
 
 class MultiElectrodeAnalyzer:
@@ -226,7 +219,7 @@ class MultiElectrodeAnalyzer:
                         dx_px = float(pos_i[0] - pos_j[0])
                         dy_px = float(pos_i[1] - pos_j[1])
                         distance_deg = float(
-                            _distance_deg(
+                            distance_deg(
                                 np.array([dx_px]),
                                 np.array([dy_px]),
                                 self.pixels_per_degree_x,
@@ -528,7 +521,7 @@ class MultiElectrodeAnalyzer:
                         dx_px = float(pos_i["x"] - pos_j["x"])
                         dy_px = float(pos_i["y"] - pos_j["y"])
                         distance_deg = float(
-                            _distance_deg(
+                            distance_deg(
                                 np.array([dx_px]),
                                 np.array([dy_px]),
                                 self.pixels_per_degree_x,

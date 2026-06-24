@@ -2,8 +2,14 @@ venv/
 *.pyc
 __pycache__/
 *.log
+.hypothesis/
 
-# Datos de experimentos
+# Datos de experimentos (generados automáticamente)
 logs/
 mapping_experiments/
 learning_results/
+comparison_results/
+results/
+
+# Calibración de gaze (específica de cada máquina)
+config/gaze_calibration.json

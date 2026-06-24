@@ -18,14 +18,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from scripts.mapping_analyzer import (
-    PhospheneMappingAnalyzer,
-    _robust_sigma_mad,
-    _trimmed_mean,
-    _tukey_boxplot_stats,
-    _distance_deg,
-    _ellipse_from_cov,
-)
+from scripts.mapping_analyzer import PhospheneMappingAnalyzer
+from scripts.stats import tukey_boxplot_stats
 from scripts.response_capture import resolve_response_features
 
 
@@ -285,9 +279,9 @@ class StandardExperimentAnalyzer:
                     }
                 ],
                 "boxplot_stats": {
-                    "dx_to_stim_deg": _tukey_boxplot_stats(np.array([dx_to_stim_deg])),
-                    "dy_to_stim_deg": _tukey_boxplot_stats(np.array([dy_to_stim_deg])),
-                    "distance_to_stim_deg": _tukey_boxplot_stats(
+                    "dx_to_stim_deg": tukey_boxplot_stats(np.array([dx_to_stim_deg])),
+                    "dy_to_stim_deg": tukey_boxplot_stats(np.array([dy_to_stim_deg])),
+                    "distance_to_stim_deg": tukey_boxplot_stats(
                         np.array([dist_to_stim_deg])
                     ),
                 },
