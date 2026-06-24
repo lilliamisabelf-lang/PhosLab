@@ -7,9 +7,8 @@ phosphene_mapping:
   electrodes_by_implant:
   - implant_id: 696e3e00f0fe
     electrode_index:
+    - 0
     - 1
-    - 2
-    - 3
   num_repetitions: 2
   experiment_name: mapeo_multiples_electrodos
   interstimulation_between_reps: true
@@ -26,20 +25,24 @@ phosphene_mapping:
   no_immediate_repeat: true
   num_practice_trials: 2
   isi_jitter_ms: 200
-input_mode: gaze
+input_mode: mouse
 drawing_input: both
 response_mode: drawing
+mapping_method: forced_adjustment
+
+#forced_adjustment || absolute || relative
+
 screen:
-  width: 1536
-  height: 864
+  width: 1920
+  height: 1080
   fullscreen: true
   background_color:
   - 0
   - 0
   - 0
-  screen_diagonal_inches: 15.33
+  screen_diagonal_inches: 21.68
   dist_to_screen_cm: 60
-  vf_scope_deg: 9.04
+  vf_scope_deg: 12.68
   anchor_circle:
     radius: 50
     color:
@@ -48,7 +51,7 @@ screen:
     - 0
     thickness: 3
     tolerance_radius: 50
-  monitor_index: 0
+  monitor_index: 1
 timing:
   prestimulation: 193
   stimulation: 400
@@ -192,8 +195,8 @@ pupil:
   max_sample_age_s: 0.25
   one_euro:
     fps: 60
-    min_cutoff: 0.3
-    beta: 0.001
+    min_cutoff: 0.1
+    beta: 0.007
     d_cutoff: 1.0
 apriltag_overlay:
   enabled: false
@@ -214,7 +217,7 @@ ui:
 debug:
   show_interstim_text: false
 saccade:
-  capture_duration_ms: 1500
+  capture_duration_ms: 2000
   extraction: idt_first_fixation
   idt:
     dispersion_px: 60

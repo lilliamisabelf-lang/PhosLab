@@ -42,6 +42,7 @@ class PhospheneMappingExperiment:
         apriltag_overlay=None,
         debug_overlay=None,
         input_mode="mouse",
+        mapping_method="absolute",
     ):
         """
         Inicializa un experimento de mapeo de fosfenos
@@ -86,6 +87,7 @@ class PhospheneMappingExperiment:
         self.num_repetitions = num_repetitions
         self.experiment_name = experiment_name
         self.input_mode = input_mode
+        self.mapping_method = mapping_method
 
         # Crear carpeta del experimento de mapeo
         experiment_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -112,6 +114,7 @@ class PhospheneMappingExperiment:
             "electrode_info": electrode_info,
             "display": display_info,
             "input_mode": input_mode,
+            "mapping_method": mapping_method,
             "num_repetitions": num_repetitions,
             "timing": timing_config,
             "repetitions": [],  # Se llenará con datos de cada repetición
@@ -279,6 +282,9 @@ class PhospheneMappingExperiment:
 
             finished = self.drawing_tablet.update(self.screen, events)
 
+            if self.mapping_method == "relative":
+                self._draw_center_cross()
+
             # Registrar gaze coordinates durante drawing (sólo informativo;
             # en modo saccade el payload ya contiene las muestras).
             if (
@@ -403,6 +409,13 @@ class PhospheneMappingExperiment:
 
             self._display_flip()
             self.clock.tick(60)
+
+    def _draw_center_cross(self):
+        cx = self.screen.get_width() // 2
+        cy = self.screen.get_height() // 2
+        arm = 24
+        pygame.draw.line(self.screen, (255, 255, 255), (cx - arm, cy), (cx + arm, cy), 2)
+        pygame.draw.line(self.screen, (255, 255, 255), (cx, cy - arm), (cx, cy + arm), 2)
 
     def _display_flip(self):
         # Rejilla + marcador de debug primero (fondo), AprilTags por encima.

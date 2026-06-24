@@ -996,7 +996,9 @@ Ejemplos de uso:
     # Ambos cumplen la misma interfaz (reset / update(screen, events) -> (bool, payload) / close)
     # así que el resto del experimento las consume con el mismo nombre.
     response_mode = (config.get("response_mode") or "drawing").lower()
+    mapping_method = (config.get("mapping_method") or "absolute").lower()
     print(f"[CONFIG] Modo de respuesta: {response_mode}")
+    print(f"[CONFIG] Método de mapeo:   {mapping_method}")
 
     def _build_audio_cue(cue_cfg):
         if not cue_cfg or not cue_cfg.get("enabled", False):
@@ -1050,6 +1052,15 @@ Ejemplos de uso:
             ),
         )
         response_capture = SaccadeResponseCapture(response_screen)
+    elif mapping_method == "forced_adjustment":
+        from scripts.tablet import ForcedAdjustmentTablet
+
+        response_screen = ForcedAdjustmentTablet(
+            actual_width, actual_height,
+            brush_size=brush_size,
+            brush_color=brush_color,
+        )
+        response_capture = DrawingResponseCapture(response_screen)
     else:
         response_screen = DrawingTablet(
             actual_width,
@@ -1454,6 +1465,7 @@ Ejemplos de uso:
                 apriltag_overlay=_APRILTAG_OVERLAY,
                 debug_overlay=_MAPPING_DEBUG_OVERLAY,
                 input_mode=input_mode,
+                mapping_method=mapping_method,
                 timing_config={
                     "prestimulation_ms": PRESTIMULATION_MS,
                     "stimulation_ms": STIMULATION_MS,

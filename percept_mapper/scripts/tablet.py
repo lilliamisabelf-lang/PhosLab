@@ -230,3 +230,136 @@ class DrawingTablet:
             print(f"[DrawingTablet] ⚠ no se pudo liberar cursor clip: {e}")
         finally:
             self._cursor_clip_active = False
+
+
+class ForcedAdjustmentTablet:
+    """Pantalla de ajuste forzado: un punto aparece en posición aleatoria y
+    el usuario lo arrastra hasta donde percibió el fosfeno.
+
+    Implementa la misma interfaz que DrawingTablet (update / reset / close /
+    last_status / mode) para ser compatible con DrawingResponseCapture sin
+    cambios en el pipeline de análisis.
+    """
+
+    DOT_RADIUS = 12
+    DOT_COLOR = (255, 220, 0)   # amarillo
+    HIT_FACTOR = 3              # radio de captura = DOT_RADIUS × HIT_FACTOR
+
+    def __init__(
+        self,
+        screen_width: int,
+        screen_height: int,
+        brush_size: int = 3,
+        brush_color: tuple = (255, 255, 0),
+    ):
+        import random
+        self.screen_width = screen_width
+        self.screen_height = screen_height
+        self.brush_size = brush_size
+        self.brush_color = brush_color
+        self._rng = random.Random()
+        self.mode = "forced_adjustment"
+        self.last_status = "unknown"
+        self.finished = False
+        self._dragging = False
+        self._drag_done = False      # True cuando se ha completado al menos un arrastre
+        self._pos: tuple[int, int] = self._random_pos()
+        self._trail: list[tuple[int, int]] = []
+        self._font = None   # lazy: pygame may not be inited yet at import time
+        print("[ForcedAdjustmentTablet] Inicializado")
+
+    # ------------------------------------------------------------------ #
+    # Interfaz pública                                                     #
+    # ------------------------------------------------------------------ #
+
+    def update(self, screen, events):
+        """Procesa eventos y dibuja. Devuelve (finished, canvas | None)."""
+        if self._font is None:
+            self._font = pygame.font.Font(None, 48)
+
+        for event in events:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mx, my = event.pos
+                hit_r = self.DOT_RADIUS * self.HIT_FACTOR
+                if (mx - self._pos[0]) ** 2 + (my - self._pos[1]) ** 2 <= hit_r ** 2:
+                    self._dragging = True
+                    self._trail = [self._pos]
+
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if self._dragging:
+                    self._dragging = False
+                    self._pos = event.pos
+                    self._trail.append(self._pos)
+                    self._drag_done = True
+                    canvas = self._render_result()
+                    self.finished = True
+                    self.last_status = "ok"
+                    return (True, canvas)
+
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                # ENTER sin arrastre = catch trial / no vio nada → canvas negro vacío
+                if not self._drag_done:
+                    canvas = pygame.Surface((self.screen_width, self.screen_height))
+                    canvas.fill((0, 0, 0))
+                    self.finished = True
+                    self.last_status = "empty"
+                    return (True, canvas)
+
+        if self._dragging:
+            self._pos = pygame.mouse.get_pos()
+            self._trail.append(self._pos)
+
+        self._draw(screen)
+        return (False, None)
+
+    def reset(self):
+        self._pos = self._random_pos()
+        self._dragging = False
+        self._drag_done = False
+        self._trail = []
+        self.finished = False
+        self.last_status = "unknown"
+        print("[ForcedAdjustmentTablet] Reseteado para nuevo ensayo")
+
+    def close(self):
+        pass
+
+    # ------------------------------------------------------------------ #
+    # Helpers privados                                                     #
+    # ------------------------------------------------------------------ #
+
+    def _random_pos(self) -> tuple[int, int]:
+        """Posición aleatoria evitando el cuarto central de la pantalla."""
+        mx, my = self.screen_width // 2, self.screen_height // 2
+        excl_x = self.screen_width // 4
+        excl_y = self.screen_height // 4
+        margin = max(self.DOT_RADIUS * 2, 40)
+        while True:
+            x = self._rng.randint(margin, self.screen_width - margin)
+            y = self._rng.randint(margin, self.screen_height - margin)
+            if abs(x - mx) > excl_x or abs(y - my) > excl_y:
+                return (x, y)
+
+    def _draw(self, screen):
+        screen.fill((0, 0, 0))
+        # Rastro visual del arrastre (solo durante el drag, no se guarda en canvas)
+        for pt in self._trail:
+            pygame.draw.circle(screen, self.brush_color, pt, self.brush_size)
+        # Punto principal
+        pygame.draw.circle(screen, self.DOT_COLOR, self._pos, self.DOT_RADIUS)
+        if not self._dragging:
+            pygame.draw.circle(screen, (255, 255, 255), self._pos,
+                               self.DOT_RADIUS + 2, 2)
+        text = self._font.render(
+            "Arrastra el punto hasta donde viste el fosfeno y presiona ENTER",
+            True, (255, 255, 255),
+        )
+        screen.blit(text, text.get_rect(center=(self.screen_width // 2, 50)))
+
+    def _render_result(self) -> pygame.Surface:
+        """Canvas de análisis: fondo negro con solo el punto en la posición final.
+        El rastro no se incluye para que el analizador extraiga un centroide limpio."""
+        canvas = pygame.Surface((self.screen_width, self.screen_height))
+        canvas.fill((0, 0, 0))
+        pygame.draw.circle(canvas, self.brush_color, self._pos, self.brush_size)
+        return canvas
