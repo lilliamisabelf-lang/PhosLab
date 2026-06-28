@@ -119,18 +119,36 @@ class MultiElectrodeAnalyzer:
 
         print(f"Encontrados {len(electrode_dirs)} electrodo(s)\n")
 
+        # Leer session_metadata.json para obtener inicio de sesión y mapping_method
+        session_meta_path = self.experiment_dir / "session_metadata.json"
+        session_started = None
+        session_mapping_method = None
+        if session_meta_path.exists():
+            try:
+                import json as _json
+                with open(session_meta_path, encoding="utf-8") as _f:
+                    _sm = _json.load(_f)
+                session_started = _sm.get("session_started")
+                session_mapping_method = _sm.get("mapping_method")
+            except Exception:
+                pass
+
         consolidated_results = {
             "experiment_name": self.experiment_dir.name,
             "num_electrodes": len(electrode_dirs),
             "electrodes": {},
             "mean_positions": {},
             "no_response_electrodes": [],
+            "session_started": session_started,
+            "session_ended": None,
+            "mapping_method": session_mapping_method,
         }
 
         # Analizar cada electrodo
         all_mean_positions = []
         all_electrode_indices = []  # todos los electrodos procesados (para log)
         valid_indices = []          # solo los que aportan posición; alineado con all_mean_positions
+        last_end_time = None
 
         for electrode_dir in electrode_dirs:
             electrode_index = int(electrode_dir.name.split("_")[1])
@@ -154,6 +172,11 @@ class MultiElectrodeAnalyzer:
                     electrode_info = analyzer.metadata.get("electrode_info") or {}
                     results["implant_id"] = electrode_info.get("implant_id")
                     results["implant_local_index"] = electrode_info.get("implant_local_index")
+
+                # Rastrear el end_time más tardío entre todos los electrodos
+                electrode_end = analyzer.metadata.get("end_time")
+                if electrode_end and (last_end_time is None or electrode_end > last_end_time):
+                    last_end_time = electrode_end
 
                 if results and results.get("mean_position"):
                     # Electrodo con respuesta utilizable
@@ -218,7 +241,7 @@ class MultiElectrodeAnalyzer:
                         distance_px = np.sqrt(np.sum((pos_i - pos_j) ** 2))
                         dx_px = float(pos_i[0] - pos_j[0])
                         dy_px = float(pos_i[1] - pos_j[1])
-                        distance_deg = float(
+                        dist_deg = float(
                             distance_deg(
                                 np.array([dx_px]),
                                 np.array([dy_px]),
@@ -227,13 +250,15 @@ class MultiElectrodeAnalyzer:
                             )[0]
                         )
                         print(
-                            f"  Electrodo {idx_i} → {idx_j}: {distance_px:.1f} px ({distance_deg:.2f}°)"
+                            f"  Electrodo {idx_i} → {idx_j}: {distance_px:.1f} px ({dist_deg:.2f}°)"
                         )
 
             consolidated_results["mean_positions"] = {
                 str(idx): {"x": float(pos[0]), "y": float(pos[1])}
                 for idx, pos in zip(valid_indices, all_mean_positions)
             }
+
+        consolidated_results["session_ended"] = last_end_time
 
         # Guardar resultados consolidados
         results_file = self.consolidated_dir / "consolidated_results.json"
@@ -448,12 +473,19 @@ class MultiElectrodeAnalyzer:
         print("GENERANDO REPORTE CONSOLIDADO")
         print("=" * 70 + "\n")
 
+        session_started = consolidated_results.get("session_started") or "—"
+        session_ended = consolidated_results.get("session_ended") or "—"
+        mapping_method = consolidated_results.get("mapping_method") or "—"
+
         report_lines = [
             "=" * 70,
             "REPORTE CONSOLIDADO DE MAPEO DE FOSFENOS",
             "=" * 70,
             "",
             f"Experimento: {consolidated_results['experiment_name']}",
+            f"Inicio:      {session_started}",
+            f"Fin:         {session_ended}",
+            f"Método:      {mapping_method}",
             f"Número de electrodos: {consolidated_results['num_electrodes']}",
             f"Con respuesta: {len(consolidated_results.get('electrodes', {}))}  |  "
             f"Sin respuesta: {len(consolidated_results.get('no_response_electrodes', []))}",
@@ -520,7 +552,7 @@ class MultiElectrodeAnalyzer:
                         )
                         dx_px = float(pos_i["x"] - pos_j["x"])
                         dy_px = float(pos_i["y"] - pos_j["y"])
-                        distance_deg = float(
+                        dist_deg = float(
                             distance_deg(
                                 np.array([dx_px]),
                                 np.array([dy_px]),
@@ -530,7 +562,7 @@ class MultiElectrodeAnalyzer:
                         )
 
                         report_lines.append(
-                            f"Electrodo {idx_i} → {idx_j}: {distance_px:.1f} px ({distance_deg:.2f}°)"
+                            f"Electrodo {idx_i} → {idx_j}: {distance_px:.1f} px ({dist_deg:.2f}°)"
                         )
 
                 report_lines.append("")

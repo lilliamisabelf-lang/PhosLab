@@ -96,6 +96,13 @@ def plot_error_comparison(
     width = min(0.3, 0.9 / n)
     offsets = np.linspace(-(n - 1) / 2, (n - 1) / 2, n) * (width + 0.04)
 
+    # Usar posiciones categóricas equidistantes para que el salto 8°→12°
+    # no aparezca más ancho que los demás en el eje X
+    # Posiciones categóricas equidistantes (independientemente del salto en grados)
+    display_eccs = eccs
+    cat_pos = list(range(len(eccs)))
+    ecc_to_cat = {e: i for i, e in enumerate(eccs)}
+
     fig, ax = plt.subplots(figsize=(max(9, 2 * len(eccs) * n), 6))
     rng = np.random.default_rng(42)
 
@@ -103,10 +110,10 @@ def plot_error_comparison(
         style = MODALITY_STYLE[modality]
         color = style["color"]
         label = style["label"]
-        positions = [e + offsets[i] for e in eccs]
+        positions = [ecc_to_cat[e] + offsets[i] for e in eccs]
         data = [groups.get(e, []) for e in eccs]
 
-        ax.boxplot(
+        bp = ax.boxplot(
             data,
             positions=positions,
             widths=width,
@@ -115,13 +122,13 @@ def plot_error_comparison(
             meanline=True,
             medianprops=dict(color="black", lw=1.5),
             meanprops=dict(color=color, ls="--", lw=1.4),
-            boxprops=dict(facecolor=color, alpha=0.30, edgecolor=color),
-            whiskerprops=dict(color=color),
-            capprops=dict(color=color),
+            boxprops=dict(facecolor=color, alpha=0.30, edgecolor="black", lw=1.0),
+            whiskerprops=dict(color="black", lw=1.0),
+            capprops=dict(color="black", lw=1.0),
             flierprops=dict(marker="", alpha=0),
         )
 
-        for pos, e in zip(positions, eccs):
+        for j, (pos, e) in enumerate(zip(positions, eccs)):
             pts = groups.get(e, [])
             if not pts:
                 continue
@@ -136,8 +143,11 @@ def plot_error_comparison(
                 alpha=0.75,
                 zorder=5,
             )
-            ax.text(pos, max(pts) * 1.03, f"{np.mean(pts):.2f}°",
-                    ha="center", va="bottom", fontsize=7, color=color)
+            # Mediana encima del bigote superior
+            top_cap_y = bp["caps"][2 * j + 1].get_ydata()[0]
+            med = float(np.median(pts))
+            ax.text(pos, top_cap_y + 0.04, f"Md={med:.2f}°",
+                    ha="center", va="bottom", fontsize=7, color="black")
 
     # x labels: ecc + n per condition
     def _n_label(e):
@@ -145,14 +155,12 @@ def plot_error_comparison(
             str(len(g.get(e, [])))
             for _, g in conditions
         )
-        return f"{e:g}°\n(n={parts})"
+        return f"{round(e):d}°\n(n={parts})"
 
-    ax.set_xticks(eccs)
+    ax.set_xticks(cat_pos)
     ax.set_xticklabels([_n_label(e) for e in eccs])
     ax.set_xlabel("Eccentricity (deg)", fontsize=12)
     ax.set_ylabel("Radial error  |response − stimulus|  (deg)", fontsize=12)
-    ax.set_title("Localization error vs eccentricity — input mode comparison",
-                 fontsize=12, fontweight="bold")
     ax.set_ylim(0, None)
     ax.grid(axis="y", alpha=0.3)
 
@@ -162,8 +170,7 @@ def plot_error_comparison(
         for m, _ in conditions
     ]
     legend_handles += [
-        Line2D([], [], color="black", lw=1.5, label="median"),
-        Line2D([], [], color="gray",  ls="--", lw=1.3, label="mean"),
+        Line2D([], [], color="black", lw=1.5, label="mediana"),
     ]
     ax.legend(handles=legend_handles, loc="upper left", fontsize=9)
 
@@ -258,8 +265,6 @@ def plot_map_comparison(
     ax.set_aspect("equal")
     ax.set_xlabel("Visual field X (deg)   [+ = right]", fontsize=12)
     ax.set_ylabel("Visual field Y (deg)   [+ = up]", fontsize=12)
-    ax.set_title("True vs measured positions — input mode comparison",
-                 fontsize=12, fontweight="bold")
     ax.grid(alpha=0.2)
     if implant_legend:
         legend_txt = "\n".join(f"{code} = {imp}" for code, imp in sorted(implant_legend.items()))
@@ -286,12 +291,13 @@ def main():
     ap.add_argument("--out-dir", default=None, help="Carpeta de salida (default: mapping_experiments/comparison_input_mode)")
     args = ap.parse_args()
 
-    # Recoger las condiciones que tienen datos
+    # Recoger las condiciones que tienen datos (wacom primero para que aparezca
+    # a la izquierda en los boxplots agrupados)
     raw = [
+        ("wacom",  args.wacom),
         ("mouse",  args.mouse),
         ("gaze",   args.gaze),
         ("pupil",  args.pupil),
-        ("wacom",  args.wacom),
     ]
     active = [(m, Path(p)) for m, p in raw if p is not None]
 

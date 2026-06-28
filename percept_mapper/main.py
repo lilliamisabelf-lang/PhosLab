@@ -1552,6 +1552,7 @@ Ejemplos de uso:
                 session_started=datetime.now().isoformat(),
                 valid_electrode_indices=valid_electrode_indices,
                 num_repetitions=num_repetitions,
+                mapping_method=mapping_method,
                 trial_sequence_config=TrialSequenceConfig(
                     randomize=do_randomize,
                     random_seed=realized_seed,

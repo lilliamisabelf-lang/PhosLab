@@ -99,6 +99,7 @@ class SessionMetadata:
     valid_electrode_indices: list[int]
     num_repetitions: int
     trial_sequence_config: TrialSequenceConfig
+    mapping_method: str = "absolute"
     summary: dict[str, Any] = field(default_factory=dict)
     trial_order: list[dict[str, Any]] = field(default_factory=list)
     schema_version: int = SCHEMA_VERSION
@@ -106,7 +107,8 @@ class SessionMetadata:
 
     _KNOWN_FIELDS = frozenset({
         "session_started", "valid_electrode_indices", "num_repetitions",
-        "trial_sequence_config", "summary", "trial_order", "schema_version",
+        "trial_sequence_config", "mapping_method", "summary", "trial_order",
+        "schema_version",
     })
 
     @classmethod
@@ -119,6 +121,7 @@ class SessionMetadata:
             valid_electrode_indices=list(known.get("valid_electrode_indices", []) or []),
             num_repetitions=int(known.get("num_repetitions", 0)),
             trial_sequence_config=TrialSequenceConfig.from_dict(tsc_raw),
+            mapping_method=str(known.get("mapping_method", "absolute")),
             summary=dict(known.get("summary", {}) or {}),
             trial_order=list(known.get("trial_order", []) or []),
             schema_version=int(known.get("schema_version", SCHEMA_VERSION)),
@@ -131,6 +134,7 @@ class SessionMetadata:
             "valid_electrode_indices": list(self.valid_electrode_indices),
             "num_repetitions": int(self.num_repetitions),
             "trial_sequence_config": self.trial_sequence_config.to_dict(),
+            "mapping_method": str(self.mapping_method),
             "summary": dict(self.summary),
             "trial_order": list(self.trial_order),
             "schema_version": int(self.schema_version),

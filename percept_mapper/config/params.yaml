@@ -9,7 +9,25 @@ phosphene_mapping:
     electrode_index:
     - 0
     - 1
-  num_repetitions: 2
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+    - 12
+    - 13
+    - 14
+    - 15
+    - 16
+    - 17
+    - 18
+    - 19
+  num_repetitions: 10
   experiment_name: mapeo_multiples_electrodos
   interstimulation_between_reps: true
   enabled: true
@@ -28,10 +46,7 @@ phosphene_mapping:
 input_mode: mouse
 drawing_input: both
 response_mode: drawing
-mapping_method: forced_adjustment
-
-#forced_adjustment || absolute || relative
-
+mapping_method: absolute
 screen:
   width: 1920
   height: 1080
@@ -159,19 +174,11 @@ retinotopic_mapping:
     k: 17.0
     a: 0.75
     pixels_per_degree: 60
-  # Error simulado en la posicion MOSTRADA de los fosfenos (experimento del
-  # bayesiano). El mapa que sale de implant_explorer (CSV) es la VERDAD ABSOLUTA y
-  # se conserva intacto como `pred` (visual_position_deg). Aqui se inyecta un error
-  # CONOCIDO en grados sobre la posicion que se DIBUJA en pantalla, de modo que
-  # error = obs - pred ~= bias + ruido. Asi el bayesiano tiene un sesgo real que
-  # detectar y se puede comprobar si recupera `bias_deg`.
-  #   bias_deg:      offset sistematico [x, y] en grados (+x derecha, +y arriba).
-  #   noise_std_deg: ruido gaussiano por electrodo (grados); 0 = sin ruido.
-  #   noise_seed:    semilla del ruido (reproducible/documentable).
-  #   enabled:       false => no se inyecta nada (valores se siguen documentando).
   simulated_display_error:
-    enabled: false
-    bias_deg: [2.0, 1.0]
+    enabled: true
+    bias_deg:
+    - 2.0
+    - 1.0
     noise_std_deg: 0.0
     noise_seed: 42
 learning:
