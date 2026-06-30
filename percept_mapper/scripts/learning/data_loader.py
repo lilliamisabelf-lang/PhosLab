@@ -120,11 +120,18 @@ class PhospheneDataLoader:
                     print(f"  WARN: Error leyendo {pairs_dir}: {e}")
                 continue
 
-            # Buscar carpetas de electrodos
+            # Buscar carpetas de electrodos. Dos esquemas de nombrado (ver
+            # scripts/phosphene_mapping.py:_electrode_dir_name):
+            #   - un solo implante  -> electrode_001 (histórico)
+            #   - varios implantes  -> impA_electrode50 (implante + índice local)
+            # El electrode_index real se lee del contenido del JSON, no del
+            # nombre, así que basta con dejar entrar ambos.
             for electrode_dir in sorted(exp_dir.iterdir()):
                 if not electrode_dir.is_dir():
                     continue
-                if not electrode_dir.name.startswith("electrode_"):
+                name = electrode_dir.name
+                is_electrode_dir = name.startswith("electrode_") or "_electrode" in name
+                if not is_electrode_dir:
                     continue
 
                 results_file = electrode_dir / "analysis_results.json"

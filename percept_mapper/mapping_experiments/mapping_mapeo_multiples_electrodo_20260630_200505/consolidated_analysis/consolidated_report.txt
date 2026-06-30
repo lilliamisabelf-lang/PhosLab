@@ -1,0 +1,303 @@
+======================================================================
+REPORTE CONSOLIDADO DE MAPEO DE FOSFENOS
+======================================================================
+
+Experimento: mapping_mapeo_multiples_electrodo_20260630_200505
+Inicio:      2026-06-30T20:05:05.313867
+Fin:         2026-06-30T20:19:32.931534
+Método:      absolute
+coords_csv:  exported_rf_10_combs_20260630_174048.csv
+Número de electrodos: 16
+Con respuesta: 16  |  Sin respuesta: 0
+
+----------------------------------------------------------------------
+RESULTADOS POR ELECTRODO
+----------------------------------------------------------------------
+
+ELECTRODO 3
+──────────────────────────────────────────────────
+Repeticiones válidas: 10/10
+Posición promedio: (1257.0, 942.4) px
+Desviación estándar: (8.3, 23.6) px
+Distancia media al promedio: 16.5 px (0.36°)
+Distancia máxima al promedio: 70.5 px (1.54°)
+Distancia media al estímulo: 15.6 px (0.34°)
+
+ELECTRODO 20
+──────────────────────────────────────────────────
+Repeticiones válidas: 10/10
+Posición promedio: (1231.6, 919.3) px
+Desviación estándar: (42.3, 4.5) px
+Distancia media al promedio: 26.0 px (0.57°)
+Distancia máxima al promedio: 126.1 px (2.76°)
+Distancia media al estímulo: 12.9 px (0.28°)
+
+ELECTRODO 24
+──────────────────────────────────────────────────
+Repeticiones válidas: 10/10
+Posición promedio: (1267.9, 937.2) px
+Desviación estándar: (2.5, 8.2) px
+Distancia media al promedio: 7.0 px (0.15°)
+Distancia máxima al promedio: 19.3 px (0.42°)
+Distancia media al estímulo: 9.0 px (0.20°)
+
+ELECTRODO 103
+──────────────────────────────────────────────────
+Repeticiones válidas: 10/10
+Posición promedio: (1264.9, 969.6) px
+Desviación estándar: (8.9, 83.8) px
+Distancia media al promedio: 50.5 px (1.11°)
+Distancia máxima al promedio: 250.7 px (5.48°)
+Distancia media al estímulo: 36.7 px (0.80°)
+
+ELECTRODO 108
+──────────────────────────────────────────────────
+Repeticiones válidas: 10/10
+Posición promedio: (1264.2, 1006.9) px
+Desviación estándar: (7.0, 12.0) px
+Distancia media al promedio: 10.1 px (0.22°)
+Distancia máxima al promedio: 34.8 px (0.76°)
+Distancia media al estímulo: 14.1 px (0.31°)
+
+ELECTRODO 123
+──────────────────────────────────────────────────
+Repeticiones válidas: 10/10
+Posición promedio: (1253.3, 973.0) px
+Desviación estándar: (35.3, 19.1) px
+Distancia media al promedio: 27.1 px (0.59°)
+Distancia máxima al promedio: 114.4 px (2.50°)
+Distancia media al estímulo: 19.6 px (0.43°)
+
+ELECTRODO 145
+──────────────────────────────────────────────────
+Repeticiones válidas: 10/10
+Posición promedio: (1271.6, 965.1) px
+Desviación estándar: (4.9, 7.3) px
+Distancia media al promedio: 6.6 px (0.14°)
+Distancia máxima al promedio: 19.3 px (0.42°)
+Distancia media al estímulo: 11.4 px (0.25°)
+
+ELECTRODO 239
+──────────────────────────────────────────────────
+Repeticiones válidas: 10/10
+Posición promedio: (1275.2, 909.9) px
+Desviación estándar: (1.8, 13.6) px
+Distancia media al promedio: 10.5 px (0.23°)
+Distancia máxima al promedio: 30.5 px (0.67°)
+Distancia media al estímulo: 6.5 px (0.14°)
+
+ELECTRODO 258
+──────────────────────────────────────────────────
+Repeticiones válidas: 10/10
+Posición promedio: (1266.4, 885.2) px
+Desviación estándar: (9.0, 15.3) px
+Distancia media al promedio: 12.9 px (0.28°)
+Distancia máxima al promedio: 47.7 px (1.04°)
+Distancia media al estímulo: 15.2 px (0.33°)
+
+ELECTRODO 377
+──────────────────────────────────────────────────
+Repeticiones válidas: 10/10
+Posición promedio: (1264.3, 872.4) px
+Desviación estándar: (5.0, 12.7) px
+Distancia media al promedio: 9.7 px (0.21°)
+Distancia máxima al promedio: 33.2 px (0.73°)
+Distancia media al estímulo: 12.8 px (0.28°)
+
+ELECTRODO 396
+──────────────────────────────────────────────────
+Repeticiones válidas: 10/10
+Posición promedio: (1262.5, 858.2) px
+Desviación estándar: (9.4, 10.9) px
+Distancia media al promedio: 11.9 px (0.26°)
+Distancia máxima al promedio: 30.7 px (0.67°)
+Distancia media al estímulo: 11.7 px (0.26°)
+
+ELECTRODO 439
+──────────────────────────────────────────────────
+Repeticiones válidas: 10/10
+Posición promedio: (1274.9, 843.8) px
+Desviación estándar: (2.7, 8.8) px
+Distancia media al promedio: 8.5 px (0.19°)
+Distancia máxima al promedio: 15.7 px (0.34°)
+Distancia media al estímulo: 11.9 px (0.26°)
+
+ELECTRODO 560
+──────────────────────────────────────────────────
+Repeticiones válidas: 10/10
+Posición promedio: (1212.5, 812.0) px
+Desviación estándar: (7.9, 6.3) px
+Distancia media al promedio: 9.1 px (0.20°)
+Distancia máxima al promedio: 15.9 px (0.35°)
+Distancia media al estímulo: 8.1 px (0.18°)
+
+ELECTRODO 628
+──────────────────────────────────────────────────
+Repeticiones válidas: 10/10
+Posición promedio: (1282.3, 813.9) px
+Desviación estándar: (7.7, 7.9) px
+Distancia media al promedio: 9.4 px (0.21°)
+Distancia máxima al promedio: 19.9 px (0.44°)
+Distancia media al estímulo: 12.8 px (0.28°)
+
+ELECTRODO 844
+──────────────────────────────────────────────────
+Repeticiones válidas: 10/10
+Posición promedio: (1280.0, 806.4) px
+Desviación estándar: (5.0, 5.9) px
+Distancia media al promedio: 6.9 px (0.15°)
+Distancia máxima al promedio: 15.0 px (0.33°)
+Distancia media al estímulo: 6.1 px (0.13°)
+
+ELECTRODO 848
+──────────────────────────────────────────────────
+Repeticiones válidas: 10/10
+Posición promedio: (1260.2, 793.5) px
+Desviación estándar: (8.7, 13.6) px
+Distancia media al promedio: 15.0 px (0.33°)
+Distancia máxima al promedio: 25.0 px (0.55°)
+Distancia media al estímulo: 1.7 px (0.04°)
+
+----------------------------------------------------------------------
+DISTANCIAS ENTRE POSICIONES PROMEDIO
+----------------------------------------------------------------------
+
+Electrodo 3 → 20: 34.3 px (0.75°)
+Electrodo 3 → 24: 12.1 px (0.26°)
+Electrodo 3 → 103: 28.3 px (0.62°)
+Electrodo 3 → 108: 64.9 px (1.42°)
+Electrodo 3 → 123: 30.8 px (0.67°)
+Electrodo 3 → 145: 27.0 px (0.59°)
+Electrodo 3 → 239: 37.3 px (0.82°)
+Electrodo 3 → 258: 58.0 px (1.27°)
+Electrodo 3 → 377: 70.4 px (1.54°)
+Electrodo 3 → 396: 84.4 px (1.84°)
+Electrodo 3 → 439: 100.3 px (2.19°)
+Electrodo 3 → 560: 137.8 px (3.01°)
+Electrodo 3 → 628: 131.0 px (2.86°)
+Electrodo 3 → 844: 138.0 px (3.02°)
+Electrodo 3 → 848: 149.0 px (3.26°)
+
+Electrodo 20 → 24: 40.5 px (0.88°)
+Electrodo 20 → 103: 60.3 px (1.32°)
+Electrodo 20 → 108: 93.5 px (2.04°)
+Electrodo 20 → 123: 57.8 px (1.26°)
+Electrodo 20 → 145: 60.8 px (1.33°)
+Electrodo 20 → 239: 44.6 px (0.98°)
+Electrodo 20 → 258: 48.7 px (1.07°)
+Electrodo 20 → 377: 57.2 px (1.25°)
+Electrodo 20 → 396: 68.5 px (1.50°)
+Electrodo 20 → 439: 87.1 px (1.90°)
+Electrodo 20 → 560: 109.1 px (2.38°)
+Electrodo 20 → 628: 117.0 px (2.56°)
+Electrodo 20 → 844: 122.9 px (2.69°)
+Electrodo 20 → 848: 129.1 px (2.82°)
+
+Electrodo 24 → 103: 32.5 px (0.71°)
+Electrodo 24 → 108: 69.8 px (1.53°)
+Electrodo 24 → 123: 38.6 px (0.84°)
+Electrodo 24 → 145: 28.2 px (0.62°)
+Electrodo 24 → 239: 28.3 px (0.62°)
+Electrodo 24 → 258: 52.1 px (1.14°)
+Electrodo 24 → 377: 64.9 px (1.42°)
+Electrodo 24 → 396: 79.2 px (1.73°)
+Electrodo 24 → 439: 93.7 px (2.05°)
+Electrodo 24 → 560: 137.0 px (2.99°)
+Electrodo 24 → 628: 124.2 px (2.72°)
+Electrodo 24 → 844: 131.4 px (2.87°)
+Electrodo 24 → 848: 143.9 px (3.15°)
+
+Electrodo 103 → 108: 37.3 px (0.82°)
+Electrodo 103 → 123: 12.1 px (0.26°)
+Electrodo 103 → 145: 8.1 px (0.18°)
+Electrodo 103 → 239: 60.6 px (1.33°)
+Electrodo 103 → 258: 84.4 px (1.85°)
+Electrodo 103 → 377: 97.2 px (2.13°)
+Electrodo 103 → 396: 111.4 px (2.44°)
+Electrodo 103 → 439: 126.2 px (2.76°)
+Electrodo 103 → 560: 166.1 px (3.63°)
+Electrodo 103 → 628: 156.7 px (3.43°)
+Electrodo 103 → 844: 163.9 px (3.58°)
+Electrodo 103 → 848: 176.2 px (3.85°)
+
+Electrodo 108 → 123: 35.7 px (0.78°)
+Electrodo 108 → 145: 42.4 px (0.93°)
+Electrodo 108 → 239: 97.7 px (2.14°)
+Electrodo 108 → 258: 121.8 px (2.66°)
+Electrodo 108 → 377: 134.5 px (2.94°)
+Electrodo 108 → 396: 148.7 px (3.25°)
+Electrodo 108 → 439: 163.5 px (3.57°)
+Electrodo 108 → 560: 201.7 px (4.41°)
+Electrodo 108 → 628: 193.9 px (4.24°)
+Electrodo 108 → 844: 201.2 px (4.40°)
+Electrodo 108 → 848: 213.5 px (4.67°)
+
+Electrodo 123 → 145: 20.0 px (0.44°)
+Electrodo 123 → 239: 66.8 px (1.46°)
+Electrodo 123 → 258: 88.7 px (1.94°)
+Electrodo 123 → 377: 101.2 px (2.21°)
+Electrodo 123 → 396: 115.1 px (2.52°)
+Electrodo 123 → 439: 131.0 px (2.86°)
+Electrodo 123 → 560: 166.1 px (3.63°)
+Electrodo 123 → 628: 161.7 px (3.54°)
+Electrodo 123 → 844: 168.7 px (3.69°)
+Electrodo 123 → 848: 179.6 px (3.93°)
+
+Electrodo 145 → 239: 55.4 px (1.21°)
+Electrodo 145 → 258: 80.1 px (1.75°)
+Electrodo 145 → 377: 93.1 px (2.03°)
+Electrodo 145 → 396: 107.3 px (2.35°)
+Electrodo 145 → 439: 121.4 px (2.65°)
+Electrodo 145 → 560: 164.2 px (3.59°)
+Electrodo 145 → 628: 151.7 px (3.32°)
+Electrodo 145 → 844: 159.0 px (3.48°)
+Electrodo 145 → 848: 172.0 px (3.76°)
+
+Electrodo 239 → 258: 26.2 px (0.57°)
+Electrodo 239 → 377: 39.1 px (0.85°)
+Electrodo 239 → 396: 53.2 px (1.16°)
+Electrodo 239 → 439: 66.1 px (1.44°)
+Electrodo 239 → 560: 116.3 px (2.54°)
+Electrodo 239 → 628: 96.3 px (2.10°)
+Electrodo 239 → 844: 103.6 px (2.26°)
+Electrodo 239 → 848: 117.3 px (2.57°)
+
+Electrodo 258 → 377: 13.0 px (0.28°)
+Electrodo 258 → 396: 27.2 px (0.60°)
+Electrodo 258 → 439: 42.3 px (0.92°)
+Electrodo 258 → 560: 90.9 px (1.99°)
+Electrodo 258 → 628: 73.1 px (1.60°)
+Electrodo 258 → 844: 80.0 px (1.75°)
+Electrodo 258 → 848: 91.9 px (2.01°)
+
+Electrodo 377 → 396: 14.3 px (0.31°)
+Electrodo 377 → 439: 30.5 px (0.67°)
+Electrodo 377 → 560: 79.5 px (1.74°)
+Electrodo 377 → 628: 61.2 px (1.34°)
+Electrodo 377 → 844: 67.9 px (1.48°)
+Electrodo 377 → 848: 79.0 px (1.73°)
+
+Electrodo 396 → 439: 19.1 px (0.42°)
+Electrodo 396 → 560: 68.1 px (1.49°)
+Electrodo 396 → 628: 48.6 px (1.06°)
+Electrodo 396 → 844: 54.8 px (1.20°)
+Electrodo 396 → 848: 64.8 px (1.42°)
+
+Electrodo 439 → 560: 70.0 px (1.53°)
+Electrodo 439 → 628: 30.8 px (0.67°)
+Electrodo 439 → 844: 37.8 px (0.83°)
+Electrodo 439 → 848: 52.4 px (1.15°)
+
+Electrodo 560 → 628: 69.8 px (1.53°)
+Electrodo 560 → 844: 67.7 px (1.48°)
+Electrodo 560 → 848: 51.1 px (1.12°)
+
+Electrodo 628 → 844: 7.8 px (0.17°)
+Electrodo 628 → 848: 30.0 px (0.66°)
+
+Electrodo 844 → 848: 23.6 px (0.52°)
+
+
+======================================================================
+FIN DEL REPORTE
+======================================================================
