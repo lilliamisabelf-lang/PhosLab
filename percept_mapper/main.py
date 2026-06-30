@@ -1055,10 +1055,17 @@ Ejemplos de uso:
     elif mapping_method == "forced_adjustment":
         from scripts.tablet import ForcedAdjustmentTablet
 
+        fa_cfg = config.get("forced_adjustment", {})
+        fa_min_deg = float(fa_cfg.get("anchor_min_dist_deg", 2.0))
+        fa_max_deg = float(fa_cfg.get("anchor_max_dist_deg", 4.0))
+        # ppd se calculará después del mapper; se pasa None por ahora y se
+        # actualiza en configure_forced_adjustment_ppd() más adelante
         response_screen = ForcedAdjustmentTablet(
             actual_width, actual_height,
             brush_size=brush_size,
             brush_color=brush_color,
+            min_dist_px=fa_min_deg * 60,   # estimación provisional (60 px/deg)
+            max_dist_px=fa_max_deg * 60,
         )
         response_capture = DrawingResponseCapture(response_screen)
     else:
@@ -1207,6 +1214,24 @@ Ejemplos de uso:
         display_noise_seed=display_noise_seed,
         display_error_enabled=display_error_enabled,
     )
+
+    # Actualizar ppd en ForcedAdjustmentTablet ahora que vf_scope_deg es conocido
+    if mapping_method == "forced_adjustment":
+        _fa_ppd = min(actual_width, actual_height) / (2.0 * vf_scope_deg)
+        response_screen._ppd = _fa_ppd
+        response_screen._screen_cx = actual_width // 2
+        response_screen._screen_cy = actual_height // 2
+        fa_cfg = config.get("forced_adjustment", {})
+        fa_min_deg = float(fa_cfg.get("anchor_min_dist_deg", 2.0))
+        fa_max_deg = float(fa_cfg.get("anchor_max_dist_deg", 4.0))
+        response_screen.min_dist_px = fa_min_deg * _fa_ppd
+        response_screen.max_dist_px = fa_max_deg * _fa_ppd
+        print(
+            f"[ForcedAdjustment] ppd={_fa_ppd:.1f} px/deg  "
+            f"anchor_range=[{response_screen.min_dist_px:.0f}, "
+            f"{response_screen.max_dist_px:.0f}] px  "
+            f"({fa_min_deg}°–{fa_max_deg}°)"
+        )
 
     # MAPPING DEBUG MODE: rejilla + marcador de fosfeno. Se construye desde la
     # geometría del mapper (mismo px/grado y centro que las posiciones de los
@@ -1553,6 +1578,7 @@ Ejemplos de uso:
                 valid_electrode_indices=valid_electrode_indices,
                 num_repetitions=num_repetitions,
                 mapping_method=mapping_method,
+                coords_csv=Path(coords_csv_path).name if coords_csv_path else "",
                 trial_sequence_config=TrialSequenceConfig(
                     randomize=do_randomize,
                     random_seed=realized_seed,

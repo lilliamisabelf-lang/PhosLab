@@ -104,14 +104,18 @@ class MultiElectrodeAnalyzer:
         print("ANÁLISIS CONSOLIDADO DE MÚLTIPLES ELECTRODOS")
         print("=" * 70 + "\n")
 
-        # Encontrar todas las carpetas de electrodos
-        electrode_dirs = sorted(
-            [
-                d
-                for d in self.experiment_dir.iterdir()
-                if d.is_dir() and d.name.startswith("electrode_")
-            ]
-        )
+        # Encontrar todas las carpetas de electrodos.
+        # Formato histórico: electrode_001
+        # Formato multi-implante: impA_electrode50
+        import json as _json
+        def _is_electrode_dir(d):
+            if not d.is_dir():
+                return False
+            return d.name.startswith("electrode_") or (
+                d.name.startswith("imp") and "_electrode" in d.name
+            )
+
+        electrode_dirs = sorted(d for d in self.experiment_dir.iterdir() if _is_electrode_dir(d))
 
         if not electrode_dirs:
             print("✗ No se encontraron carpetas de electrodos")
@@ -123,6 +127,7 @@ class MultiElectrodeAnalyzer:
         session_meta_path = self.experiment_dir / "session_metadata.json"
         session_started = None
         session_mapping_method = None
+        session_coords_csv = ""
         if session_meta_path.exists():
             try:
                 import json as _json
@@ -130,6 +135,7 @@ class MultiElectrodeAnalyzer:
                     _sm = _json.load(_f)
                 session_started = _sm.get("session_started")
                 session_mapping_method = _sm.get("mapping_method")
+                session_coords_csv = _sm.get("coords_csv", "")
             except Exception:
                 pass
 
@@ -142,6 +148,7 @@ class MultiElectrodeAnalyzer:
             "session_started": session_started,
             "session_ended": None,
             "mapping_method": session_mapping_method,
+            "coords_csv": session_coords_csv,
         }
 
         # Analizar cada electrodo
@@ -151,11 +158,22 @@ class MultiElectrodeAnalyzer:
         last_end_time = None
 
         for electrode_dir in electrode_dirs:
-            electrode_index = int(electrode_dir.name.split("_")[1])
+            # Leer índice global desde metadata.json (robusto ante ambos formatos de carpeta)
+            _meta_f = electrode_dir / "metadata.json"
+            try:
+                electrode_index = int(
+                    _json.loads(_meta_f.read_text(encoding="utf-8")).get("electrode_index", -1)
+                )
+            except Exception:
+                # Fallback: extraer del nombre (formato histórico electrode_001)
+                try:
+                    electrode_index = int(electrode_dir.name.split("_")[1])
+                except (IndexError, ValueError):
+                    electrode_index = -1
             all_electrode_indices.append(electrode_index)
 
             print(f"{'='*70}")
-            print(f"Analizando electrodo {electrode_index:03d}...")
+            print(f"Analizando electrodo {electrode_index:03d} ({electrode_dir.name})...")
             print(f"{'='*70}")
 
             try:
@@ -476,6 +494,7 @@ class MultiElectrodeAnalyzer:
         session_started = consolidated_results.get("session_started") or "—"
         session_ended = consolidated_results.get("session_ended") or "—"
         mapping_method = consolidated_results.get("mapping_method") or "—"
+        coords_csv = consolidated_results.get("coords_csv") or "—"
 
         report_lines = [
             "=" * 70,
@@ -486,6 +505,7 @@ class MultiElectrodeAnalyzer:
             f"Inicio:      {session_started}",
             f"Fin:         {session_ended}",
             f"Método:      {mapping_method}",
+            f"coords_csv:  {coords_csv}",
             f"Número de electrodos: {consolidated_results['num_electrodes']}",
             f"Con respuesta: {len(consolidated_results.get('electrodes', {}))}  |  "
             f"Sin respuesta: {len(consolidated_results.get('no_response_electrodes', []))}",

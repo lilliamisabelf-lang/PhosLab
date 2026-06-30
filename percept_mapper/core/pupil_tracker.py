@@ -68,6 +68,7 @@ class PupilTracker:
         min_confidence: float = 0.6,
         one_euro: dict | None = None,
         max_sample_age_s: float = 0.25,
+        max_velocity_px_s: float = 1500.0,
     ):
         print("[PupilTracker] Inicializando...")
         self.address = address

@@ -15,6 +15,21 @@ import json
 
 from scripts.response_capture import apply_response_metadata, write_response_summary
 from scripts.schemas import TrialRecord
+import string as _string
+
+
+def _electrode_dir_name(electrode_index: int, electrode_info: dict | None, display_info: dict | None) -> str:
+    """Devuelve el nombre de carpeta del electrodo.
+    Con un solo implante: electrode_001 (formato histórico).
+    Con múltiples implantes: impA_electrode50 (implante + índice local)."""
+    if electrode_info and display_info:
+        imp_id = electrode_info.get("implant_id")
+        local_idx = electrode_info.get("implant_local_index")
+        implants = (display_info.get("coord_source") or {}).get("implants") or []
+        if imp_id and local_idx is not None and len(implants) > 1 and imp_id in implants:
+            letter = _string.ascii_uppercase[implants.index(imp_id)]
+            return f"imp{letter}_electrode{local_idx}"
+    return f"electrode_{electrode_index:03d}"
 
 
 class PhospheneMappingExperiment:
@@ -100,7 +115,9 @@ class PhospheneMappingExperiment:
                 Path("mapping_experiments")
                 / f"mapping_{experiment_name}_{experiment_timestamp}"
             )
-        self.electrode_dir = self.experiment_dir / f"electrode_{electrode_index:03d}"
+        self.electrode_dir = self.experiment_dir / _electrode_dir_name(
+            electrode_index, electrode_info, display_info
+        )
         self.electrode_dir.mkdir(parents=True, exist_ok=True)
 
         print(f"                             Carpeta: {self.experiment_dir}")
@@ -270,6 +287,12 @@ class PhospheneMappingExperiment:
         # ============================================
         print(f"[4/4] DRAWING: Dibuja el fosfeno (repetición {repetition_number})")
         repetition_metadata["drawing_start"] = datetime.now().isoformat()
+
+        # Informar al ForcedAdjustmentTablet de la posición del fosfeno actual
+        # para que el punto aleatorio aparezca cerca (si el modo lo soporta)
+        _inner = getattr(self.drawing_tablet, 'response_screen', None)
+        if _inner is not None and hasattr(_inner, 'set_anchor_px') and phosphene_position is not None:
+            _inner.set_anchor_px(int(phosphene_position[0]), int(phosphene_position[1]))
 
         # Resetear pantalla de respuesta para nuevo trial
         drawing_tablet_reset_func(self.drawing_tablet)

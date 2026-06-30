@@ -251,12 +251,23 @@ class ForcedAdjustmentTablet:
         screen_height: int,
         brush_size: int = 3,
         brush_color: tuple = (255, 255, 0),
+        min_dist_px: float = 80.0,
+        max_dist_px: float = 170.0,
+        ppd: float | None = None,
+        screen_cx: int | None = None,
+        screen_cy: int | None = None,
     ):
         import random
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.brush_size = brush_size
         self.brush_color = brush_color
+        self.min_dist_px = max(1.0, float(min_dist_px))
+        self.max_dist_px = max(self.min_dist_px + 1, float(max_dist_px))
+        self._ppd = float(ppd) if ppd else None
+        self._screen_cx = screen_cx if screen_cx is not None else screen_width // 2
+        self._screen_cy = screen_cy if screen_cy is not None else screen_height // 2
+        self._anchor_px: tuple[int, int] | None = None
         self._rng = random.Random()
         self.mode = "forced_adjustment"
         self.last_status = "unknown"
@@ -328,12 +339,38 @@ class ForcedAdjustmentTablet:
     # Helpers privados                                                     #
     # ------------------------------------------------------------------ #
 
+    def set_anchor_px(self, x_px: int, y_px: int) -> None:
+        """Actualiza la posición del fosfeno actual (en píxeles) para el próximo reset()."""
+        self._anchor_px = (int(x_px), int(y_px))
+
+    def set_anchor_deg(self, x_deg: float, y_deg: float) -> None:
+        """Actualiza la posición del fosfeno actual (en grados) para el próximo reset().
+        Convierte a píxeles usando ppd y el centro de pantalla."""
+        if self._ppd is None:
+            return
+        px = int(round(self._screen_cx + x_deg * self._ppd))
+        py = int(round(self._screen_cy - y_deg * self._ppd))
+        self._anchor_px = (px, py)
+
     def _random_pos(self) -> tuple[int, int]:
-        """Posición aleatoria evitando el cuarto central de la pantalla."""
+        """Posición aleatoria en un anillo alrededor del fosfeno (si hay anchor),
+        o en cualquier zona de la pantalla evitando el cuarto central (fallback)."""
+        import math
+        margin = max(self.DOT_RADIUS * 2, 40)
+        if self._anchor_px is not None:
+            ax, ay = self._anchor_px
+            for _ in range(300):
+                angle = self._rng.uniform(0, 2 * math.pi)
+                r = self._rng.uniform(self.min_dist_px, self.max_dist_px)
+                x = int(round(ax + r * math.cos(angle)))
+                y = int(round(ay + r * math.sin(angle)))
+                if margin <= x <= self.screen_width - margin and \
+                   margin <= y <= self.screen_height - margin:
+                    return (x, y)
+        # Fallback: posición aleatoria evitando el cuarto central
         mx, my = self.screen_width // 2, self.screen_height // 2
         excl_x = self.screen_width // 4
         excl_y = self.screen_height // 4
-        margin = max(self.DOT_RADIUS * 2, 40)
         while True:
             x = self._rng.randint(margin, self.screen_width - margin)
             y = self._rng.randint(margin, self.screen_height - margin)

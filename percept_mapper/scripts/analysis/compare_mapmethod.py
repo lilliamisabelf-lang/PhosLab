@@ -75,9 +75,10 @@ def assign_rings(results: dict, tol: float = 1.0) -> dict[int, float]:
     cluster: list[int] = []
 
     def flush(cl):
-        m = round(sum(raw[e] for e in cl) / len(cl), 2)
+        m = sum(raw[e] for e in cl) / len(cl)
+        m_snapped = float(round(m))  # snap al grado entero más cercano
         for e in cl:
-            rings[e] = m
+            rings[e] = m_snapped
 
     for e in order:
         if cluster and raw[e] - raw[cluster[-1]] > tol:

@@ -5,29 +5,17 @@ experiment:
 experiment_mode: mapping
 phosphene_mapping:
   electrodes_by_implant:
-  - implant_id: 696e3e00f0fe
+  - implant_id: 14330dd1d9a8
     electrode_index:
-    - 0
-    - 1
-    - 2
-    - 3
-    - 4
-    - 5
-    - 6
-    - 7
-    - 8
-    - 9
-    - 10
-    - 11
-    - 12
-    - 13
-    - 14
-    - 15
-    - 16
-    - 17
-    - 18
-    - 19
-  num_repetitions: 10
+    - 30
+  - implant_id: 7ba4f44cbe8d
+    electrode_index:
+    - 30
+    - 41
+  - implant_id: c4b4f071acfd
+    electrode_index:
+    - 41
+  num_repetitions: 2
   experiment_name: mapeo_multiples_electrodos
   interstimulation_between_reps: true
   enabled: true
@@ -47,17 +35,20 @@ input_mode: mouse
 drawing_input: both
 response_mode: drawing
 mapping_method: absolute
+forced_adjustment:
+  anchor_min_dist_deg: 3.0
+  anchor_max_dist_deg: 5.0
 screen:
-  width: 1920
-  height: 1080
+  width: 1536
+  height: 864
   fullscreen: true
   background_color:
   - 0
   - 0
   - 0
-  screen_diagonal_inches: 21.68
+  screen_diagonal_inches: 15.33
   dist_to_screen_cm: 60
-  vf_scope_deg: 12.68
+  vf_scope_deg: 9.04
   anchor_circle:
     radius: 50
     color:
@@ -66,7 +57,7 @@ screen:
     - 0
     thickness: 3
     tolerance_radius: 50
-  monitor_index: 1
+  monitor_index: 0
 timing:
   prestimulation: 193
   stimulation: 400
@@ -153,7 +144,7 @@ retinotopic_mapping:
   array_type: shanks_10x32
   implant_id_filter: all
   coordinate_source: phoslab_csv
-  coords_csv_path: C:/PhosLab/percept_mapper/config/synthetic_4ecc_4el.csv
+  coords_csv_path: C:/PhosLab/percept_mapper/config/prueba4utah.csv
   coordinate_files:
     shanks_10x16: config/coords_shanks_10x16.yaml
     shanks_10x32: config/coords_shanks_10x32.yaml
@@ -175,7 +166,7 @@ retinotopic_mapping:
     a: 0.75
     pixels_per_degree: 60
   simulated_display_error:
-    enabled: true
+    enabled: false
     bias_deg:
     - 2.0
     - 1.0
