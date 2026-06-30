@@ -1,0 +1,121 @@
+======================================================================
+EXPERIMENTO DE MAPEO DE FOSFENOS
+======================================================================
+
+Nombre: mapeo_electrodo_14
+ID Experimento: 20260630_185135
+Inicio: 2026-06-30T18:51:35.119795
+Fin: 2026-06-30T19:07:13.892291
+Electrodo: 14
+Repeticiones: 10
+
+TIEMPOS:
+  - Prestimulation: 193ms
+  - Stimulation: 400ms
+  - Poststimulation: 100ms
+  - Interstimulation: 500ms
+
+======================================================================
+DETALLES DE CADA REPETICIÓN
+======================================================================
+
+REPETICIÓN 4:
+  Posición: (1097, 1036)
+  Inicio: 2026-06-30T18:53:32.409198
+  Fin: 2026-06-30T18:53:35.132886
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=22)
+  response_xy: [1123.9754079079262, 1118.307218297051]
+  Archivo respuesta: saccade_samples_repetition_004.json
+
+REPETICIÓN 5:
+  Posición: (1097, 1036)
+  Inicio: 2026-06-30T18:53:59.266836
+  Fin: 2026-06-30T18:54:04.614811
+  Pérdidas de fijación: 2
+  Intentos: 3
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=30)
+  response_xy: [1308.5328505188827, 691.669022107138]
+  Archivo respuesta: saccade_samples_repetition_005.json
+
+REPETICIÓN 8:
+  Posición: (1097, 1036)
+  Inicio: 2026-06-30T18:56:42.630598
+  Fin: 2026-06-30T18:56:45.367863
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=72)
+  response_xy: [1121.23663512814, 1067.879756230359]
+  Archivo respuesta: saccade_samples_repetition_008.json
+
+REPETICIÓN 2:
+  Posición: (1097, 1036)
+  Inicio: 2026-06-30T18:57:40.639089
+  Fin: 2026-06-30T18:57:43.526967
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=85)
+  response_xy: [1270.7164168873576, 685.8380160215971]
+  Archivo respuesta: saccade_samples_repetition_002.json
+
+REPETICIÓN 1:
+  Posición: (1097, 1036)
+  Inicio: 2026-06-30T18:58:25.693085
+  Fin: 2026-06-30T18:58:28.432211
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=98)
+  response_xy: [1026.179634429984, 1129.9975359485331]
+  Archivo respuesta: saccade_samples_repetition_001.json
+
+REPETICIÓN 6:
+  Posición: (1097, 1036)
+  Inicio: 2026-06-30T19:00:55.607106
+  Fin: 2026-06-30T19:01:04.078017
+  Pérdidas de fijación: 1
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=137)
+  response_xy: [1253.732673541063, 797.6550147306224]
+  Archivo respuesta: saccade_samples_repetition_006.json
+
+REPETICIÓN 9:
+  Posición: (1097, 1036)
+  Inicio: 2026-06-30T19:02:38.672714
+  Fin: 2026-06-30T19:02:41.395344
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=163)
+  response_xy: [1014.4225208610558, 1094.3203398084618]
+  Archivo respuesta: saccade_samples_repetition_009.json
+
+REPETICIÓN 3:
+  Posición: (1097, 1036)
+  Inicio: 2026-06-30T19:03:14.441459
+  Fin: 2026-06-30T19:03:17.185383
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=173)
+  response_xy: [1124.347931635044, 1067.8810321801807]
+  Archivo respuesta: saccade_samples_repetition_003.json
+
+REPETICIÓN 10:
+  Posición: (1097, 1036)
+  Inicio: 2026-06-30T19:04:26.281954
+  Fin: 2026-06-30T19:04:29.025749
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=191)
+  response_xy: [1072.609884505302, 1091.4767535613964]
+  Archivo respuesta: saccade_samples_repetition_010.json
+
+REPETICIÓN 7:
+  Posición: (1097, 1036)
+  Inicio: 2026-06-30T19:07:07.382933
+  Fin: 2026-06-30T19:07:10.121147
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=231)
+  response_xy: [1156.859032475194, 940.3311846195201]
+  Archivo respuesta: saccade_samples_repetition_007.json
+

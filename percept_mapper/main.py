@@ -357,6 +357,7 @@ import ctypes
 from core.eye_tracker import EyeTracker
 from core.mouse_tracker import MouseTracker
 from core.pupil_tracker import PupilTracker
+from core.neon_tracker import NeonTracker
 from scripts.anchor_screen import AnchorScreen
 from scripts.stimulation_screen import StimulationScreen
 from scripts.debug_overlay import MappingDebugOverlay
@@ -897,6 +898,44 @@ Ejemplos de uso:
                 "⚠ Cayendo a modo mouse por configuración pupil.allow_mouse_fallback=true."
             )
             tracker = MouseTracker()
+    elif input_mode == "neon":
+        print("[INIT] Inicializando Neon tracker (realtime_api a Companion app)...")
+        neon_cfg = config.get("neon", {}) or {}
+        # Neon needs the AprilTags on screen to map gaze -> screen pixels.
+        if _APRILTAG_OVERLAY is None:
+            print("=" * 70)
+            print("⚠ ERROR: input_mode: neon requiere apriltag_overlay.enabled: true")
+            print("  (las gafas mapean la mirada usando los AprilTags de las esquinas).")
+            print("=" * 70)
+            cleanup_and_exit(None, webcam_viewer)
+            return
+        try:
+            tracker = NeonTracker(
+                address=neon_cfg.get("address", ""),
+                port=neon_cfg.get("port", 8080),
+                discover_timeout_s=neon_cfg.get("discover_timeout_s", 10.0),
+                min_confidence=neon_cfg.get("min_confidence", 0.7),
+                one_euro=neon_cfg.get("one_euro"),
+                max_sample_age_s=neon_cfg.get("max_sample_age_s", 0.25),
+                apriltag_overlay=_APRILTAG_OVERLAY,
+                homography_min_tags=neon_cfg.get("homography_min_tags", 4),
+            )
+            print("       ✓ Neon tracker iniciado correctamente")
+        except Exception as e:
+            print("=" * 70)
+            print("⚠ ERROR al iniciar Neon tracker:")
+            print(str(e))
+            print("=" * 70)
+            if not bool(neon_cfg.get("allow_mouse_fallback", False)):
+                print(
+                    "✗ No se inicia el experimento sin Neon. Activa neon.allow_mouse_fallback solo para pruebas."
+                )
+                cleanup_and_exit(None, webcam_viewer)
+                return
+            print(
+                "⚠ Cayendo a modo mouse por configuración neon.allow_mouse_fallback=true."
+            )
+            tracker = MouseTracker()
     else:
         tracker = MouseTracker()
 
@@ -1066,6 +1105,18 @@ Ejemplos de uso:
             brush_color=brush_color,
             min_dist_px=fa_min_deg * 60,   # estimación provisional (60 px/deg)
             max_dist_px=fa_max_deg * 60,
+        )
+        response_capture = DrawingResponseCapture(response_screen)
+    elif mapping_method == "paired":
+        from scripts.tablet import LineDrawingTablet
+
+        response_screen = LineDrawingTablet(
+            actual_width, actual_height,
+            brush_size=brush_size,
+            brush_color=brush_color,
+            instructions_text=instructions_text,
+            hide_cursor=hide_cursor,
+            cursor_clip_rect=cursor_clip_rect,
         )
         response_capture = DrawingResponseCapture(response_screen)
     else:
@@ -1523,6 +1574,49 @@ Ejemplos de uso:
         if not valid_electrode_indices:
             print("✗ ERROR: Ningún electrodo válido para mapear.")
             cleanup_and_exit(eye_tracker, webcam_viewer)
+            return
+
+        # ============================================
+        # MÉTODO PAREADO (paired): dos fosfenos por ensayo, respuesta de línea
+        # Forma de ensayo distinta (A→rest→B + 1 línea) → bucle propio que no
+        # usa la trial-list por-electrodo. Construye un grafo de pares sobre las
+        # posiciones de los electrodos válidos y los recorre. Tras terminar,
+        # finaliza y sale (el análisis pareado vive en build_relative_map.py).
+        # ============================================
+        if mapping_method == "paired":
+            _run_paired_session(
+                params=params,
+                config=config,
+                screen=screen,
+                clock=clock,
+                eye_tracker=eye_tracker,
+                anchor_screen=anchor_screen,
+                response_capture=response_capture,
+                webcam_viewer=webcam_viewer,
+                gaze_trace=gaze_trace,
+                display_metadata=display_metadata,
+                stim_by_electrode=stim_by_electrode,
+                position_by_electrode=position_by_electrode,
+                current_by_electrode=current_by_electrode,
+                valid_electrode_indices=valid_electrode_indices,
+                mapper=mapper,
+                multi_experiment_dir=multi_experiment_dir,
+                input_mode=input_mode,
+                coords_csv_path=coords_csv_path,
+                mapping_config=mapping_config,
+                timing_config={
+                    "prestimulation_ms": PRESTIMULATION_MS,
+                    "stimulation_ms": STIMULATION_MS,
+                    "poststimulation_ms": POSTSTIMULATION_MS,
+                    "interstimulation_ms": INTERSTIMULATION_MS,
+                },
+                pulse_width_us=PULSE_WIDTH_US,
+                frequency_hz=FREQUENCY_HZ,
+                FPS=FPS,
+                save_results=SAVE_RESULTS,
+                screen_width=SCREEN_WIDTH,
+                screen_height=SCREEN_HEIGHT,
+            )
             return
 
         # ============================================
@@ -2703,6 +2797,226 @@ def run_interstimulation(
 
         _display_flip(screen)
         clock.tick(FPS)  # Cómo de fluido se ejecuta el programa
+
+
+def _run_paired_session(
+    *,
+    params,
+    config,
+    screen,
+    clock,
+    eye_tracker,
+    anchor_screen,
+    response_capture,
+    webcam_viewer,
+    gaze_trace,
+    display_metadata,
+    stim_by_electrode,
+    position_by_electrode,
+    current_by_electrode,
+    valid_electrode_indices,
+    mapper,
+    multi_experiment_dir,
+    input_mode,
+    coords_csv_path,
+    mapping_config,
+    timing_config,
+    pulse_width_us,
+    frequency_hz,
+    FPS,
+    save_results,
+    screen_width,
+    screen_height,
+):
+    """Ejecuta una sesión completa del método de mapeo PAREADO.
+
+    Construye un grafo de pares de electrodos sobre la geometría VERDADERA (en
+    grados, vía mapper.get_electrode_info), los recorre estimulando A→rest→B y
+    capturando una línea por par, y persiste pairs/{metadata,session_metadata}.
+    El análisis (recuperación del mapa) se hace después, offline, con
+    scripts/analysis/build_relative_map.py.
+    """
+    import numpy as np
+    import random as _rng_mod
+    import secrets as _secrets
+
+    from scripts.pair_mapping import PairMappingExperiment
+    from scripts.relative_map import build_pair_graph
+
+    paired_cfg = (config.get("paired") or {})
+    strategy = str(paired_cfg.get("strategy", "knn+struts"))
+    k = int(paired_cfg.get("k", 4))
+    n_long = int(paired_cfg.get("n_long", 6))
+    both_directions = bool(paired_cfg.get("both_directions", False))
+    rest_ms = float(paired_cfg.get("rest_ms", 1000.0))
+    do_randomize = bool(paired_cfg.get("randomize", True))
+    seed_cfg = paired_cfg.get("random_seed", mapping_config.get("random_seed"))
+    realized_seed = int(seed_cfg) if seed_cfg is not None else _secrets.randbits(32)
+
+    # Geometría verdadera (grados) de cada electrodo válido, en el mismo orden
+    # que valid_electrode_indices → nodos 0..N-1 del grafo.
+    coords_deg = []
+    info_by_node = []
+    for ei in valid_electrode_indices:
+        try:
+            info = mapper.get_electrode_info(ei)
+            xy = info.get("visual_position_deg")
+        except Exception:
+            info, xy = {"index": int(ei)}, None
+        if xy is None:
+            xy = [0.0, 0.0]
+        coords_deg.append([float(xy[0]), float(xy[1])])
+        info_by_node.append(info)
+    coords_deg = np.asarray(coords_deg, dtype=np.float64)
+    n_nodes = len(valid_electrode_indices)
+
+    if n_nodes < 2:
+        print("✗ ERROR (paired): se requieren ≥2 electrodos para formar pares.")
+        cleanup_and_exit(eye_tracker, webcam_viewer)
+        return
+
+    edges = build_pair_graph(
+        coords_deg, strategy=strategy, k=k, n_long=n_long, seed=realized_seed
+    )
+    # Pares dirigidos: añadir reverso (B→A) si both_directions (cancela el sesgo
+    # de orden serial en el estimador LSQ aguas abajo).
+    directed = [(i, j) for (i, j) in edges]
+    if both_directions:
+        directed += [(j, i) for (i, j) in edges]
+
+    if do_randomize:
+        _rng_mod.Random(realized_seed).shuffle(directed)
+
+    print("=" * 70)
+    print("MODO MAPEO: PAREADO (paired)")
+    print(f"  electrodos={n_nodes}  estrategia={strategy} (k={k}, n_long={n_long})")
+    print(f"  pares={len(edges)}  dirigidos={len(directed)}  "
+          f"both_directions={both_directions}")
+    print(f"  rest={rest_ms:.0f}ms  randomize={do_randomize}  seed={realized_seed}")
+    print("=" * 70)
+    print()
+
+    exp = PairMappingExperiment(
+        params=params,
+        screen=screen,
+        clock=clock,
+        eye_tracker=eye_tracker,
+        anchor_screen=anchor_screen,
+        drawing_tablet=response_capture,
+        webcam_viewer=webcam_viewer,
+        gaze_trace=gaze_trace,
+        display_info=display_metadata,
+        timing_config=timing_config,
+        experiment_name="paired",
+        experiment_dir=multi_experiment_dir,
+        apriltag_overlay=_APRILTAG_OVERLAY,
+        debug_overlay=_MAPPING_DEBUG_OVERLAY,
+        input_mode=input_mode,
+        coords_csv=Path(coords_csv_path).name if coords_csv_path else "",
+        rest_ms=rest_ms,
+    )
+
+    # Persistir el orden/geometría de la sesión para que el analizador la
+    # reproduzca sin re-derivar nada.
+    if save_results and multi_experiment_dir is not None:
+        session_record = {
+            "session_started": datetime.now().isoformat(),
+            "mapping_method": "paired",
+            "coords_csv": Path(coords_csv_path).name if coords_csv_path else "",
+            "valid_electrode_indices": [int(e) for e in valid_electrode_indices],
+            "node_to_electrode": [int(e) for e in valid_electrode_indices],
+            "coords_deg_true": coords_deg.tolist(),
+            "strategy": strategy,
+            "k": k,
+            "n_long": n_long,
+            "both_directions": both_directions,
+            "rest_ms": rest_ms,
+            "randomize": do_randomize,
+            "random_seed": realized_seed,
+            "pair_order": [[int(a), int(b)] for (a, b) in directed],
+            "n_pairs_undirected": len(edges),
+            "n_pairs_directed": len(directed),
+        }
+        with open(exp.pairs_dir / "session_metadata.json", "w", encoding="utf-8") as f:
+            json.dump(session_record, f, indent=2, ensure_ascii=False)
+        print(f"✓ Orden de pares guardado: {exp.pairs_dir / 'session_metadata.json'}")
+        print()
+
+    user_cancelled = False
+    for pair_pos, (node_a, node_b) in enumerate(directed):
+        ea = valid_electrode_indices[node_a]
+        eb = valid_electrode_indices[node_b]
+        rec = exp.run_pair(
+            pair_index=pair_pos + 1,
+            electrode_a=int(ea),
+            electrode_b=int(eb),
+            stim_a=stim_by_electrode[ea],
+            stim_b=stim_by_electrode[eb],
+            pos_a=position_by_electrode[ea],
+            pos_b=position_by_electrode[eb],
+            current_a=current_by_electrode[ea],
+            current_b=current_by_electrode[eb],
+            pulse_width_us=pulse_width_us,
+            frequency_hz=frequency_hz,
+            run_prestim_func=run_prestimulation,
+            run_stim_func=run_stimulation,
+            run_poststim_func=run_poststimulation,
+            drawing_tablet_reset_func=drawing_tablet_reset,
+            FPS=FPS,
+            electrode_info_a=info_by_node[node_a],
+            electrode_info_b=info_by_node[node_b],
+        )
+        if rec is None:
+            print("\n[INFO] Sesión pareada cancelada por el usuario")
+            user_cancelled = True
+            break
+
+        status = (rec.get("response_status") or "ok").lower()
+        print(f"      [DASH] par {pair_pos+1}/{len(directed)}  status={status}")
+
+        # Descanso entre pares (reusa el rest sin marcador)
+        if pair_pos < len(directed) - 1:
+            if not exp._run_rest(timing_config.get("interstimulation_ms", 1000)):
+                print("\n[INFO] Cancelado durante el descanso entre pares")
+                user_cancelled = True
+                break
+
+    if save_results:
+        exp.finalize()
+
+    if eye_tracker:
+        eye_tracker.release()
+    if webcam_viewer:
+        webcam_viewer.release()
+
+    if user_cancelled:
+        cleanup_and_exit(eye_tracker, webcam_viewer)
+        return
+
+    print("\n" + "=" * 70)
+    print("SESIÓN PAREADA COMPLETADA")
+    print("=" * 70)
+    if save_results:
+        print(f"\n📁 Resultados: {exp.pairs_dir}")
+        print("   Para reconstruir el mapa: "
+              "uv run python scripts/analysis/build_relative_map.py "
+              f"--session {exp.pairs_dir}")
+    print()
+
+    show_experiment_completion_screen(
+        screen=screen, clock=clock,
+        screen_width=screen_width, screen_height=screen_height,
+    )
+
+    print("\nPresiona cualquier tecla para salir...")
+    waiting = True
+    while waiting:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT or event.type == pygame.KEYDOWN:
+                waiting = False
+        clock.tick(10)
+    pygame.quit()
+    print("\n[INFO] Programa finalizado (paired)")
 
 
 def drawing_tablet_reset(tablet):

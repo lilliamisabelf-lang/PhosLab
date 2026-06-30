@@ -1,0 +1,121 @@
+======================================================================
+EXPERIMENTO DE MAPEO DE FOSFENOS
+======================================================================
+
+Nombre: mapeo_electrodo_17
+ID Experimento: 20260630_185135
+Inicio: 2026-06-30T18:51:35.119795
+Fin: 2026-06-30T19:07:13.928838
+Electrodo: 17
+Repeticiones: 10
+
+TIEMPOS:
+  - Prestimulation: 193ms
+  - Stimulation: 400ms
+  - Poststimulation: 100ms
+  - Interstimulation: 500ms
+
+======================================================================
+DETALLES DE CADA REPETICIÓN
+======================================================================
+
+REPETICIÓN 4:
+  Posición: (1594, 1169)
+  Inicio: 2026-06-30T18:52:55.568111
+  Fin: 2026-06-30T18:52:58.301480
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=18)
+  response_xy: [1435.4852660511274, 904.0441363876707]
+  Archivo respuesta: saccade_samples_repetition_004.json
+
+REPETICIÓN 2:
+  Posición: (1594, 1169)
+  Inicio: 2026-06-30T18:55:03.755693
+  Fin: 2026-06-30T18:55:06.497754
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=47)
+  response_xy: [1309.6094608582305, 693.4344909896148]
+  Archivo respuesta: saccade_samples_repetition_002.json
+
+REPETICIÓN 7:
+  Posición: (1594, 1169)
+  Inicio: 2026-06-30T18:56:19.825674
+  Fin: 2026-06-30T18:56:22.556122
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=66)
+  response_xy: [1607.966707775099, 1235.0567365946536]
+  Archivo respuesta: saccade_samples_repetition_007.json
+
+REPETICIÓN 9:
+  Posición: (1594, 1169)
+  Inicio: 2026-06-30T18:58:03.051968
+  Fin: 2026-06-30T18:58:05.801860
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=91)
+  response_xy: [1385.4307834549008, 913.4396692805939]
+  Archivo respuesta: saccade_samples_repetition_009.json
+
+REPETICIÓN 5:
+  Posición: (1594, 1169)
+  Inicio: 2026-06-30T18:59:36.942499
+  Fin: 2026-06-30T18:59:41.090786
+  Pérdidas de fijación: 2
+  Intentos: 2
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=116)
+  response_xy: [1285.146366532846, 678.6668957168704]
+  Archivo respuesta: saccade_samples_repetition_005.json
+
+REPETICIÓN 10:
+  Posición: (1594, 1169)
+  Inicio: 2026-06-30T19:00:06.007792
+  Fin: 2026-06-30T19:00:08.727321
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=124)
+  response_xy: [1276.103696723462, 675.193630066491]
+  Archivo respuesta: saccade_samples_repetition_010.json
+
+REPETICIÓN 6:
+  Posición: (1594, 1169)
+  Inicio: 2026-06-30T19:01:25.105857
+  Fin: 2026-06-30T19:01:27.837292
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=143)
+  response_xy: [1596.2725759596747, 1243.45583219162]
+  Archivo respuesta: saccade_samples_repetition_006.json
+
+REPETICIÓN 1:
+  Posición: (1594, 1169)
+  Inicio: 2026-06-30T19:03:36.886435
+  Fin: 2026-06-30T19:03:39.630180
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=180)
+  response_xy: [1509.2817318210311, 1168.586685832295]
+  Archivo respuesta: saccade_samples_repetition_001.json
+
+REPETICIÓN 3:
+  Posición: (1594, 1169)
+  Inicio: 2026-06-30T19:05:13.936718
+  Fin: 2026-06-30T19:05:16.688508
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=202)
+  response_xy: [1486.2300710329873, 1239.7611928258875]
+  Archivo respuesta: saccade_samples_repetition_003.json
+
+REPETICIÓN 8:
+  Posición: (1594, 1169)
+  Inicio: 2026-06-30T19:06:03.238013
+  Fin: 2026-06-30T19:06:05.988002
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=216)
+  response_xy: [1569.9800181207752, 1226.713438413157]
+  Archivo respuesta: saccade_samples_repetition_008.json
+

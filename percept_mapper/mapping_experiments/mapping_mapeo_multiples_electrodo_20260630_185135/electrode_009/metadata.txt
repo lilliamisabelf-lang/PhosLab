@@ -1,0 +1,121 @@
+======================================================================
+EXPERIMENTO DE MAPEO DE FOSFENOS
+======================================================================
+
+Nombre: mapeo_electrodo_9
+ID Experimento: 20260630_185135
+Inicio: 2026-06-30T18:51:35.118795
+Fin: 2026-06-30T19:07:13.836386
+Electrodo: 9
+Repeticiones: 10
+
+TIEMPOS:
+  - Prestimulation: 193ms
+  - Stimulation: 400ms
+  - Poststimulation: 100ms
+  - Interstimulation: 500ms
+
+======================================================================
+DETALLES DE CADA REPETICIÓN
+======================================================================
+
+REPETICIÓN 5:
+  Posición: (1373, 977)
+  Inicio: 2026-06-30T18:51:51.779858
+  Fin: 2026-06-30T18:51:54.517743
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=5)
+  response_xy: [1332.8723556329378, 1019.2733022824395]
+  Archivo respuesta: saccade_samples_repetition_005.json
+
+REPETICIÓN 6:
+  Posición: (1373, 977)
+  Inicio: 2026-06-30T18:54:22.352903
+  Fin: 2026-06-30T18:54:28.148368
+  Pérdidas de fijación: 2
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=36)
+  response_xy: [1358.0727479916748, 1163.514302617482]
+  Archivo respuesta: saccade_samples_repetition_006.json
+
+REPETICIÓN 1:
+  Posición: (1373, 977)
+  Inicio: 2026-06-30T18:56:09.880319
+  Fin: 2026-06-30T18:56:12.625060
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=63)
+  response_xy: [1356.7428751510683, 1113.3143211249237]
+  Archivo respuesta: saccade_samples_repetition_001.json
+
+REPETICIÓN 9:
+  Posición: (1373, 977)
+  Inicio: 2026-06-30T18:58:06.468616
+  Fin: 2026-06-30T18:58:09.220696
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=92)
+  response_xy: [1299.7706847819072, 1049.0210068122904]
+  Archivo respuesta: saccade_samples_repetition_009.json
+
+REPETICIÓN 4:
+  Posición: (1373, 977)
+  Inicio: 2026-06-30T18:58:32.408345
+  Fin: 2026-06-30T18:58:35.156978
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=100)
+  response_xy: [1354.743636763539, 1067.8760353084358]
+  Archivo respuesta: saccade_samples_repetition_004.json
+
+REPETICIÓN 3:
+  Posición: (1373, 977)
+  Inicio: 2026-06-30T19:00:45.491512
+  Fin: 2026-06-30T19:00:49.442282
+  Pérdidas de fijación: 1
+  Intentos: 2
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=135)
+  response_xy: [1224.3845894366177, 745.3439472786687]
+  Archivo respuesta: saccade_samples_repetition_003.json
+
+REPETICIÓN 10:
+  Posición: (1373, 977)
+  Inicio: 2026-06-30T19:02:35.558918
+  Fin: 2026-06-30T19:02:38.290239
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=162)
+  response_xy: [1317.1986484817342, 1030.7620708014247]
+  Archivo respuesta: saccade_samples_repetition_010.json
+
+REPETICIÓN 8:
+  Posición: (1373, 977)
+  Inicio: 2026-06-30T19:03:43.342140
+  Fin: 2026-06-30T19:03:46.081127
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=182)
+  response_xy: [1317.785401216381, 1055.9549283513454]
+  Archivo respuesta: saccade_samples_repetition_008.json
+
+REPETICIÓN 7:
+  Posición: (1373, 977)
+  Inicio: 2026-06-30T19:05:27.389756
+  Fin: 2026-06-30T19:05:30.243457
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=206)
+  response_xy: [1324.195251296611, 710.1498041565201]
+  Archivo respuesta: saccade_samples_repetition_007.json
+
+REPETICIÓN 2:
+  Posición: (1373, 977)
+  Inicio: 2026-06-30T19:07:10.449768
+  Fin: 2026-06-30T19:07:13.684174
+  Pérdidas de fijación: 1
+  Intentos: 1
+  Modo respuesta: saccade (idt_first_fixation, status=ok, intentos=232)
+  response_xy: [1323.882382866347, 1010.761236695071]
+  Archivo respuesta: saccade_samples_repetition_002.json
+

@@ -107,6 +107,19 @@ class PhospheneDataLoader:
             ):
                 continue
 
+            # Sesión PAREADA (mapping_method: paired): un único 'pairs/' con
+            # metadata.json en vez de carpetas por electrodo. Se reconstruye la
+            # posición absoluta por electrodo con MDS y se emiten filas pred→obs.
+            pairs_dir = exp_dir / "pairs"
+            if (pairs_dir / "metadata.json").exists():
+                try:
+                    count += self._append_rows(
+                        self._extract_paired_rows(pairs_dir, exp_dir.name)
+                    )
+                except Exception as e:
+                    print(f"  WARN: Error leyendo {pairs_dir}: {e}")
+                continue
+
             # Buscar carpetas de electrodos
             for electrode_dir in sorted(exp_dir.iterdir()):
                 if not electrode_dir.is_dir():
@@ -185,6 +198,116 @@ class PhospheneDataLoader:
                 }
             )
 
+        return rows
+
+    def _extract_paired_rows(self, pairs_dir, experiment_id):
+        """Reconstruye una posición observada ABSOLUTA por electrodo desde una
+        sesión pareada y emite filas pred→obs (mismo esquema que mapping).
+
+        Cómo: el dato pareado es relativo (cada ensayo da Δ(A→B) = pos_B − pos_A
+        en grados, de los dos extremos trazados). Con MDS sobre |Δ| recuperamos
+        la geometría hasta una similitud, y la llevamos al marco absoluto en
+        grados alineándola por Procrustes sobre las posiciones PREDICHAS (atlas)
+        de los electrodos — las mismas `visual_position_deg` que en el modo
+        absoluto. La salida `obs` es esa reconstrucción alineada; `pred` es la
+        predicha; `error = obs − pred`. Reutiliza scripts/relative_map.py y la
+        carga de scripts/analysis/build_relative_map.py:PairedSession.
+        """
+        # Imports diferidos: solo se necesitan para sesiones pareadas y arrastran
+        # scipy/PairedSession; mantenerlos aquí no penaliza el caso absoluto.
+        import sys as _sys
+        from pathlib import Path as _Path
+
+        _root = _Path(__file__).resolve().parents[2]  # percept_mapper/
+        if str(_root) not in _sys.path:
+            _sys.path.insert(0, str(_root))
+        from scripts.analysis.build_relative_map import PairedSession
+        from scripts.relative_map import embed_mds, align_procrustes
+
+        sess = PairedSession(_Path(pairs_dir))
+
+        # Filtro por modo de entrada (a nivel de sesión, igual que el resto).
+        if self.input_mode and sess.meta.get("input_mode") != self.input_mode:
+            return []
+
+        if not sess.edges or sess.n_nodes < 1:
+            return []
+
+        # Posiciones PREDICHAS (atlas) e info por electrode_index, leídas de los
+        # electrode_info de cada par. Sirven de objetivo de alineación y de `pred`.
+        pred_deg = {}
+        ecc_deg = {}
+        implant_by_e = {}
+        for t in sess.meta.get("trials", []):
+            if t.get("is_practice"):
+                continue
+            for key in ("electrode_info_a", "electrode_info_b"):
+                info = t.get(key) or {}
+                e = info.get("index")
+                vp = info.get("visual_position_deg")
+                if e is None or not vp or vp[0] is None or vp[1] is None:
+                    continue
+                e = int(e)
+                if e not in pred_deg:
+                    pred_deg[e] = (float(vp[0]), float(vp[1]))
+                    ecc_deg[e] = info.get("eccentricity_deg")
+                    implant_by_e[e] = info.get("implant_id", "unknown")
+
+        # Anclas de alineación: todos los electrodos con predicción, por NODO.
+        # Procrustes ajusta la similitud que mejor lleva la geometría MDS sobre
+        # las posiciones predichas (≥3 anclas no colineales para fijar rotación).
+        anchors = {
+            node: pred_deg[e]
+            for node, e in enumerate(sess.node_to_electrode)
+            if e in pred_deg
+        }
+        if len(anchors) < 3:
+            print(
+                f"  WARN: sesión pareada {experiment_id}: solo {len(anchors)} "
+                "electrodos con predicción; MDS necesita ≥3 anclas para orientar. "
+                "Se omite."
+            )
+            return []
+
+        mds_est, mds_info = embed_mds(
+            sess.edges, sess.distances_obs, sess.n_nodes, method="smacof",
+            n_init=4, seed=0,
+        )
+        try:
+            obs_coords, _ = align_procrustes(
+                mds_est, anchors, allow_scale=True, allow_reflection=True
+            )
+        except ValueError:
+            return []
+
+        rows = []
+        for node, e in enumerate(sess.node_to_electrode):
+            if e not in pred_deg:
+                continue
+            obs = obs_coords[node]
+            if obs is None or np.any(np.isnan(obs)):
+                continue
+            px, py = pred_deg[e]
+            ox, oy = float(obs[0]), float(obs[1])
+            ecc = ecc_deg.get(e)
+            rows.append(
+                {
+                    "electrode_index": e,
+                    "implant_id": implant_by_e.get(e, "unknown"),
+                    "experiment_mode": "mapping",
+                    "experiment_id": experiment_id,
+                    "pred_x_deg": px,
+                    "pred_y_deg": py,
+                    "obs_x_deg": ox,
+                    "obs_y_deg": oy,
+                    "error_x_deg": ox - px,
+                    "error_y_deg": oy - py,
+                    "error_radial_deg": float(np.hypot(ox - px, oy - py)),
+                    "current_uA": None,
+                    "eccentricity_deg": float(ecc) if ecc else None,
+                    "repetition_index": 0,
+                }
+            )
         return rows
 
     def _load_standard_experiments(self):

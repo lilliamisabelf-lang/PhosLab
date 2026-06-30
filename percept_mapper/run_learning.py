@@ -140,7 +140,7 @@ def main():
     )
     parser.add_argument(
         "--input-mode",
-        choices=["all", "pupil", "gaze", "mouse"],
+        choices=["all", "pupil", "gaze", "mouse", "neon"],
         default="all",
         help="Filtra observaciones por modo de entrada de la sesión (default: all)",
     )

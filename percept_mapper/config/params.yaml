@@ -38,6 +38,13 @@ mapping_method: absolute
 forced_adjustment:
   anchor_min_dist_deg: 3.0
   anchor_max_dist_deg: 5.0
+paired:
+  strategy: knn+struts
+  k: 4
+  n_long: 6
+  both_directions: false
+  rest_ms: 1000
+  randomize: true
 screen:
   width: 1536
   height: 864
@@ -191,6 +198,18 @@ pupil:
   surface_name: phoslab_screen
   min_confidence: 0.7
   max_sample_age_s: 0.25
+  one_euro:
+    fps: 60
+    min_cutoff: 0.1
+    beta: 0.007
+    d_cutoff: 1.0
+neon:
+  address: ''
+  port: 8080
+  discover_timeout_s: 10.0
+  min_confidence: 0.7
+  max_sample_age_s: 0.25
+  homography_min_tags: 4
   one_euro:
     fps: 60
     min_cutoff: 0.1
