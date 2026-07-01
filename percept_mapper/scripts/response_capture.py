@@ -38,6 +38,13 @@ class ResponseResult:
         if "extraction" in self.debug:
             metadata["response_extraction"] = self.debug["extraction"]
 
+        # Paired-mapping endpoints: the load-bearing payload of the line
+        # response. These are not part of the canonical TrialRecord schema, so
+        # they ride along as extras (TrialRecord keeps unknown keys verbatim).
+        for key in ("endpoint_a_px", "endpoint_b_px", "displacement_px"):
+            if key in self.debug:
+                metadata[key] = self.debug[key]
+
         # Legacy compatibility for existing analyzers, scripts, and saved data.
         if self.mode == "drawing":
             metadata["drawing_file"] = self.response_file
@@ -75,6 +82,18 @@ class DrawingResponseCapture:
         drawing_filename: str,
         saccade_filename: str | None = None,
     ) -> ResponseResult:
+        # If the wrapped response screen carries a richer save_result (e.g. the
+        # paired LineDrawingTablet, whose ordered endpoints are the actual
+        # payload), delegate to it so that metadata isn't lost. Plain
+        # DrawingTablet has no save_result, so we fall back to the canvas path.
+        inner_save = getattr(self.response_screen, "save_result", None)
+        if callable(inner_save):
+            return inner_save(
+                output_dir,
+                drawing_filename=drawing_filename,
+                saccade_filename=saccade_filename,
+            )
+
         if self._canvas is None:
             raise RuntimeError("Drawing response finished without a canvas")
         import pygame
