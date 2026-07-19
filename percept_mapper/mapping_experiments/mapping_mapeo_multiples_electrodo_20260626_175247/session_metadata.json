@@ -1,0 +1,1669 @@
+{
+  "session_started": "2026-06-26T17:52:47.759308",
+  "valid_electrode_indices": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+  ],
+  "num_repetitions": 10,
+  "trial_sequence_config": {
+    "randomize": true,
+    "random_seed": 3627881038,
+    "catch_trial_rate": 0.15,
+    "no_immediate_repeat": true,
+    "num_practice_trials": 2,
+    "isi_jitter_ms": 200.0
+  },
+  "mapping_method": "forced_adjustment",
+  "summary": {
+    "n": 232,
+    "real": 200,
+    "catch": 30,
+    "practice": 2,
+    "adjacent_repeats": 0
+  },
+  "trial_order": [
+    {
+      "trial_idx": 0,
+      "electrode_index": 0,
+      "rep_num": 0,
+      "is_catch": false,
+      "is_practice": true
+    },
+    {
+      "trial_idx": 1,
+      "electrode_index": 1,
+      "rep_num": 0,
+      "is_catch": false,
+      "is_practice": true
+    },
+    {
+      "trial_idx": 2,
+      "electrode_index": 19,
+      "rep_num": 10,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 3,
+      "electrode_index": 7,
+      "rep_num": 4,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 4,
+      "electrode_index": 6,
+      "rep_num": 4,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 5,
+      "electrode_index": 15,
+      "rep_num": 7,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 6,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 7,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 8,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 9,
+      "electrode_index": 3,
+      "rep_num": 8,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 10,
+      "electrode_index": 0,
+      "rep_num": 1,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 11,
+      "electrode_index": 1,
+      "rep_num": 1,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 12,
+      "electrode_index": 12,
+      "rep_num": 5,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 13,
+      "electrode_index": 13,
+      "rep_num": 10,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 14,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 15,
+      "electrode_index": 10,
+      "rep_num": 3,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 16,
+      "electrode_index": 17,
+      "rep_num": 4,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 17,
+      "electrode_index": 4,
+      "rep_num": 2,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 18,
+      "electrode_index": 16,
+      "rep_num": 2,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 19,
+      "electrode_index": 9,
+      "rep_num": 10,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 20,
+      "electrode_index": 8,
+      "rep_num": 7,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 21,
+      "electrode_index": 18,
+      "rep_num": 1,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 22,
+      "electrode_index": 14,
+      "rep_num": 5,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 23,
+      "electrode_index": 11,
+      "rep_num": 8,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 24,
+      "electrode_index": 5,
+      "rep_num": 10,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 25,
+      "electrode_index": 2,
+      "rep_num": 1,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 26,
+      "electrode_index": 6,
+      "rep_num": 2,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 27,
+      "electrode_index": 9,
+      "rep_num": 1,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 28,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 29,
+      "electrode_index": 2,
+      "rep_num": 2,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 30,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 31,
+      "electrode_index": 8,
+      "rep_num": 5,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 32,
+      "electrode_index": 12,
+      "rep_num": 6,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 33,
+      "electrode_index": 10,
+      "rep_num": 6,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 34,
+      "electrode_index": 13,
+      "rep_num": 2,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 35,
+      "electrode_index": 7,
+      "rep_num": 7,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 36,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 37,
+      "electrode_index": 18,
+      "rep_num": 5,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 38,
+      "electrode_index": 15,
+      "rep_num": 9,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 39,
+      "electrode_index": 1,
+      "rep_num": 9,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 40,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 41,
+      "electrode_index": 5,
+      "rep_num": 4,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 42,
+      "electrode_index": 19,
+      "rep_num": 8,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 43,
+      "electrode_index": 3,
+      "rep_num": 1,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 44,
+      "electrode_index": 16,
+      "rep_num": 1,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 45,
+      "electrode_index": 17,
+      "rep_num": 8,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 46,
+      "electrode_index": 0,
+      "rep_num": 8,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 47,
+      "electrode_index": 11,
+      "rep_num": 5,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 48,
+      "electrode_index": 4,
+      "rep_num": 7,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 49,
+      "electrode_index": 14,
+      "rep_num": 3,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 50,
+      "electrode_index": 1,
+      "rep_num": 6,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 51,
+      "electrode_index": 16,
+      "rep_num": 3,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 52,
+      "electrode_index": 11,
+      "rep_num": 4,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 53,
+      "electrode_index": 2,
+      "rep_num": 5,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 54,
+      "electrode_index": 10,
+      "rep_num": 4,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 55,
+      "electrode_index": 6,
+      "rep_num": 6,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 56,
+      "electrode_index": 3,
+      "rep_num": 3,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 57,
+      "electrode_index": 9,
+      "rep_num": 4,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 58,
+      "electrode_index": 7,
+      "rep_num": 9,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 59,
+      "electrode_index": 5,
+      "rep_num": 1,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 60,
+      "electrode_index": 17,
+      "rep_num": 9,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 61,
+      "electrode_index": 18,
+      "rep_num": 6,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 62,
+      "electrode_index": 8,
+      "rep_num": 8,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 63,
+      "electrode_index": 4,
+      "rep_num": 1,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 64,
+      "electrode_index": 19,
+      "rep_num": 6,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 65,
+      "electrode_index": 13,
+      "rep_num": 4,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 66,
+      "electrode_index": 14,
+      "rep_num": 6,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 67,
+      "electrode_index": 0,
+      "rep_num": 10,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 68,
+      "electrode_index": 12,
+      "rep_num": 4,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 69,
+      "electrode_index": 15,
+      "rep_num": 10,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 70,
+      "electrode_index": 6,
+      "rep_num": 7,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 71,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 72,
+      "electrode_index": 9,
+      "rep_num": 8,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 73,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 74,
+      "electrode_index": 12,
+      "rep_num": 8,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 75,
+      "electrode_index": 8,
+      "rep_num": 3,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 76,
+      "electrode_index": 14,
+      "rep_num": 9,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 77,
+      "electrode_index": 2,
+      "rep_num": 9,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 78,
+      "electrode_index": 7,
+      "rep_num": 2,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 79,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 80,
+      "electrode_index": 4,
+      "rep_num": 4,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 81,
+      "electrode_index": 16,
+      "rep_num": 7,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 82,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 83,
+      "electrode_index": 11,
+      "rep_num": 2,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 84,
+      "electrode_index": 5,
+      "rep_num": 7,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 85,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 86,
+      "electrode_index": 10,
+      "rep_num": 5,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 87,
+      "electrode_index": 15,
+      "rep_num": 3,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 88,
+      "electrode_index": 3,
+      "rep_num": 10,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 89,
+      "electrode_index": 13,
+      "rep_num": 6,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 90,
+      "electrode_index": 1,
+      "rep_num": 8,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 91,
+      "electrode_index": 0,
+      "rep_num": 3,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 92,
+      "electrode_index": 17,
+      "rep_num": 5,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 93,
+      "electrode_index": 18,
+      "rep_num": 7,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 94,
+      "electrode_index": 19,
+      "rep_num": 1,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 95,
+      "electrode_index": 18,
+      "rep_num": 3,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 96,
+      "electrode_index": 0,
+      "rep_num": 4,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 97,
+      "electrode_index": 2,
+      "rep_num": 6,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 98,
+      "electrode_index": 12,
+      "rep_num": 2,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 99,
+      "electrode_index": 3,
+      "rep_num": 2,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 100,
+      "electrode_index": 14,
+      "rep_num": 4,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 101,
+      "electrode_index": 9,
+      "rep_num": 6,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 102,
+      "electrode_index": 11,
+      "rep_num": 9,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 103,
+      "electrode_index": 19,
+      "rep_num": 7,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 104,
+      "electrode_index": 5,
+      "rep_num": 6,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 105,
+      "electrode_index": 6,
+      "rep_num": 5,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 106,
+      "electrode_index": 16,
+      "rep_num": 5,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 107,
+      "electrode_index": 8,
+      "rep_num": 10,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 108,
+      "electrode_index": 4,
+      "rep_num": 8,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 109,
+      "electrode_index": 1,
+      "rep_num": 10,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 110,
+      "electrode_index": 7,
+      "rep_num": 1,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 111,
+      "electrode_index": 17,
+      "rep_num": 6,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 112,
+      "electrode_index": 13,
+      "rep_num": 8,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 113,
+      "electrode_index": 10,
+      "rep_num": 2,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 114,
+      "electrode_index": 15,
+      "rep_num": 1,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 115,
+      "electrode_index": 12,
+      "rep_num": 10,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 116,
+      "electrode_index": 7,
+      "rep_num": 8,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 117,
+      "electrode_index": 18,
+      "rep_num": 9,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 118,
+      "electrode_index": 14,
+      "rep_num": 1,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 119,
+      "electrode_index": 10,
+      "rep_num": 10,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 120,
+      "electrode_index": 1,
+      "rep_num": 4,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 121,
+      "electrode_index": 3,
+      "rep_num": 7,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 122,
+      "electrode_index": 6,
+      "rep_num": 10,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 123,
+      "electrode_index": 16,
+      "rep_num": 10,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 124,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 125,
+      "electrode_index": 2,
+      "rep_num": 4,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 126,
+      "electrode_index": 8,
+      "rep_num": 1,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 127,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 128,
+      "electrode_index": 19,
+      "rep_num": 2,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 129,
+      "electrode_index": 0,
+      "rep_num": 9,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 130,
+      "electrode_index": 11,
+      "rep_num": 3,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 131,
+      "electrode_index": 9,
+      "rep_num": 9,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 132,
+      "electrode_index": 15,
+      "rep_num": 6,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 133,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 134,
+      "electrode_index": 13,
+      "rep_num": 7,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 135,
+      "electrode_index": 4,
+      "rep_num": 10,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 136,
+      "electrode_index": 5,
+      "rep_num": 5,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 137,
+      "electrode_index": 17,
+      "rep_num": 1,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 138,
+      "electrode_index": 0,
+      "rep_num": 2,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 139,
+      "electrode_index": 19,
+      "rep_num": 5,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 140,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 141,
+      "electrode_index": 17,
+      "rep_num": 2,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 142,
+      "electrode_index": 6,
+      "rep_num": 8,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 143,
+      "electrode_index": 16,
+      "rep_num": 9,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 144,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 145,
+      "electrode_index": 14,
+      "rep_num": 2,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 146,
+      "electrode_index": 8,
+      "rep_num": 6,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 147,
+      "electrode_index": 7,
+      "rep_num": 3,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 148,
+      "electrode_index": 15,
+      "rep_num": 8,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 149,
+      "electrode_index": 12,
+      "rep_num": 3,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 150,
+      "electrode_index": 10,
+      "rep_num": 8,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 151,
+      "electrode_index": 9,
+      "rep_num": 3,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 152,
+      "electrode_index": 13,
+      "rep_num": 5,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 153,
+      "electrode_index": 18,
+      "rep_num": 8,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 154,
+      "electrode_index": 1,
+      "rep_num": 3,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 155,
+      "electrode_index": 4,
+      "rep_num": 9,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 156,
+      "electrode_index": 2,
+      "rep_num": 10,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 157,
+      "electrode_index": 11,
+      "rep_num": 7,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 158,
+      "electrode_index": 5,
+      "rep_num": 8,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 159,
+      "electrode_index": 3,
+      "rep_num": 9,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 160,
+      "electrode_index": 6,
+      "rep_num": 3,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 161,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 162,
+      "electrode_index": 11,
+      "rep_num": 1,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 163,
+      "electrode_index": 4,
+      "rep_num": 3,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 164,
+      "electrode_index": 18,
+      "rep_num": 10,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 165,
+      "electrode_index": 2,
+      "rep_num": 3,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 166,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 167,
+      "electrode_index": 19,
+      "rep_num": 4,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 168,
+      "electrode_index": 16,
+      "rep_num": 6,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 169,
+      "electrode_index": 17,
+      "rep_num": 7,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 170,
+      "electrode_index": 12,
+      "rep_num": 9,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 171,
+      "electrode_index": 7,
+      "rep_num": 6,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 172,
+      "electrode_index": 5,
+      "rep_num": 9,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 173,
+      "electrode_index": 3,
+      "rep_num": 4,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 174,
+      "electrode_index": 10,
+      "rep_num": 1,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 175,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 176,
+      "electrode_index": 0,
+      "rep_num": 7,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 177,
+      "electrode_index": 9,
+      "rep_num": 2,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 178,
+      "electrode_index": 14,
+      "rep_num": 8,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 179,
+      "electrode_index": 15,
+      "rep_num": 2,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 180,
+      "electrode_index": 8,
+      "rep_num": 2,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 181,
+      "electrode_index": 1,
+      "rep_num": 5,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 182,
+      "electrode_index": 13,
+      "rep_num": 9,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 183,
+      "electrode_index": 12,
+      "rep_num": 7,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 184,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 185,
+      "electrode_index": 4,
+      "rep_num": 6,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 186,
+      "electrode_index": 9,
+      "rep_num": 5,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 187,
+      "electrode_index": 19,
+      "rep_num": 9,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 188,
+      "electrode_index": 16,
+      "rep_num": 8,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 189,
+      "electrode_index": 14,
+      "rep_num": 10,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 190,
+      "electrode_index": 6,
+      "rep_num": 9,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 191,
+      "electrode_index": 8,
+      "rep_num": 4,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 192,
+      "electrode_index": 11,
+      "rep_num": 6,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 193,
+      "electrode_index": 18,
+      "rep_num": 2,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 194,
+      "electrode_index": 1,
+      "rep_num": 7,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 195,
+      "electrode_index": 0,
+      "rep_num": 5,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 196,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 197,
+      "electrode_index": 2,
+      "rep_num": 7,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 198,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 199,
+      "electrode_index": 10,
+      "rep_num": 9,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 200,
+      "electrode_index": 7,
+      "rep_num": 5,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 201,
+      "electrode_index": 3,
+      "rep_num": 5,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 202,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 203,
+      "electrode_index": 15,
+      "rep_num": 5,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 204,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 205,
+      "electrode_index": 13,
+      "rep_num": 3,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 206,
+      "electrode_index": 17,
+      "rep_num": 10,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 207,
+      "electrode_index": 5,
+      "rep_num": 3,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 208,
+      "electrode_index": 11,
+      "rep_num": 10,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 209,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 210,
+      "electrode_index": 19,
+      "rep_num": 3,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 211,
+      "electrode_index": 9,
+      "rep_num": 7,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 212,
+      "electrode_index": 6,
+      "rep_num": 1,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 213,
+      "electrode_index": 17,
+      "rep_num": 3,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 214,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 215,
+      "electrode_index": 4,
+      "rep_num": 5,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 216,
+      "electrode_index": 1,
+      "rep_num": 2,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 217,
+      "electrode_index": 13,
+      "rep_num": 1,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 218,
+      "electrode_index": 5,
+      "rep_num": 2,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 219,
+      "electrode_index": 0,
+      "rep_num": 6,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 220,
+      "electrode_index": 8,
+      "rep_num": 9,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 221,
+      "electrode_index": 14,
+      "rep_num": 7,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 222,
+      "electrode_index": 12,
+      "rep_num": 1,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 223,
+      "electrode_index": 15,
+      "rep_num": 4,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 224,
+      "electrode_index": 18,
+      "rep_num": 4,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 225,
+      "electrode_index": 10,
+      "rep_num": 7,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 226,
+      "electrode_index": 16,
+      "rep_num": 4,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 227,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 228,
+      "electrode_index": 3,
+      "rep_num": 6,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 229,
+      "electrode_index": 7,
+      "rep_num": 10,
+      "is_catch": false,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 230,
+      "electrode_index": null,
+      "rep_num": 0,
+      "is_catch": true,
+      "is_practice": false
+    },
+    {
+      "trial_idx": 231,
+      "electrode_index": 2,
+      "rep_num": 8,
+      "is_catch": false,
+      "is_practice": false
+    }
+  ],
+  "schema_version": 1
+}

@@ -38,6 +38,12 @@ class ResponseResult:
         if "extraction" in self.debug:
             metadata["response_extraction"] = self.debug["extraction"]
 
+        # Paired method (LineDrawingTablet): promote endpoint/displacement
+        # debug fields to top-level metadata so they land in TrialRecord.
+        for key in ("endpoint_a_px", "endpoint_b_px", "displacement_px"):
+            if key in self.debug:
+                metadata[key] = self.debug[key]
+
         # Legacy compatibility for existing analyzers, scripts, and saved data.
         if self.mode == "drawing":
             metadata["drawing_file"] = self.response_file
@@ -75,6 +81,16 @@ class DrawingResponseCapture:
         drawing_filename: str,
         saccade_filename: str | None = None,
     ) -> ResponseResult:
+        # Pantallas con guardado propio (p.ej. LineDrawingTablet del método
+        # pareado) delegan aquí para no perder campos específicos (endpoints,
+        # desplazamiento) que el guardado genérico de canvas no conoce.
+        if hasattr(self.response_screen, "save_result"):
+            return self.response_screen.save_result(
+                output_dir,
+                drawing_filename=drawing_filename,
+                saccade_filename=saccade_filename,
+            )
+
         if self._canvas is None:
             raise RuntimeError("Drawing response finished without a canvas")
         import pygame

@@ -4,6 +4,11 @@ Produce dos figuras en --out-dir:
   1. error_vs_ecc_boxplot.png  — boxplot por anillo de excentricidad con puntos superpuestos
   2. error_vs_ecc_scatter.png  — scatter por ensayo con línea de regresión lineal
 
+Además imprime en consola el r de Pearson entre excentricidad y error, con su
+IC95% y p-valor calculados por bootstrap por electrodo (ver stats_utils.py) —
+no por ensayo individual, ya que las 10 repeticiones de un mismo electrodo no
+son observaciones independientes entre sí.
+
 Uso (PowerShell):
     cd percept_mapper; uv run python scripts/analysis/plot_error_vs_ecc.py --session mapping_experiments/mapping_mapeo_multiples_electrodo_20260626_165130 --out-dir comparison_results/exp1_error_vs_ecc
 """
@@ -19,6 +24,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+
+from stats_utils import report_r, format_r_report
 
 # ---------------------------------------------------------------------------
 # Estilo global para TFG
@@ -228,6 +235,13 @@ def main() -> None:
     eccs, errors = load_data(session_dir)
     print(f"[Exp 1] Ensayos cargados: {len(errors)}")
     print(f"[Exp 1] Error medio global: {np.mean(errors):.3f}°  |  mediana: {np.median(errors):.3f}°\n")
+
+    results_file = session_dir / "consolidated_analysis" / "consolidated_results.json"
+    data = json.loads(results_file.read_text(encoding="utf-8"))
+    rep = report_r(data)
+    print(f"[Exp 1] {format_r_report('Correlación excentricidad-error', rep)}")
+    print("[Exp 1] IC y p calculados remuestreando electrodos completos (no ensayos), "
+          "porque las repeticiones de un mismo electrodo no son independientes entre sí.\n")
 
     plot_boxplot(eccs, errors, out_dir / "error_vs_ecc_boxplot.png")
     plot_scatter(eccs, errors, out_dir / "error_vs_ecc_scatter.png")

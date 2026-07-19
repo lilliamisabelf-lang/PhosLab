@@ -400,3 +400,206 @@ class ForcedAdjustmentTablet:
         canvas.fill((0, 0, 0))
         pygame.draw.circle(canvas, self.brush_color, self._pos, self.brush_size)
         return canvas
+
+
+class LineDrawingTablet:
+    """Pantalla de respuesta del método pareado (mapping_method: paired).
+
+    El participante marca con dos clics, EN ORDEN, dónde percibió el primer
+    fosfeno del par (A) y el segundo (B). ENTER confirma; `R_DELETE_LAST`
+    deshace el último punto marcado; las teclas 1/2 fuerzan una respuesta
+    parcial ("solo vi uno de los dos"), descartando el punto no fiable sin
+    tener que rehacer el ensayo entero.
+
+    Implementa la misma interfaz mínima que el resto de pantallas de respuesta
+    (reset/update/close) más `save_result`, que `DrawingResponseCapture`
+    delega aquí (en vez de usar su guardado genérico de canvas) para no
+    perder los extremos (`endpoint_a_px`/`endpoint_b_px`) ni el vector de
+    desplazamiento que alimenta `embed_displacement_lsq`.
+    """
+
+    DOT_RADIUS = 10
+    DOT_COLOR = (255, 220, 0)
+    R_DELETE_LAST = pygame.K_x
+
+    def __init__(
+        self,
+        screen_width: int,
+        screen_height: int,
+        brush_size: int = 3,
+        brush_color: tuple = (255, 255, 0),
+        instructions_text: str | None = None,
+        hide_cursor: bool = False,
+        cursor_clip_rect=None,
+    ):
+        self.screen_width = screen_width
+        self.screen_height = screen_height
+        self.brush_size = brush_size
+        self.brush_color = brush_color
+        self.hide_cursor = bool(hide_cursor)
+        self._cursor_clip_rect = cursor_clip_rect
+        self._cursor_clip_active = False
+        self._cursor_prev_visible = None
+
+        self.instructions_text = instructions_text or (
+            "Marca en orden el 1er y 2o punto de luz  -  "
+            "ENTER confirma  -  X deshace  -  1/2 = 'solo vi uno'"
+        )
+        self.mode = "paired_line"
+        self.endpoint_a: tuple[int, int] | None = None
+        self.endpoint_b: tuple[int, int] | None = None
+        self.finished = False
+        self.last_status = "unknown"
+        self._font = None
+
+        if self.hide_cursor:
+            self._cursor_prev_visible = pygame.mouse.get_visible()
+            pygame.mouse.set_visible(False)
+
+        print("[LineDrawingTablet] Inicializado")
+
+    # ------------------------------------------------------------------ #
+    # Interfaz pública                                                     #
+    # ------------------------------------------------------------------ #
+
+    def update(self, screen, events):
+        """Procesa eventos y dibuja. Devuelve (finished, canvas | None)."""
+        if self._font is None:
+            self._font = pygame.font.Font(None, 40)
+
+        for event in events:
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if self.endpoint_a is None:
+                    self.endpoint_a = event.pos
+                elif self.endpoint_b is None:
+                    self.endpoint_b = event.pos
+
+            elif event.type == pygame.KEYDOWN:
+                if event.key == self.R_DELETE_LAST:
+                    if self.endpoint_b is not None:
+                        self.endpoint_b = None
+                    elif self.endpoint_a is not None:
+                        self.endpoint_a = None
+
+                elif event.key == pygame.K_1:
+                    # "Solo vi el primero": el segundo clic (si existe) se descarta.
+                    self.endpoint_b = None
+
+                elif event.key == pygame.K_2:
+                    # "Solo vi el segundo": el primer clic (si existe) se descarta.
+                    self.endpoint_a = None
+
+                elif event.key == pygame.K_RETURN:
+                    if self.endpoint_a is not None and self.endpoint_b is not None:
+                        self.last_status = "ok"
+                    elif self.endpoint_a is not None or self.endpoint_b is not None:
+                        self.last_status = "partial"
+                    else:
+                        self.last_status = "empty"
+                    self.finished = True
+                    self._release_cursor_clip()
+                    return (True, self._render_result())
+
+        self._draw(screen)
+        return (False, None)
+
+    def reset(self):
+        self.endpoint_a = None
+        self.endpoint_b = None
+        self.finished = False
+        self.last_status = "unknown"
+        self._apply_cursor_clip()
+        print("[LineDrawingTablet] Reseteado para nuevo par")
+
+    def close(self):
+        self._release_cursor_clip()
+        if self._cursor_prev_visible is not None:
+            pygame.mouse.set_visible(self._cursor_prev_visible)
+            self._cursor_prev_visible = None
+
+    def save_result(self, output_dir, *, drawing_filename, saccade_filename=None):
+        """Guarda el canvas final y devuelve un ResponseResult con los
+        extremos y el desplazamiento en `debug` (que ResponseResult.to_metadata
+        promueve a campos de primer nivel: endpoint_a_px/endpoint_b_px/
+        displacement_px)."""
+        from pathlib import Path
+        from scripts.response_capture import ResponseResult
+
+        output_dir = Path(output_dir)
+        canvas = self._render_result()
+        pygame.image.save(canvas, str(output_dir / drawing_filename))
+
+        a = list(self.endpoint_a) if self.endpoint_a is not None else None
+        b = list(self.endpoint_b) if self.endpoint_b is not None else None
+        disp = [b[0] - a[0], b[1] - a[1]] if (a is not None and b is not None) else None
+
+        return ResponseResult(
+            mode=self.mode,
+            status=self.last_status,
+            response_file=drawing_filename,
+            response_file_type="png",
+            debug={
+                "endpoint_a_px": a,
+                "endpoint_b_px": b,
+                "displacement_px": disp,
+            },
+        )
+
+    # ------------------------------------------------------------------ #
+    # Helpers privados                                                     #
+    # ------------------------------------------------------------------ #
+
+    def _draw(self, screen):
+        screen.fill((0, 0, 0))
+        if self.endpoint_a is not None and self.endpoint_b is not None:
+            pygame.draw.line(screen, self.brush_color, self.endpoint_a, self.endpoint_b, 2)
+        if self.endpoint_a is not None:
+            pygame.draw.circle(screen, self.DOT_COLOR, self.endpoint_a, self.DOT_RADIUS)
+            self._blit_label(screen, "1", self.endpoint_a)
+        if self.endpoint_b is not None:
+            pygame.draw.circle(screen, self.DOT_COLOR, self.endpoint_b, self.DOT_RADIUS)
+            self._blit_label(screen, "2", self.endpoint_b)
+        text = self._font.render(self.instructions_text, True, (255, 255, 255))
+        screen.blit(text, text.get_rect(center=(self.screen_width // 2, 40)))
+
+    def _blit_label(self, screen, label, pos):
+        surf = self._font.render(label, True, (255, 255, 255))
+        screen.blit(surf, (pos[0] + self.DOT_RADIUS + 4, pos[1] - self.DOT_RADIUS - 4))
+
+    def _render_result(self) -> pygame.Surface:
+        """Canvas de análisis: fondo negro con la línea y los puntos finales
+        (sin texto de instrucciones), para que el analizador extraiga
+        endpoints limpios."""
+        canvas = pygame.Surface((self.screen_width, self.screen_height))
+        canvas.fill((0, 0, 0))
+        if self.endpoint_a is not None and self.endpoint_b is not None:
+            pygame.draw.line(canvas, self.brush_color, self.endpoint_a, self.endpoint_b, 2)
+        if self.endpoint_a is not None:
+            pygame.draw.circle(canvas, self.brush_color, self.endpoint_a, self.brush_size)
+        if self.endpoint_b is not None:
+            pygame.draw.circle(canvas, self.brush_color, self.endpoint_b, self.brush_size)
+        return canvas
+
+    def _apply_cursor_clip(self):
+        if self._cursor_clip_rect is None or self._cursor_clip_active:
+            return
+        try:
+            from scripts.cursor_clip import clip_cursor
+
+            if clip_cursor(self._cursor_clip_rect):
+                self._cursor_clip_active = True
+                print(f"[LineDrawingTablet] Cursor confinado a {self._cursor_clip_rect}")
+        except Exception as e:
+            print(f"[LineDrawingTablet] ⚠ no se pudo aplicar cursor clip: {e}")
+
+    def _release_cursor_clip(self):
+        if not self._cursor_clip_active:
+            return
+        try:
+            from scripts.cursor_clip import clip_cursor
+
+            clip_cursor(None)
+        except Exception as e:
+            print(f"[LineDrawingTablet] ⚠ no se pudo liberar cursor clip: {e}")
+        finally:
+            self._cursor_clip_active = False

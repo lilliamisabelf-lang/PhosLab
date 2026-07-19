@@ -5,16 +5,9 @@ experiment:
 experiment_mode: mapping
 phosphene_mapping:
   electrodes_by_implant:
-  - implant_id: 14330dd1d9a8
+  - implant_id: 696e3e00f0fe
     electrode_index:
-    - 30
-  - implant_id: 7ba4f44cbe8d
-    electrode_index:
-    - 30
-    - 41
-  - implant_id: c4b4f071acfd
-    electrode_index:
-    - 41
+    - 3
   num_repetitions: 2
   experiment_name: mapeo_multiples_electrodos
   interstimulation_between_reps: true
@@ -151,7 +144,7 @@ retinotopic_mapping:
   array_type: shanks_10x32
   implant_id_filter: all
   coordinate_source: phoslab_csv
-  coords_csv_path: C:/PhosLab/percept_mapper/config/prueba4utah.csv
+  coords_csv_path: C:/PhosLab/percept_mapper/config/synthetic_4ecc_4el.csv
   coordinate_files:
     shanks_10x16: config/coords_shanks_10x16.yaml
     shanks_10x32: config/coords_shanks_10x32.yaml

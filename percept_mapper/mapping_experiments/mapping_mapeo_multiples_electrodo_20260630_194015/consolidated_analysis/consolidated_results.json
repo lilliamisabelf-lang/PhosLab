@@ -1,0 +1,1817 @@
+{
+  "experiment_name": "paired",
+  "num_electrodes": 20,
+  "mapping_method": "paired",
+  "estimator": "lsq",
+  "n_pairs": 58,
+  "n_ok": 58,
+  "n_partial": 0,
+  "n_empty": 0,
+  "session_started": "2026-06-30T19:40:15.206958",
+  "session_ended": "2026-06-30T19:48:19.765081",
+  "electrodes": {
+    "0": {
+      "electrode_index": 0,
+      "num_total_repetitions": 9,
+      "num_valid_repetitions": 9,
+      "num_invalid_repetitions": 0,
+      "centroids_deg": [
+        [
+          0.7214166666666667,
+          2.4484444444444446
+        ],
+        [
+          0.6339722222222223,
+          2.4047222222222224
+        ],
+        [
+          0.5683888888888889,
+          1.8581944444444445
+        ],
+        [
+          0.59025,
+          2.4484444444444446
+        ],
+        [
+          1.0274722222222223,
+          2.120527777777778
+        ],
+        [
+          0.8525833333333334,
+          2.1861111111111113
+        ],
+        [
+          0.6995555555555556,
+          1.7051666666666667
+        ],
+        [
+          0.8963055555555556,
+          1.9237777777777778
+        ],
+        [
+          0.48094444444444445,
+          2.2735555555555558
+        ]
+      ],
+      "mean_position_deg": {
+        "x": 0.7937005912454356,
+        "y": 2.8870514775506826
+      },
+      "std_position": {
+        "x": 0.17606151055761318,
+        "y": 0.2726316142042492
+      },
+      "stimulation_position_deg": [
+        0.68404,
+        1.879385
+      ],
+      "per_repetition_metrics": [
+        {
+          "repetition_number": 1,
+          "dx_to_stim_deg": 0.037376666666666725,
+          "dy_to_stim_deg": 0.5690594444444446,
+          "distance_to_stim_deg": 0.5702856008374497
+        },
+        {
+          "repetition_number": 2,
+          "dx_to_stim_deg": -0.05006777777777771,
+          "dy_to_stim_deg": 0.5253372222222223,
+          "distance_to_stim_deg": 0.5277177080824231
+        },
+        {
+          "repetition_number": 3,
+          "dx_to_stim_deg": -0.11565111111111104,
+          "dy_to_stim_deg": -0.0211905555555556,
+          "distance_to_stim_deg": 0.11757643958713684
+        },
+        {
+          "repetition_number": 4,
+          "dx_to_stim_deg": -0.09378999999999993,
+          "dy_to_stim_deg": 0.5690594444444446,
+          "distance_to_stim_deg": 0.5767366950449918
+        },
+        {
+          "repetition_number": 5,
+          "dx_to_stim_deg": 0.34343222222222236,
+          "dy_to_stim_deg": 0.2411427777777777,
+          "distance_to_stim_deg": 0.4196373798112802
+        },
+        {
+          "repetition_number": 6,
+          "dx_to_stim_deg": 0.16854333333333338,
+          "dy_to_stim_deg": 0.30672611111111125,
+          "distance_to_stim_deg": 0.34998251734687674
+        },
+        {
+          "repetition_number": 7,
+          "dx_to_stim_deg": 0.015515555555555616,
+          "dy_to_stim_deg": -0.17421833333333336,
+          "distance_to_stim_deg": 0.1749078618405759
+        },
+        {
+          "repetition_number": 8,
+          "dx_to_stim_deg": 0.2122655555555556,
+          "dy_to_stim_deg": 0.044392777777777725,
+          "distance_to_stim_deg": 0.21685798300762602
+        },
+        {
+          "repetition_number": 9,
+          "dx_to_stim_deg": -0.20309555555555553,
+          "dy_to_stim_deg": 0.3941705555555557,
+          "distance_to_stim_deg": 0.4434165440682104
+        }
+      ],
+      "distance_mean_to_stimulus_deg": 1.013615891376856,
+      "offset_mean_to_stimulus_deg": {
+        "x": 0.10966059124543559,
+        "y": 1.0076664775506825
+      },
+      "status": "ok"
+    },
+    "1": {
+      "electrode_index": 1,
+      "num_total_repetitions": 8,
+      "num_valid_repetitions": 8,
+      "num_invalid_repetitions": 0,
+      "centroids_deg": [
+        [
+          1.8363333333333334,
+          -1.1149166666666668
+        ],
+        [
+          1.9237777777777778,
+          -0.4153611111111111
+        ],
+        [
+          1.748888888888889,
+          -0.24047222222222223
+        ],
+        [
+          1.9893611111111111,
+          -0.3060555555555556
+        ],
+        [
+          2.361,
+          -0.8963055555555556
+        ],
+        [
+          1.5958611111111112,
+          -0.5465277777777778
+        ],
+        [
+          1.8800555555555556,
+          -0.6558333333333334
+        ],
+        [
+          1.945638888888889,
+          -0.021861111111111112
+        ]
+      ],
+      "mean_position_deg": {
+        "x": 2.0059433647767793,
+        "y": 0.289551375045258
+      },
+      "std_position": {
+        "x": 0.22107610766122507,
+        "y": 0.3580725305986375
+      },
+      "stimulation_position_deg": [
+        1.879385,
+        -0.68404
+      ],
+      "per_repetition_metrics": [
+        {
+          "repetition_number": 1,
+          "dx_to_stim_deg": -0.04305166666666671,
+          "dy_to_stim_deg": -0.4308766666666668,
+          "distance_to_stim_deg": 0.43302211015207487
+        },
+        {
+          "repetition_number": 2,
+          "dx_to_stim_deg": 0.044392777777777725,
+          "dy_to_stim_deg": 0.26867888888888886,
+          "distance_to_stim_deg": 0.2723216187771273
+        },
+        {
+          "repetition_number": 3,
+          "dx_to_stim_deg": -0.13049611111111115,
+          "dy_to_stim_deg": 0.4435677777777778,
+          "distance_to_stim_deg": 0.4623652327952865
+        },
+        {
+          "repetition_number": 4,
+          "dx_to_stim_deg": 0.10997611111111105,
+          "dy_to_stim_deg": 0.3779844444444444,
+          "distance_to_stim_deg": 0.39365846270224997
+        },
+        {
+          "repetition_number": 5,
+          "dx_to_stim_deg": 0.4816150000000001,
+          "dy_to_stim_deg": -0.2122655555555556,
+          "distance_to_stim_deg": 0.5263170853205402
+        },
+        {
+          "repetition_number": 6,
+          "dx_to_stim_deg": -0.2835238888888889,
+          "dy_to_stim_deg": 0.13751222222222215,
+          "distance_to_stim_deg": 0.31511173705714746
+        },
+        {
+          "repetition_number": 7,
+          "dx_to_stim_deg": 0.0006705555555555076,
+          "dy_to_stim_deg": 0.028206666666666602,
+          "distance_to_stim_deg": 0.028214636081252707
+        },
+        {
+          "repetition_number": 8,
+          "dx_to_stim_deg": 0.06625388888888883,
+          "dy_to_stim_deg": 0.6621788888888889,
+          "distance_to_stim_deg": 0.665485130324506
+        }
+      ],
+      "distance_mean_to_stimulus_deg": 0.9817826568327068,
+      "offset_mean_to_stimulus_deg": {
+        "x": 0.12655836477677918,
+        "y": 0.9735913750452581
+      },
+      "status": "ok"
+    },
+    "2": {
+      "electrode_index": 2,
+      "num_total_repetitions": 8,
+      "num_valid_repetitions": 8,
+      "num_invalid_repetitions": 0,
+      "centroids_deg": [
+        [
+          -0.9181666666666667,
+          -1.9675
+        ],
+        [
+          -0.8525833333333334,
+          -1.8800555555555556
+        ],
+        [
+          -0.6995555555555556,
+          -1.5958611111111112
+        ],
+        [
+          -0.9181666666666667,
+          -2.4484444444444446
+        ],
+        [
+          -0.5465277777777778,
+          -1.8800555555555556
+        ],
+        [
+          -0.7651388888888889,
+          -1.8144722222222223
+        ],
+        [
+          -0.787,
+          -1.5958611111111112
+        ],
+        [
+          0.0,
+          -1.8800555555555556
+        ]
+      ],
+      "mean_position_deg": {
+        "x": -0.2778622582167016,
+        "y": -1.4033883470600514
+      },
+      "std_position": {
+        "x": 0.30290235439122154,
+        "y": 0.26632066050197317
+      },
+      "stimulation_position_deg": [
+        -0.68404,
+        -1.879385
+      ],
+      "per_repetition_metrics": [
+        {
+          "repetition_number": 1,
+          "dx_to_stim_deg": -0.2341266666666667,
+          "dy_to_stim_deg": -0.08811499999999994,
+          "distance_to_stim_deg": 0.2501590479463904
+        },
+        {
+          "repetition_number": 2,
+          "dx_to_stim_deg": -0.16854333333333338,
+          "dy_to_stim_deg": -0.0006705555555555076,
+          "distance_to_stim_deg": 0.1685446672424382
+        },
+        {
+          "repetition_number": 3,
+          "dx_to_stim_deg": -0.015515555555555616,
+          "dy_to_stim_deg": 0.2835238888888889,
+          "distance_to_stim_deg": 0.2839481079966488
+        },
+        {
+          "repetition_number": 4,
+          "dx_to_stim_deg": -0.2341266666666667,
+          "dy_to_stim_deg": -0.5690594444444446,
+          "distance_to_stim_deg": 0.6153405133386427
+        },
+        {
+          "repetition_number": 5,
+          "dx_to_stim_deg": 0.13751222222222215,
+          "dy_to_stim_deg": -0.0006705555555555076,
+          "distance_to_stim_deg": 0.1375138571390058
+        },
+        {
+          "repetition_number": 6,
+          "dx_to_stim_deg": -0.08109888888888894,
+          "dy_to_stim_deg": 0.06491277777777782,
+          "distance_to_stim_deg": 0.10387828694120596
+        },
+        {
+          "repetition_number": 7,
+          "dx_to_stim_deg": -0.10296000000000005,
+          "dy_to_stim_deg": 0.2835238888888889,
+          "distance_to_stim_deg": 0.3016397804844033
+        },
+        {
+          "repetition_number": 8,
+          "dx_to_stim_deg": 0.68404,
+          "dy_to_stim_deg": -0.0006705555555555076,
+          "distance_to_stim_deg": 0.6840403286683856
+        }
+      ],
+      "distance_mean_to_stimulus_deg": 0.6257420966582109,
+      "offset_mean_to_stimulus_deg": {
+        "x": 0.4061777417832984,
+        "y": 0.47599665293994864
+      },
+      "status": "ok"
+    },
+    "3": {
+      "electrode_index": 3,
+      "num_total_repetitions": 8,
+      "num_valid_repetitions": 8,
+      "num_invalid_repetitions": 0,
+      "centroids_deg": [
+        [
+          -2.0112222222222225,
+          0.5465277777777778
+        ],
+        [
+          -2.317277777777778,
+          0.1748888888888889
+        ],
+        [
+          -2.16425,
+          0.6776944444444445
+        ],
+        [
+          -1.7051666666666667,
+          0.8088611111111111
+        ],
+        [
+          -1.8581944444444445,
+          0.6776944444444445
+        ],
+        [
+          -2.16425,
+          1.158638888888889
+        ],
+        [
+          -2.16425,
+          0.9181666666666667
+        ],
+        [
+          -2.2954166666666667,
+          1.9237777777777778
+        ]
+      ],
+      "mean_position_deg": {
+        "x": -1.5193800625225236,
+        "y": 1.4059900059916373
+      },
+      "std_position": {
+        "x": 0.21321588948422532,
+        "y": 0.5156015502791302
+      },
+      "stimulation_position_deg": [
+        -1.879385,
+        0.68404
+      ],
+      "per_repetition_metrics": [
+        {
+          "repetition_number": 1,
+          "dx_to_stim_deg": -0.13183722222222238,
+          "dy_to_stim_deg": -0.13751222222222215,
+          "distance_to_stim_deg": 0.19050108772331314
+        },
+        {
+          "repetition_number": 2,
+          "dx_to_stim_deg": -0.4378927777777779,
+          "dy_to_stim_deg": -0.5091511111111111,
+          "distance_to_stim_deg": 0.6715541220003176
+        },
+        {
+          "repetition_number": 3,
+          "dx_to_stim_deg": -0.2848649999999999,
+          "dy_to_stim_deg": -0.006345555555555493,
+          "distance_to_stim_deg": 0.28493566695011807
+        },
+        {
+          "repetition_number": 4,
+          "dx_to_stim_deg": 0.17421833333333336,
+          "dy_to_stim_deg": 0.12482111111111116,
+          "distance_to_stim_deg": 0.21431830871033117
+        },
+        {
+          "repetition_number": 5,
+          "dx_to_stim_deg": 0.0211905555555556,
+          "dy_to_stim_deg": -0.006345555555555493,
+          "distance_to_stim_deg": 0.02212025587694974
+        },
+        {
+          "repetition_number": 6,
+          "dx_to_stim_deg": -0.2848649999999999,
+          "dy_to_stim_deg": 0.474598888888889,
+          "distance_to_stim_deg": 0.5535270305590938
+        },
+        {
+          "repetition_number": 7,
+          "dx_to_stim_deg": -0.2848649999999999,
+          "dy_to_stim_deg": 0.2341266666666667,
+          "distance_to_stim_deg": 0.36873210365988535
+        },
+        {
+          "repetition_number": 8,
+          "dx_to_stim_deg": -0.4160316666666666,
+          "dy_to_stim_deg": 1.2397377777777778,
+          "distance_to_stim_deg": 1.3076819587800494
+        }
+      ],
+      "distance_mean_to_stimulus_deg": 0.8067312849762843,
+      "offset_mean_to_stimulus_deg": {
+        "x": 0.3600049374774765,
+        "y": 0.7219500059916373
+      },
+      "status": "ok"
+    },
+    "4": {
+      "electrode_index": 4,
+      "num_total_repetitions": 5,
+      "num_valid_repetitions": 5,
+      "num_invalid_repetitions": 0,
+      "centroids_deg": [
+        [
+          3.3010277777777777,
+          1.945638888888889
+        ],
+        [
+          2.710777777777778,
+          2.5796111111111113
+        ],
+        [
+          3.126138888888889,
+          2.8419444444444446
+        ],
+        [
+          2.6670555555555557,
+          3.4540555555555557
+        ],
+        [
+          3.388472222222222,
+          3.563361111111111
+        ]
+      ],
+      "mean_position_deg": {
+        "x": 3.494891409281706,
+        "y": 3.7368515420757955
+      },
+      "std_position": {
+        "x": 0.33333714407543946,
+        "y": 0.6635486457857284
+      },
+      "stimulation_position_deg": [
+        3.064178,
+        2.571132
+      ],
+      "per_repetition_metrics": [
+        {
+          "repetition_number": 1,
+          "dx_to_stim_deg": 0.2368497777777776,
+          "dy_to_stim_deg": -0.625493111111111,
+          "distance_to_stim_deg": 0.6688343960060961
+        },
+        {
+          "repetition_number": 2,
+          "dx_to_stim_deg": -0.3534002222222221,
+          "dy_to_stim_deg": 0.008479111111111326,
+          "distance_to_stim_deg": 0.3535019269989211
+        },
+        {
+          "repetition_number": 3,
+          "dx_to_stim_deg": 0.06196088888888873,
+          "dy_to_stim_deg": 0.27081244444444463,
+          "distance_to_stim_deg": 0.27781024426373596
+        },
+        {
+          "repetition_number": 4,
+          "dx_to_stim_deg": -0.39712244444444433,
+          "dy_to_stim_deg": 0.8829235555555557,
+          "distance_to_stim_deg": 0.968122017535184
+        },
+        {
+          "repetition_number": 5,
+          "dx_to_stim_deg": 0.32429422222222204,
+          "dy_to_stim_deg": 0.992229111111111,
+          "distance_to_stim_deg": 1.0438799507141907
+        }
+      ],
+      "distance_mean_to_stimulus_deg": 1.2427453849089414,
+      "offset_mean_to_stimulus_deg": {
+        "x": 0.43071340928170576,
+        "y": 1.1657195420757955
+      },
+      "status": "ok"
+    },
+    "5": {
+      "electrode_index": 5,
+      "num_total_repetitions": 6,
+      "num_valid_repetitions": 6,
+      "num_invalid_repetitions": 0,
+      "centroids_deg": [
+        [
+          2.6889166666666666,
+          -4.700138888888889
+        ],
+        [
+          2.7545,
+          -3.1917222222222223
+        ],
+        [
+          2.5140277777777778,
+          -3.0824166666666666
+        ],
+        [
+          2.885666666666667,
+          -2.6670555555555557
+        ],
+        [
+          2.5140277777777778,
+          -2.776361111111111
+        ],
+        [
+          2.5140277777777778,
+          -2.2079722222222222
+        ]
+      ],
+      "mean_position_deg": {
+        "x": 2.8950334516720764,
+        "y": -2.58403477282407
+      },
+      "std_position": {
+        "x": 0.15703522546561668,
+        "y": 0.8552138195565444
+      },
+      "stimulation_position_deg": [
+        2.571132,
+        -3.064178
+      ],
+      "per_repetition_metrics": [
+        {
+          "repetition_number": 1,
+          "dx_to_stim_deg": 0.11778466666666665,
+          "dy_to_stim_deg": -1.6359608888888886,
+          "distance_to_stim_deg": 1.6401954937372252
+        },
+        {
+          "repetition_number": 2,
+          "dx_to_stim_deg": 0.1833680000000002,
+          "dy_to_stim_deg": -0.12754422222222228,
+          "distance_to_stim_deg": 0.2233637214192844
+        },
+        {
+          "repetition_number": 3,
+          "dx_to_stim_deg": -0.05710422222222222,
+          "dy_to_stim_deg": -0.018238666666666514,
+          "distance_to_stim_deg": 0.05994615214826311
+        },
+        {
+          "repetition_number": 4,
+          "dx_to_stim_deg": 0.31453466666666685,
+          "dy_to_stim_deg": 0.39712244444444433,
+          "distance_to_stim_deg": 0.5065948010161987
+        },
+        {
+          "repetition_number": 5,
+          "dx_to_stim_deg": -0.05710422222222222,
+          "dy_to_stim_deg": 0.287816888888889,
+          "distance_to_stim_deg": 0.2934270841713219
+        },
+        {
+          "repetition_number": 6,
+          "dx_to_stim_deg": -0.05710422222222222,
+          "dy_to_stim_deg": 0.8562057777777778,
+          "distance_to_stim_deg": 0.8581079338263075
+        }
+      ],
+      "distance_mean_to_stimulus_deg": 0.5791801697211285,
+      "offset_mean_to_stimulus_deg": {
+        "x": 0.3239014516720764,
+        "y": 0.48014322717593005
+      },
+      "status": "ok"
+    },
+    "6": {
+      "electrode_index": 6,
+      "num_total_repetitions": 5,
+      "num_valid_repetitions": 5,
+      "num_invalid_repetitions": 0,
+      "centroids_deg": [
+        [
+          -2.8200833333333333,
+          -2.4047222222222224
+        ],
+        [
+          -2.732638888888889,
+          -3.322888888888889
+        ],
+        [
+          -2.492166666666667,
+          -2.0330833333333334
+        ],
+        [
+          -2.776361111111111,
+          -2.9731111111111113
+        ],
+        [
+          -2.7545,
+          -2.4047222222222224
+        ]
+      ],
+      "mean_position_deg": {
+        "x": -1.9896430968819223,
+        "y": -2.0435697067052043
+      },
+      "std_position": {
+        "x": 0.1287766042871467,
+        "y": 0.5137128540835019
+      },
+      "stimulation_position_deg": [
+        -3.064178,
+        -2.571132
+      ],
+      "per_repetition_metrics": [
+        {
+          "repetition_number": 1,
+          "dx_to_stim_deg": 0.2440946666666668,
+          "dy_to_stim_deg": 0.16640977777777755,
+          "distance_to_stim_deg": 0.29542244402746465
+        },
+        {
+          "repetition_number": 2,
+          "dx_to_stim_deg": 0.33153911111111123,
+          "dy_to_stim_deg": -0.751756888888889,
+          "distance_to_stim_deg": 0.8216182825304261
+        },
+        {
+          "repetition_number": 3,
+          "dx_to_stim_deg": 0.5720113333333332,
+          "dy_to_stim_deg": 0.5380486666666666,
+          "distance_to_stim_deg": 0.7852982447220644
+        },
+        {
+          "repetition_number": 4,
+          "dx_to_stim_deg": 0.287816888888889,
+          "dy_to_stim_deg": -0.4019791111111113,
+          "distance_to_stim_deg": 0.49439434391926274
+        },
+        {
+          "repetition_number": 5,
+          "dx_to_stim_deg": 0.3096779999999999,
+          "dy_to_stim_deg": 0.16640977777777755,
+          "distance_to_stim_deg": 0.3515575028697997
+        }
+      ],
+      "distance_mean_to_stimulus_deg": 1.1970577393448658,
+      "offset_mean_to_stimulus_deg": {
+        "x": 1.0745349031180778,
+        "y": 0.5275622932947956
+      },
+      "status": "ok"
+    },
+    "7": {
+      "electrode_index": 7,
+      "num_total_repetitions": 5,
+      "num_valid_repetitions": 5,
+      "num_invalid_repetitions": 0,
+      "centroids_deg": [
+        [
+          -2.55775,
+          3.0605555555555557
+        ],
+        [
+          -2.7545,
+          3.148
+        ],
+        [
+          -2.8200833333333333,
+          3.4103333333333334
+        ],
+        [
+          -2.317277777777778,
+          3.7819722222222225
+        ],
+        [
+          -2.9731111111111113,
+          3.7819722222222225
+        ]
+      ],
+      "mean_position_deg": {
+        "x": -2.0899612468487607,
+        "y": 3.537809080176967
+      },
+      "std_position": {
+        "x": 0.25372077509136487,
+        "y": 0.34057057278381575
+      },
+      "stimulation_position_deg": [
+        -2.571132,
+        3.064178
+      ],
+      "per_repetition_metrics": [
+        {
+          "repetition_number": 1,
+          "dx_to_stim_deg": 0.013382000000000005,
+          "dy_to_stim_deg": -0.0036224444444443726,
+          "distance_to_stim_deg": 0.013863622461430707
+        },
+        {
+          "repetition_number": 2,
+          "dx_to_stim_deg": -0.1833680000000002,
+          "dy_to_stim_deg": 0.08382200000000006,
+          "distance_to_stim_deg": 0.2016183302877
+        },
+        {
+          "repetition_number": 3,
+          "dx_to_stim_deg": -0.2489513333333333,
+          "dy_to_stim_deg": 0.34615533333333337,
+          "distance_to_stim_deg": 0.42638044181640833
+        },
+        {
+          "repetition_number": 4,
+          "dx_to_stim_deg": 0.253854222222222,
+          "dy_to_stim_deg": 0.7177942222222224,
+          "distance_to_stim_deg": 0.7613609601205295
+        },
+        {
+          "repetition_number": 5,
+          "dx_to_stim_deg": -0.4019791111111113,
+          "dy_to_stim_deg": 0.7177942222222224,
+          "distance_to_stim_deg": 0.822688125127186
+        }
+      ],
+      "distance_mean_to_stimulus_deg": 0.6751679004497558,
+      "offset_mean_to_stimulus_deg": {
+        "x": 0.48117075315123925,
+        "y": 0.473631080176967
+      },
+      "status": "ok"
+    },
+    "8": {
+      "electrode_index": 8,
+      "num_total_repetitions": 6,
+      "num_valid_repetitions": 6,
+      "num_invalid_repetitions": 0,
+      "centroids_deg": [
+        [
+          5.9025,
+          2.120527777777778
+        ],
+        [
+          6.011805555555556,
+          2.0768055555555556
+        ],
+        [
+          5.268527777777778,
+          2.6670555555555557
+        ],
+        [
+          5.815055555555555,
+          2.361
+        ],
+        [
+          5.727611111111111,
+          2.8419444444444446
+        ],
+        [
+          5.4871388888888895,
+          2.0330833333333334
+        ]
+      ],
+      "mean_position_deg": {
+        "x": 6.018256609576475,
+        "y": 2.824965040152575
+      },
+      "std_position": {
+        "x": 0.277012857601861,
+        "y": 0.3377523979637257
+      },
+      "stimulation_position_deg": [
+        5.638158,
+        2.052121
+      ],
+      "per_repetition_metrics": [
+        {
+          "repetition_number": 1,
+          "dx_to_stim_deg": 0.2643420000000001,
+          "dy_to_stim_deg": 0.0684067777777777,
+          "distance_to_stim_deg": 0.27304977606644965
+        },
+        {
+          "repetition_number": 2,
+          "dx_to_stim_deg": 0.3736475555555563,
+          "dy_to_stim_deg": 0.024684555555555487,
+          "distance_to_stim_deg": 0.3744620448798754
+        },
+        {
+          "repetition_number": 3,
+          "dx_to_stim_deg": -0.36963022222222186,
+          "dy_to_stim_deg": 0.6149345555555557,
+          "distance_to_stim_deg": 0.7174754412496346
+        },
+        {
+          "repetition_number": 4,
+          "dx_to_stim_deg": 0.17689755555555564,
+          "dy_to_stim_deg": 0.3088790000000001,
+          "distance_to_stim_deg": 0.35594800435250507
+        },
+        {
+          "repetition_number": 5,
+          "dx_to_stim_deg": 0.0894531111111112,
+          "dy_to_stim_deg": 0.7898234444444445,
+          "distance_to_stim_deg": 0.7948729033509341
+        },
+        {
+          "repetition_number": 6,
+          "dx_to_stim_deg": -0.15101911111111033,
+          "dy_to_stim_deg": -0.01903766666666673,
+          "distance_to_stim_deg": 0.1522143379347064
+        }
+      ],
+      "distance_mean_to_stimulus_deg": 0.8612565607304973,
+      "offset_mean_to_stimulus_deg": {
+        "x": 0.3800986095764749,
+        "y": 0.7728440401525751
+      },
+      "status": "ok"
+    },
+    "9": {
+      "electrode_index": 9,
+      "num_total_repetitions": 7,
+      "num_valid_repetitions": 7,
+      "num_invalid_repetitions": 0,
+      "centroids_deg": [
+        [
+          2.2079722222222222,
+          -7.0392777777777775
+        ],
+        [
+          1.9019166666666667,
+          -5.202944444444444
+        ],
+        [
+          2.8638055555555555,
+          -4.372222222222223
+        ],
+        [
+          2.361,
+          -6.0992500000000005
+        ],
+        [
+          2.382861111111111,
+          -5.683888888888889
+        ],
+        [
+          2.0768055555555556,
+          -5.924361111111112
+        ],
+        [
+          2.6670555555555557,
+          -6.645777777777778
+        ]
+      ],
+      "mean_position_deg": {
+        "x": 2.4811769964480197,
+        "y": -5.245037929974852
+      },
+      "std_position": {
+        "x": 0.3319860374973328,
+        "y": 0.8893213824038888
+      },
+      "stimulation_position_deg": [
+        2.052121,
+        -5.638158
+      ],
+      "per_repetition_metrics": [
+        {
+          "repetition_number": 1,
+          "dx_to_stim_deg": 0.15585122222222214,
+          "dy_to_stim_deg": -1.4011197777777777,
+          "distance_to_stim_deg": 1.409761056047517
+        },
+        {
+          "repetition_number": 2,
+          "dx_to_stim_deg": -0.15020433333333338,
+          "dy_to_stim_deg": 0.4352135555555554,
+          "distance_to_stim_deg": 0.4604043664990805
+        },
+        {
+          "repetition_number": 3,
+          "dx_to_stim_deg": 0.8116845555555554,
+          "dy_to_stim_deg": 1.265935777777777,
+          "distance_to_stim_deg": 1.5038035813181339
+        },
+        {
+          "repetition_number": 4,
+          "dx_to_stim_deg": 0.3088790000000001,
+          "dy_to_stim_deg": -0.4610920000000007,
+          "distance_to_stim_deg": 0.554988350422782
+        },
+        {
+          "repetition_number": 5,
+          "dx_to_stim_deg": 0.330740111111111,
+          "dy_to_stim_deg": -0.04573088888888943,
+          "distance_to_stim_deg": 0.33388671027214906
+        },
+        {
+          "repetition_number": 6,
+          "dx_to_stim_deg": 0.024684555555555487,
+          "dy_to_stim_deg": -0.28620311111111185,
+          "distance_to_stim_deg": 0.28726564029249085
+        },
+        {
+          "repetition_number": 7,
+          "dx_to_stim_deg": 0.6149345555555557,
+          "dy_to_stim_deg": -1.0076197777777782,
+          "distance_to_stim_deg": 1.1804414954521245
+        }
+      ],
+      "distance_mean_to_stimulus_deg": 0.5819213327801107,
+      "offset_mean_to_stimulus_deg": {
+        "x": 0.4290559964480196,
+        "y": 0.39312007002514804
+      },
+      "status": "ok"
+    },
+    "10": {
+      "electrode_index": 10,
+      "num_total_repetitions": 5,
+      "num_valid_repetitions": 5,
+      "num_invalid_repetitions": 0,
+      "centroids_deg": [
+        [
+          -6.164833333333333,
+          -1.9237777777777778
+        ],
+        [
+          -4.5471111111111115,
+          -1.2242222222222223
+        ],
+        [
+          -5.552722222222222,
+          -2.4047222222222224
+        ],
+        [
+          -5.836916666666667,
+          -2.4484444444444446
+        ],
+        [
+          -5.596444444444445,
+          -1.6833055555555556
+        ]
+      ],
+      "mean_position_deg": {
+        "x": -5.031981059844888,
+        "y": -2.065430817816314
+      },
+      "std_position": {
+        "x": 0.6057539928433644,
+        "y": 0.5130612292894485
+      },
+      "stimulation_position_deg": [
+        -5.638158,
+        -2.052121
+      ],
+      "per_repetition_metrics": [
+        {
+          "repetition_number": 1,
+          "dx_to_stim_deg": -0.5266753333333334,
+          "dy_to_stim_deg": 0.12834322222222228,
+          "distance_to_stim_deg": 0.5420875293088382
+        },
+        {
+          "repetition_number": 2,
+          "dx_to_stim_deg": 1.0910468888888882,
+          "dy_to_stim_deg": 0.8278987777777778,
+          "distance_to_stim_deg": 1.3695983717864373
+        },
+        {
+          "repetition_number": 3,
+          "dx_to_stim_deg": 0.08543577777777767,
+          "dy_to_stim_deg": -0.35260122222222234,
+          "distance_to_stim_deg": 0.362804208957254
+        },
+        {
+          "repetition_number": 4,
+          "dx_to_stim_deg": -0.19875866666666742,
+          "dy_to_stim_deg": -0.39632344444444456,
+          "distance_to_stim_deg": 0.44337036458408013
+        },
+        {
+          "repetition_number": 5,
+          "dx_to_stim_deg": 0.041713555555555004,
+          "dy_to_stim_deg": 0.3688154444444445,
+          "distance_to_stim_deg": 0.37116687995811193
+        }
+      ],
+      "distance_mean_to_stimulus_deg": 0.6063230442809486,
+      "offset_mean_to_stimulus_deg": {
+        "x": 0.6061769401551116,
+        "y": -0.013309817816313796
+      },
+      "status": "ok"
+    },
+    "11": {
+      "electrode_index": 11,
+      "num_total_repetitions": 5,
+      "num_valid_repetitions": 5,
+      "num_invalid_repetitions": 0,
+      "centroids_deg": [
+        [
+          -2.9731111111111113,
+          4.787583333333333
+        ],
+        [
+          -1.7926111111111112,
+          4.896888888888889
+        ],
+        [
+          -2.2079722222222222,
+          5.596444444444445
+        ],
+        [
+          -2.0549444444444447,
+          5.880638888888889
+        ],
+        [
+          -2.1861111111111113,
+          6.230416666666667
+        ]
+      ],
+      "mean_position_deg": {
+        "x": -1.6272343949969137,
+        "y": 5.643762783880668
+      },
+      "std_position": {
+        "x": 0.4403806751473206,
+        "y": 0.6238274041509824
+      },
+      "stimulation_position_deg": [
+        -2.052121,
+        5.638158
+      ],
+      "per_repetition_metrics": [
+        {
+          "repetition_number": 1,
+          "dx_to_stim_deg": -0.9209901111111112,
+          "dy_to_stim_deg": -0.8505746666666667,
+          "distance_to_stim_deg": 1.2536746182082368
+        },
+        {
+          "repetition_number": 2,
+          "dx_to_stim_deg": 0.25950988888888893,
+          "dy_to_stim_deg": -0.7412691111111105,
+          "distance_to_stim_deg": 0.785382249301943
+        },
+        {
+          "repetition_number": 3,
+          "dx_to_stim_deg": -0.15585122222222214,
+          "dy_to_stim_deg": -0.041713555555555004,
+          "distance_to_stim_deg": 0.1613369895133997
+        },
+        {
+          "repetition_number": 4,
+          "dx_to_stim_deg": -0.0028234444444446005,
+          "dy_to_stim_deg": 0.2424808888888892,
+          "distance_to_stim_deg": 0.2424973264076878
+        },
+        {
+          "repetition_number": 5,
+          "dx_to_stim_deg": -0.13399011111111125,
+          "dy_to_stim_deg": 0.5922586666666669,
+          "distance_to_stim_deg": 0.6072262165925859
+        }
+      ],
+      "distance_mean_to_stimulus_deg": 0.42492357043755263,
+      "offset_mean_to_stimulus_deg": {
+        "x": 0.4248866050030864,
+        "y": 0.005604783880667874
+      },
+      "status": "ok"
+    },
+    "12": {
+      "electrode_index": 12,
+      "num_total_repetitions": 4,
+      "num_valid_repetitions": 4,
+      "num_invalid_repetitions": 0,
+      "centroids_deg": [
+        [
+          3.8475555555555556,
+          7.148583333333334
+        ],
+        [
+          3.8475555555555556,
+          6.7113611111111116
+        ],
+        [
+          4.066166666666667,
+          8.088611111111112
+        ],
+        [
+          3.8475555555555556,
+          6.558333333333334
+        ]
+      ],
+      "mean_position_deg": {
+        "x": 4.208042129293791,
+        "y": 8.147072686593013
+      },
+      "std_position": {
+        "x": 0.10930555555555556,
+        "y": 0.688306841552205
+      },
+      "stimulation_position_deg": [
+        4.0,
+        6.928203
+      ],
+      "per_repetition_metrics": [
+        {
+          "repetition_number": 1,
+          "dx_to_stim_deg": -0.15244444444444438,
+          "dy_to_stim_deg": 0.22038033333333384,
+          "distance_to_stim_deg": 0.26796790845563323
+        },
+        {
+          "repetition_number": 2,
+          "dx_to_stim_deg": -0.15244444444444438,
+          "dy_to_stim_deg": -0.21684188888888833,
+          "distance_to_stim_deg": 0.26506548892467363
+        },
+        {
+          "repetition_number": 3,
+          "dx_to_stim_deg": 0.0661666666666667,
+          "dy_to_stim_deg": 1.1604081111111118,
+          "distance_to_stim_deg": 1.1622929975312748
+        },
+        {
+          "repetition_number": 4,
+          "dx_to_stim_deg": -0.15244444444444438,
+          "dy_to_stim_deg": -0.3698696666666663,
+          "distance_to_stim_deg": 0.4000535951120626
+        }
+      ],
+      "distance_mean_to_stimulus_deg": 1.2364970038202456,
+      "offset_mean_to_stimulus_deg": {
+        "x": 0.20804212929379062,
+        "y": 1.2188696865930133
+      },
+      "status": "ok"
+    },
+    "13": {
+      "electrode_index": 13,
+      "num_total_repetitions": 5,
+      "num_valid_repetitions": 5,
+      "num_invalid_repetitions": 0,
+      "centroids_deg": [
+        [
+          10.231,
+          -5.159222222222223
+        ],
+        [
+          6.164833333333333,
+          -4.109888888888889
+        ],
+        [
+          5.9462222222222225,
+          -3.563361111111111
+        ],
+        [
+          7.061138888888889,
+          -3.913138888888889
+        ],
+        [
+          6.755083333333333,
+          -3.563361111111111
+        ]
+      ],
+      "mean_position_deg": {
+        "x": 7.607394734852642,
+        "y": -3.6212007736719727
+      },
+      "std_position": {
+        "x": 1.735130587397984,
+        "y": 0.6568163466254815
+      },
+      "stimulation_position_deg": [
+        6.928203,
+        -4.0
+      ],
+      "per_repetition_metrics": [
+        {
+          "repetition_number": 1,
+          "dx_to_stim_deg": 3.302797,
+          "dy_to_stim_deg": -1.1592222222222226,
+          "distance_to_stim_deg": 3.5003234398699257
+        },
+        {
+          "repetition_number": 2,
+          "dx_to_stim_deg": -0.7633696666666667,
+          "dy_to_stim_deg": -0.10988888888888937,
+          "distance_to_stim_deg": 0.7712384948172728
+        },
+        {
+          "repetition_number": 3,
+          "dx_to_stim_deg": -0.9819807777777774,
+          "dy_to_stim_deg": 0.436638888888889,
+          "distance_to_stim_deg": 1.0746812398172643
+        },
+        {
+          "repetition_number": 4,
+          "dx_to_stim_deg": 0.1329358888888894,
+          "dy_to_stim_deg": 0.08686111111111083,
+          "distance_to_stim_deg": 0.15879799488071597
+        },
+        {
+          "repetition_number": 5,
+          "dx_to_stim_deg": -0.17311966666666656,
+          "dy_to_stim_deg": 0.436638888888889,
+          "distance_to_stim_deg": 0.46970622550366664
+        }
+      ],
+      "distance_mean_to_stimulus_deg": 0.7776826258563668,
+      "offset_mean_to_stimulus_deg": {
+        "x": 0.6791917348526422,
+        "y": 0.3787992263280273
+      },
+      "status": "ok"
+    },
+    "14": {
+      "electrode_index": 14,
+      "num_total_repetitions": 4,
+      "num_valid_repetitions": 4,
+      "num_invalid_repetitions": 0,
+      "centroids_deg": [
+        [
+          -3.760111111111111,
+          -6.383444444444445
+        ],
+        [
+          -5.421555555555556,
+          -8.591416666666667
+        ],
+        [
+          -4.612694444444444,
+          -7.367194444444444
+        ],
+        [
+          -3.169861111111111,
+          -6.558333333333334
+        ]
+      ],
+      "mean_position_deg": {
+        "x": -3.6576957037538063,
+        "y": -6.987653871466787
+      },
+      "std_position": {
+        "x": 0.984963757401795,
+        "y": 1.0066402744935803
+      },
+      "stimulation_position_deg": [
+        -4.0,
+        -6.928203
+      ],
+      "per_repetition_metrics": [
+        {
+          "repetition_number": 1,
+          "dx_to_stim_deg": 0.23988888888888882,
+          "dy_to_stim_deg": 0.5447585555555552,
+          "distance_to_stim_deg": 0.5952382404242191
+        },
+        {
+          "repetition_number": 2,
+          "dx_to_stim_deg": -1.421555555555556,
+          "dy_to_stim_deg": -1.6632136666666675,
+          "distance_to_stim_deg": 2.1879442174145223
+        },
+        {
+          "repetition_number": 3,
+          "dx_to_stim_deg": -0.6126944444444442,
+          "dy_to_stim_deg": -0.4389914444444445,
+          "distance_to_stim_deg": 0.7537293748743682
+        },
+        {
+          "repetition_number": 4,
+          "dx_to_stim_deg": 0.830138888888889,
+          "dy_to_stim_deg": 0.3698696666666663,
+          "distance_to_stim_deg": 0.9088091907357616
+        }
+      ],
+      "distance_mean_to_stimulus_deg": 0.3474286075537856,
+      "offset_mean_to_stimulus_deg": {
+        "x": 0.34230429624619374,
+        "y": -0.05945087146678674
+      },
+      "status": "ok"
+    },
+    "15": {
+      "electrode_index": 15,
+      "num_total_repetitions": 7,
+      "num_valid_repetitions": 7,
+      "num_invalid_repetitions": 0,
+      "centroids_deg": [
+        [
+          -6.0992500000000005,
+          3.5852222222222223
+        ],
+        [
+          -6.951833333333333,
+          3.2135833333333332
+        ],
+        [
+          -6.7113611111111116,
+          3.5852222222222223
+        ],
+        [
+          -6.011805555555556,
+          3.4103333333333334
+        ],
+        [
+          -6.645777777777778,
+          3.366611111111111
+        ],
+        [
+          -6.602055555555555,
+          4.022444444444445
+        ],
+        [
+          -5.071777777777778,
+          3.104277777777778
+        ]
+      ],
+      "mean_position_deg": {
+        "x": -5.818163299765946,
+        "y": 3.4310349175020987
+      },
+      "std_position": {
+        "x": 0.6372840199088299,
+        "y": 0.30152336837136745
+      },
+      "stimulation_position_deg": [
+        -6.928203,
+        4.0
+      ],
+      "per_repetition_metrics": [
+        {
+          "repetition_number": 1,
+          "dx_to_stim_deg": 0.8289529999999994,
+          "dy_to_stim_deg": -0.4147777777777777,
+          "distance_to_stim_deg": 0.9269324037637645
+        },
+        {
+          "repetition_number": 2,
+          "dx_to_stim_deg": -0.023630333333333198,
+          "dy_to_stim_deg": -0.7864166666666668,
+          "distance_to_stim_deg": 0.7867716099762089
+        },
+        {
+          "repetition_number": 3,
+          "dx_to_stim_deg": 0.21684188888888833,
+          "dy_to_stim_deg": -0.4147777777777777,
+          "distance_to_stim_deg": 0.4680395386237925
+        },
+        {
+          "repetition_number": 4,
+          "dx_to_stim_deg": 0.9163974444444438,
+          "dy_to_stim_deg": -0.5896666666666666,
+          "distance_to_stim_deg": 1.0897206311537306
+        },
+        {
+          "repetition_number": 5,
+          "dx_to_stim_deg": 0.2824252222222219,
+          "dy_to_stim_deg": -0.6333888888888888,
+          "distance_to_stim_deg": 0.6935023364886181
+        },
+        {
+          "repetition_number": 6,
+          "dx_to_stim_deg": 0.32614744444444455,
+          "dy_to_stim_deg": 0.022444444444444933,
+          "distance_to_stim_deg": 0.3269188104163812
+        },
+        {
+          "repetition_number": 7,
+          "dx_to_stim_deg": 1.8564252222222217,
+          "dy_to_stim_deg": -0.8957222222222221,
+          "distance_to_stim_deg": 2.0612212169210613
+        }
+      ],
+      "distance_mean_to_stimulus_deg": 1.2473609746972016,
+      "offset_mean_to_stimulus_deg": {
+        "x": 1.1100397002340543,
+        "y": -0.5689650824979013
+      },
+      "status": "ok"
+    },
+    "16": {
+      "electrode_index": 16,
+      "num_total_repetitions": 4,
+      "num_valid_repetitions": 4,
+      "num_invalid_repetitions": 0,
+      "centroids_deg": [
+        [
+          9.728194444444444,
+          6.361583333333334
+        ],
+        [
+          9.42213888888889,
+          6.558333333333334
+        ],
+        [
+          9.247250000000001,
+          6.0992500000000005
+        ],
+        [
+          8.569555555555556,
+          7.083
+        ]
+      ],
+      "mean_position_deg": {
+        "x": 9.47656990707157,
+        "y": 7.137089353259686
+      },
+      "std_position": {
+        "x": 0.4902529840415305,
+        "y": 0.4165101066978823
+      },
+      "stimulation_position_deg": [
+        9.829824,
+        6.882917
+      ],
+      "per_repetition_metrics": [
+        {
+          "repetition_number": 1,
+          "dx_to_stim_deg": -0.1016295555555562,
+          "dy_to_stim_deg": -0.5213336666666661,
+          "distance_to_stim_deg": 0.5311472098792673
+        },
+        {
+          "repetition_number": 2,
+          "dx_to_stim_deg": -0.4076851111111104,
+          "dy_to_stim_deg": -0.3245836666666664,
+          "distance_to_stim_deg": 0.521115828284323
+        },
+        {
+          "repetition_number": 3,
+          "dx_to_stim_deg": -0.5825739999999993,
+          "dy_to_stim_deg": -0.7836669999999994,
+          "distance_to_stim_deg": 0.9764867804353514
+        },
+        {
+          "repetition_number": 4,
+          "dx_to_stim_deg": -1.2602684444444439,
+          "dy_to_stim_deg": 0.20008300000000023,
+          "distance_to_stim_deg": 1.276052412305787
+        }
+      ],
+      "distance_mean_to_stimulus_deg": 0.4351919568790939,
+      "offset_mean_to_stimulus_deg": {
+        "x": -0.3532540929284309,
+        "y": 0.254172353259686
+      },
+      "status": "ok"
+    },
+    "17": {
+      "electrode_index": 17,
+      "num_total_repetitions": 5,
+      "num_valid_repetitions": 5,
+      "num_invalid_repetitions": 0,
+      "centroids_deg": [
+        [
+          5.7931944444444445,
+          -10.099833333333333
+        ],
+        [
+          7.301611111111112,
+          -10.143555555555556
+        ],
+        [
+          8.87561111111111,
+          -8.963055555555556
+        ],
+        [
+          7.913722222222223,
+          -9.771916666666668
+        ],
+        [
+          7.804416666666667,
+          -10.558916666666667
+        ]
+      ],
+      "mean_position_deg": {
+        "x": 7.2228164944656585,
+        "y": -9.362961902552765
+      },
+      "std_position": {
+        "x": 1.1293332357325923,
+        "y": 0.5973726117495832
+      },
+      "stimulation_position_deg": [
+        6.882917,
+        -9.829824
+      ],
+      "per_repetition_metrics": [
+        {
+          "repetition_number": 1,
+          "dx_to_stim_deg": -1.0897225555555554,
+          "dy_to_stim_deg": -0.27000933333333244,
+          "distance_to_stim_deg": 1.1226755043972596
+        },
+        {
+          "repetition_number": 2,
+          "dx_to_stim_deg": 0.41869411111111177,
+          "dy_to_stim_deg": -0.313731555555556,
+          "distance_to_stim_deg": 0.5231942733157856
+        },
+        {
+          "repetition_number": 3,
+          "dx_to_stim_deg": 1.9926941111111107,
+          "dy_to_stim_deg": 0.8667684444444443,
+          "distance_to_stim_deg": 2.173043339821261
+        },
+        {
+          "repetition_number": 4,
+          "dx_to_stim_deg": 1.0308052222222228,
+          "dy_to_stim_deg": 0.057907333333332645,
+          "distance_to_stim_deg": 1.0324304651715697
+        },
+        {
+          "repetition_number": 5,
+          "dx_to_stim_deg": 0.9214996666666666,
+          "dy_to_stim_deg": -0.7290926666666664,
+          "distance_to_stim_deg": 1.17504797870295
+        }
+      ],
+      "distance_mean_to_stimulus_deg": 0.5774875620918963,
+      "offset_mean_to_stimulus_deg": {
+        "x": 0.3398994944656586,
+        "y": 0.46686209744723506
+      },
+      "status": "ok"
+    },
+    "18": {
+      "electrode_index": 18,
+      "num_total_repetitions": 5,
+      "num_valid_repetitions": 5,
+      "num_invalid_repetitions": 0,
+      "centroids_deg": [
+        [
+          -9.116083333333334,
+          -7.913722222222223
+        ],
+        [
+          -9.81563888888889,
+          -7.1923055555555555
+        ],
+        [
+          -9.509583333333333,
+          -7.148583333333334
+        ],
+        [
+          -9.553305555555555,
+          -7.520222222222222
+        ],
+        [
+          -9.312833333333334,
+          -7.585805555555556
+        ]
+      ],
+      "mean_position_deg": {
+        "x": -9.429963066738383,
+        "y": -7.266615503174478
+      },
+      "std_position": {
+        "x": 0.2634241211290123,
+        "y": 0.3135374178991075
+      },
+      "stimulation_position_deg": [
+        -9.829824,
+        -6.882917
+      ],
+      "per_repetition_metrics": [
+        {
+          "repetition_number": 1,
+          "dx_to_stim_deg": 0.7137406666666664,
+          "dy_to_stim_deg": -1.0308052222222228,
+          "distance_to_stim_deg": 1.2537883176255804
+        },
+        {
+          "repetition_number": 2,
+          "dx_to_stim_deg": 0.01418511111111087,
+          "dy_to_stim_deg": -0.30938855555555556,
+          "distance_to_stim_deg": 0.3097135703936585
+        },
+        {
+          "repetition_number": 3,
+          "dx_to_stim_deg": 0.32024066666666684,
+          "dy_to_stim_deg": -0.2656663333333338,
+          "distance_to_stim_deg": 0.4160921595679126
+        },
+        {
+          "repetition_number": 4,
+          "dx_to_stim_deg": 0.27651844444444507,
+          "dy_to_stim_deg": -0.6373052222222224,
+          "distance_to_stim_deg": 0.6947088572846124
+        },
+        {
+          "repetition_number": 5,
+          "dx_to_stim_deg": 0.5169906666666666,
+          "dy_to_stim_deg": -0.702888555555556,
+          "distance_to_stim_deg": 0.8725432201051248
+        }
+      ],
+      "distance_mean_to_stimulus_deg": 0.554178046558312,
+      "offset_mean_to_stimulus_deg": {
+        "x": 0.39986093326161765,
+        "y": -0.38369850317447796
+      },
+      "status": "ok"
+    },
+    "19": {
+      "electrode_index": 19,
+      "num_total_repetitions": 5,
+      "num_valid_repetitions": 5,
+      "num_invalid_repetitions": 0,
+      "centroids_deg": [
+        [
+          -6.514611111111111,
+          6.033666666666667
+        ],
+        [
+          -7.367194444444444,
+          9.509583333333333
+        ],
+        [
+          -8.394666666666668,
+          9.465861111111112
+        ],
+        [
+          -7.148583333333334,
+          8.001166666666666
+        ],
+        [
+          -7.979305555555555,
+          9.968666666666667
+        ]
+      ],
+      "mean_position_deg": {
+        "x": -6.8695624015372285,
+        "y": 9.10878954929308
+      },
+      "std_position": {
+        "x": 0.7315147216837976,
+        "y": 1.6120549944140965
+      },
+      "stimulation_position_deg": [
+        -6.882917,
+        9.829824
+      ],
+      "per_repetition_metrics": [
+        {
+          "repetition_number": 1,
+          "dx_to_stim_deg": 0.36830588888888904,
+          "dy_to_stim_deg": -3.7961573333333334,
+          "distance_to_stim_deg": 3.8139821351457166
+        },
+        {
+          "repetition_number": 2,
+          "dx_to_stim_deg": -0.4842774444444444,
+          "dy_to_stim_deg": -0.32024066666666684,
+          "distance_to_stim_deg": 0.5805848153239569
+        },
+        {
+          "repetition_number": 3,
+          "dx_to_stim_deg": -1.5117496666666677,
+          "dy_to_stim_deg": -0.3639628888888886,
+          "distance_to_stim_deg": 1.5549456708049727
+        },
+        {
+          "repetition_number": 4,
+          "dx_to_stim_deg": -0.2656663333333338,
+          "dy_to_stim_deg": -1.828657333333334,
+          "distance_to_stim_deg": 1.8478544973618887
+        },
+        {
+          "repetition_number": 5,
+          "dx_to_stim_deg": -1.0963885555555555,
+          "dy_to_stim_deg": 0.1388426666666671,
+          "distance_to_stim_deg": 1.1051448551390486
+        }
+      ],
+      "distance_mean_to_stimulus_deg": 0.7211581133193552,
+      "offset_mean_to_stimulus_deg": {
+        "x": 0.013354598462771428,
+        "y": -0.7210344507069202
+      },
+      "status": "ok"
+    }
+  },
+  "mean_positions": {
+    "0": [
+      0.7937005912454356,
+      2.8870514775506826
+    ],
+    "1": [
+      2.0059433647767793,
+      0.289551375045258
+    ],
+    "2": [
+      -0.2778622582167016,
+      -1.4033883470600514
+    ],
+    "3": [
+      -1.5193800625225236,
+      1.4059900059916373
+    ],
+    "4": [
+      3.494891409281706,
+      3.7368515420757955
+    ],
+    "5": [
+      2.8950334516720764,
+      -2.58403477282407
+    ],
+    "6": [
+      -1.9896430968819223,
+      -2.0435697067052043
+    ],
+    "7": [
+      -2.0899612468487607,
+      3.537809080176967
+    ],
+    "8": [
+      6.018256609576475,
+      2.824965040152575
+    ],
+    "9": [
+      2.4811769964480197,
+      -5.245037929974852
+    ],
+    "10": [
+      -5.031981059844888,
+      -2.065430817816314
+    ],
+    "11": [
+      -1.6272343949969137,
+      5.643762783880668
+    ],
+    "12": [
+      4.208042129293791,
+      8.147072686593013
+    ],
+    "13": [
+      7.607394734852642,
+      -3.6212007736719727
+    ],
+    "14": [
+      -3.6576957037538063,
+      -6.987653871466787
+    ],
+    "15": [
+      -5.818163299765946,
+      3.4310349175020987
+    ],
+    "16": [
+      9.47656990707157,
+      7.137089353259686
+    ],
+    "17": [
+      7.2228164944656585,
+      -9.362961902552765
+    ],
+    "18": [
+      -9.429963066738383,
+      -7.266615503174478
+    ],
+    "19": [
+      -6.8695624015372285,
+      9.10878954929308
+    ]
+  },
+  "no_response_electrodes": []
+}
