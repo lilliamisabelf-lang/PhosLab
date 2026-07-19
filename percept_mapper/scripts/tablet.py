@@ -403,30 +403,42 @@ class ForcedAdjustmentTablet:
 
 
 class LineDrawingTablet:
-    """Pantalla de respuesta del método pareado (mapping_method: paired).
+    """Pantalla de respuesta para el método de mapeo *pareado* (paired).
 
-    El participante marca con dos clics, EN ORDEN, dónde percibió el primer
-    fosfeno del par (A) y el segundo (B). ENTER confirma; `R_DELETE_LAST`
-    deshace el último punto marcado; las teclas 1/2 fuerzan una respuesta
-    parcial ("solo vi uno de los dos"), descartando el punto no fiable sin
-    tener que rehacer el ensayo entero.
+    En cada ensayo se estimulan dos electrodos (A primero, 1 s de descanso,
+    luego B). El participante traza una línea *dirigida* desde donde percibió
+    A hasta donde percibió B. Lo que importa NO es la línea dibujada sino sus
+    dos extremos ordenados (endpoint_A, endpoint_B); su diferencia es el
+    vector de desplazamiento Δ(A→B) que alimenta a embed_displacement_lsq().
 
-    Implementa la misma interfaz mínima que el resto de pantallas de respuesta
-    (reset/update/close) más `save_result`, que `DrawingResponseCapture`
-    delega aquí (en vez de usar su guardado genérico de canvas) para no
-    perder los extremos (`endpoint_a_px`/`endpoint_b_px`) ni el vector de
-    desplazamiento que alimenta `embed_displacement_lsq`.
-    """
+    Interacción (dos clics, robusta para ratón y stylus):
+      1) primer clic  → fija el extremo A (donde se vio el primer fosfeno)
+      2) segundo clic → fija el extremo B (donde se vio el segundo fosfeno)
+      ENTER           → confirma (status="ok" si ambos extremos están puestos)
 
-    DOT_RADIUS = 10
-    DOT_COLOR = (255, 220, 0)
+    Casos parciales (esenciales para no inventar datos):
+      - "solo vi UNO": pulsar 1 (solo A) o 2 (solo B) antes de ENTER →
+        status="partial"; el extremo no visto queda en None y el par se
+        descarta como restricción de desplazamiento aguas abajo.
+      - "no vi NINGUNO": ENTER sin clics → status="empty".
+
+    Implementa la misma interfaz que DrawingTablet/ForcedAdjustmentTablet
+    (update / reset / close / last_status / mode) para encajar en
+    DrawingResponseCapture sin tocar el pipeline. Además expone los extremos
+    ordenados como atributos (endpoint_a / endpoint_b) y los serializa al
+    metadata vía save_result()."""
+
+    DOT_RADIUS = 9
+    COLOR_A = (80, 200, 255)    # azul → primer fosfeno (A)
+    COLOR_B = (255, 200, 80)    # naranja → segundo fosfeno (B)
+    LINE_COLOR = (200, 200, 200)
     R_DELETE_LAST = pygame.K_x
 
     def __init__(
         self,
         screen_width: int,
         screen_height: int,
-        brush_size: int = 3,
+        brush_size: int = 4,
         brush_color: tuple = (255, 255, 0),
         instructions_text: str | None = None,
         hide_cursor: bool = False,
@@ -436,26 +448,28 @@ class LineDrawingTablet:
         self.screen_height = screen_height
         self.brush_size = brush_size
         self.brush_color = brush_color
+        self.mode = "paired_line"
         self.hide_cursor = bool(hide_cursor)
         self._cursor_clip_rect = cursor_clip_rect
         self._cursor_clip_active = False
-        self._cursor_prev_visible = None
 
-        self.instructions_text = instructions_text or (
-            "Marca en orden el 1er y 2o punto de luz  -  "
-            "ENTER confirma  -  X deshace  -  1/2 = 'solo vi uno'"
-        )
-        self.mode = "paired_line"
+        self.BLACK = (0, 0, 0)
+        self.WHITE = (255, 255, 255)
+
+        # Estado de respuesta
         self.endpoint_a: tuple[int, int] | None = None
         self.endpoint_b: tuple[int, int] | None = None
         self.finished = False
         self.last_status = "unknown"
-        self._font = None
 
+        self.title_text = instructions_text or (
+            "Marca DÓNDE viste el 1er punto (azul), luego el 2º (naranja). ENTER"
+        )
+        self._font = None  # lazy: pygame puede no estar inicializado al importar
+        self._cursor_prev_visible = None
         if self.hide_cursor:
             self._cursor_prev_visible = pygame.mouse.get_visible()
             pygame.mouse.set_visible(False)
-
         print("[LineDrawingTablet] Inicializado")
 
     # ------------------------------------------------------------------ #
@@ -465,40 +479,25 @@ class LineDrawingTablet:
     def update(self, screen, events):
         """Procesa eventos y dibuja. Devuelve (finished, canvas | None)."""
         if self._font is None:
-            self._font = pygame.font.Font(None, 40)
+            self._font = pygame.font.Font(None, 48)
 
         for event in events:
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if self.endpoint_a is None:
-                    self.endpoint_a = event.pos
-                elif self.endpoint_b is None:
-                    self.endpoint_b = event.pos
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                self._place_next(event.pos)
 
             elif event.type == pygame.KEYDOWN:
-                if event.key == self.R_DELETE_LAST:
-                    if self.endpoint_b is not None:
-                        self.endpoint_b = None
-                    elif self.endpoint_a is not None:
-                        self.endpoint_a = None
-
+                if event.key == pygame.K_RETURN:
+                    return self._confirm()
+                elif event.key == self.R_DELETE_LAST:
+                    self._undo_last()
                 elif event.key == pygame.K_1:
-                    # "Solo vi el primero": el segundo clic (si existe) se descarta.
+                    # "solo vi el primero": fuerza modo parcial-solo-A.
                     self.endpoint_b = None
-
+                    print("[LineDrawingTablet] Marcado: solo se vio A")
                 elif event.key == pygame.K_2:
-                    # "Solo vi el segundo": el primer clic (si existe) se descarta.
+                    # "solo vi el segundo": fuerza modo parcial-solo-B.
                     self.endpoint_a = None
-
-                elif event.key == pygame.K_RETURN:
-                    if self.endpoint_a is not None and self.endpoint_b is not None:
-                        self.last_status = "ok"
-                    elif self.endpoint_a is not None or self.endpoint_b is not None:
-                        self.last_status = "partial"
-                    else:
-                        self.last_status = "empty"
-                    self.finished = True
-                    self._release_cursor_clip()
-                    return (True, self._render_result())
+                    print("[LineDrawingTablet] Marcado: solo se vio B")
 
         self._draw(screen)
         return (False, None)
@@ -518,10 +517,12 @@ class LineDrawingTablet:
             self._cursor_prev_visible = None
 
     def save_result(self, output_dir, *, drawing_filename, saccade_filename=None):
-        """Guarda el canvas final y devuelve un ResponseResult con los
-        extremos y el desplazamiento en `debug` (que ResponseResult.to_metadata
-        promueve a campos de primer nivel: endpoint_a_px/endpoint_b_px/
-        displacement_px)."""
+        """Guarda un PNG limpio (dos puntos) para el analizador y devuelve un
+        ResponseResult cuyo `extras` lleva los extremos ordenados y el vector
+        de desplazamiento en píxeles — la carga útil real del método pareado.
+
+        Se importa ResponseResult de forma perezosa para no crear un ciclo de
+        importación con response_capture (que importa de schemas, no de aquí)."""
         from pathlib import Path
         from scripts.response_capture import ResponseResult
 
@@ -529,18 +530,20 @@ class LineDrawingTablet:
         canvas = self._render_result()
         pygame.image.save(canvas, str(output_dir / drawing_filename))
 
-        a = list(self.endpoint_a) if self.endpoint_a is not None else None
-        b = list(self.endpoint_b) if self.endpoint_b is not None else None
-        disp = [b[0] - a[0], b[1] - a[1]] if (a is not None and b is not None) else None
+        ax = list(self.endpoint_a) if self.endpoint_a is not None else None
+        bx = list(self.endpoint_b) if self.endpoint_b is not None else None
+        disp = None
+        if ax is not None and bx is not None:
+            disp = [bx[0] - ax[0], bx[1] - ax[1]]
 
         return ResponseResult(
-            mode=self.mode,
-            status=self.last_status,
+            mode="paired_line",
+            status=self.last_status or "ok",
             response_file=drawing_filename,
             response_file_type="png",
             debug={
-                "endpoint_a_px": a,
-                "endpoint_b_px": b,
+                "endpoint_a_px": ax,
+                "endpoint_b_px": bx,
                 "displacement_px": disp,
             },
         )
@@ -549,35 +552,67 @@ class LineDrawingTablet:
     # Helpers privados                                                     #
     # ------------------------------------------------------------------ #
 
-    def _draw(self, screen):
-        screen.fill((0, 0, 0))
-        if self.endpoint_a is not None and self.endpoint_b is not None:
-            pygame.draw.line(screen, self.brush_color, self.endpoint_a, self.endpoint_b, 2)
-        if self.endpoint_a is not None:
-            pygame.draw.circle(screen, self.DOT_COLOR, self.endpoint_a, self.DOT_RADIUS)
-            self._blit_label(screen, "1", self.endpoint_a)
-        if self.endpoint_b is not None:
-            pygame.draw.circle(screen, self.DOT_COLOR, self.endpoint_b, self.DOT_RADIUS)
-            self._blit_label(screen, "2", self.endpoint_b)
-        text = self._font.render(self.instructions_text, True, (255, 255, 255))
-        screen.blit(text, text.get_rect(center=(self.screen_width // 2, 40)))
+    def _place_next(self, pos):
+        """Coloca el siguiente extremo libre: primero A, luego B. Un tercer
+        clic re-coloca B (corrección rápida del último extremo)."""
+        p = (int(pos[0]), int(pos[1]))
+        if self.endpoint_a is None:
+            self.endpoint_a = p
+        else:
+            self.endpoint_b = p
 
-    def _blit_label(self, screen, label, pos):
-        surf = self._font.render(label, True, (255, 255, 255))
-        screen.blit(surf, (pos[0] + self.DOT_RADIUS + 4, pos[1] - self.DOT_RADIUS - 4))
+    def _undo_last(self):
+        if self.endpoint_b is not None:
+            self.endpoint_b = None
+        elif self.endpoint_a is not None:
+            self.endpoint_a = None
+
+    def _confirm(self):
+        has_a = self.endpoint_a is not None
+        has_b = self.endpoint_b is not None
+        if has_a and has_b:
+            self.last_status = "ok"
+        elif has_a or has_b:
+            self.last_status = "partial"
+        else:
+            self.last_status = "empty"
+        self.finished = True
+        self._release_cursor_clip()
+        print(
+            f"[LineDrawingTablet] Confirmado (status={self.last_status}, "
+            f"A={self.endpoint_a}, B={self.endpoint_b})"
+        )
+        return (True, self._render_result())
+
+    def _draw(self, screen):
+        screen.fill(self.BLACK)
+        # Línea dirigida A→B (solo si ambos extremos existen)
+        if self.endpoint_a is not None and self.endpoint_b is not None:
+            pygame.draw.line(screen, self.LINE_COLOR, self.endpoint_a,
+                             self.endpoint_b, 2)
+        if self.endpoint_a is not None:
+            pygame.draw.circle(screen, self.COLOR_A, self.endpoint_a,
+                               self.DOT_RADIUS)
+        if self.endpoint_b is not None:
+            pygame.draw.circle(screen, self.COLOR_B, self.endpoint_b,
+                               self.DOT_RADIUS)
+
+        title = self._font.render(self.title_text, True, self.WHITE)
+        screen.blit(title, title.get_rect(center=(self.screen_width // 2, 50)))
+        hint = self._font.render(
+            "X=deshacer  1=solo vi el 1º  2=solo vi el 2º", True, self.WHITE)
+        screen.blit(hint, hint.get_rect(center=(self.screen_width // 2, 100)))
 
     def _render_result(self) -> pygame.Surface:
-        """Canvas de análisis: fondo negro con la línea y los puntos finales
-        (sin texto de instrucciones), para que el analizador extraiga
-        endpoints limpios."""
+        """Canvas de análisis: fondo negro con los dos extremos como puntos del
+        color de pincel (sin la línea ni los colores A/B) para que un extractor
+        de centroides genérico funcione. Los datos ordenados viven en el
+        metadata, no en los píxeles."""
         canvas = pygame.Surface((self.screen_width, self.screen_height))
-        canvas.fill((0, 0, 0))
-        if self.endpoint_a is not None and self.endpoint_b is not None:
-            pygame.draw.line(canvas, self.brush_color, self.endpoint_a, self.endpoint_b, 2)
-        if self.endpoint_a is not None:
-            pygame.draw.circle(canvas, self.brush_color, self.endpoint_a, self.brush_size)
-        if self.endpoint_b is not None:
-            pygame.draw.circle(canvas, self.brush_color, self.endpoint_b, self.brush_size)
+        canvas.fill(self.BLACK)
+        for pt in (self.endpoint_a, self.endpoint_b):
+            if pt is not None:
+                pygame.draw.circle(canvas, self.brush_color, pt, self.brush_size)
         return canvas
 
     def _apply_cursor_clip(self):
@@ -588,7 +623,6 @@ class LineDrawingTablet:
 
             if clip_cursor(self._cursor_clip_rect):
                 self._cursor_clip_active = True
-                print(f"[LineDrawingTablet] Cursor confinado a {self._cursor_clip_rect}")
         except Exception as e:
             print(f"[LineDrawingTablet] ⚠ no se pudo aplicar cursor clip: {e}")
 

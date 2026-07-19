@@ -38,8 +38,9 @@ class ResponseResult:
         if "extraction" in self.debug:
             metadata["response_extraction"] = self.debug["extraction"]
 
-        # Paired method (LineDrawingTablet): promote endpoint/displacement
-        # debug fields to top-level metadata so they land in TrialRecord.
+        # Paired-mapping endpoints: the load-bearing payload of the line
+        # response. These are not part of the canonical TrialRecord schema, so
+        # they ride along as extras (TrialRecord keeps unknown keys verbatim).
         for key in ("endpoint_a_px", "endpoint_b_px", "displacement_px"):
             if key in self.debug:
                 metadata[key] = self.debug[key]
@@ -81,11 +82,13 @@ class DrawingResponseCapture:
         drawing_filename: str,
         saccade_filename: str | None = None,
     ) -> ResponseResult:
-        # Pantallas con guardado propio (p.ej. LineDrawingTablet del método
-        # pareado) delegan aquí para no perder campos específicos (endpoints,
-        # desplazamiento) que el guardado genérico de canvas no conoce.
-        if hasattr(self.response_screen, "save_result"):
-            return self.response_screen.save_result(
+        # If the wrapped response screen carries a richer save_result (e.g. the
+        # paired LineDrawingTablet, whose ordered endpoints are the actual
+        # payload), delegate to it so that metadata isn't lost. Plain
+        # DrawingTablet has no save_result, so we fall back to the canvas path.
+        inner_save = getattr(self.response_screen, "save_result", None)
+        if callable(inner_save):
+            return inner_save(
                 output_dir,
                 drawing_filename=drawing_filename,
                 saccade_filename=saccade_filename,
