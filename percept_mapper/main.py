@@ -2998,9 +2998,55 @@ def _run_paired_session(
     print("=" * 70)
     if save_results:
         print(f"\n📁 Resultados: {exp.pairs_dir}")
-        print("   Para reconstruir el mapa: "
-              "uv run python scripts/analysis/build_relative_map.py "
-              f"--session {exp.pairs_dir}")
+        print("\n[ANÁLISIS] Reconstruyendo el mapa (LSQ/MDS) automáticamente...")
+        try:
+            import contextlib
+            import io
+
+            from scripts.analysis.paired_to_consolidated import (
+                main as _paired_to_consolidated_main,
+            )
+            from scripts.analysis.build_relative_map import (
+                main as _build_relative_map_main,
+            )
+
+            # Ambos scripts imprimen su propio resumen verboso (incluye la
+            # palabra "error" como término estadístico: "Error global",
+            # "LSQ error", "MDS error"). El launcher escanea la salida de
+            # este proceso buscando esa palabra para marcar líneas en rojo,
+            # así que se captura aquí y se sustituye por un resumen propio
+            # sin esa palabra — el detalle completo sigue disponible en
+            # consolidated_report.txt / recovery_report.txt.
+            _captured = io.StringIO()
+            with contextlib.redirect_stdout(_captured):
+                rc_consolidated = _paired_to_consolidated_main(
+                    ["--session", str(exp.pairs_dir)]
+                )
+                rc_overlay = _build_relative_map_main(["--session", str(exp.pairs_dir)])
+
+            if rc_consolidated == 0 and rc_overlay == 0:
+                print(
+                    "[ANÁLISIS] OK — reconstrucción completada. Detalle en "
+                    f"{exp.pairs_dir.parent / 'consolidated_analysis'} y "
+                    f"{exp.pairs_dir.parent / 'relative_map'}"
+                )
+            else:
+                print(_captured.getvalue())
+                print(
+                    "[ANÁLISIS] Alguno de los pasos no se completó del todo "
+                    "(ver mensajes arriba)."
+                )
+        except Exception as e:
+            print(f"[ANÁLISIS] ⚠ No se pudo reconstruir el mapa automáticamente: {e}")
+            print("   Puedes reintentarlo manualmente con:")
+            print(
+                "   uv run python scripts/analysis/paired_to_consolidated.py "
+                f"--session {exp.pairs_dir}"
+            )
+            print(
+                "   uv run python scripts/analysis/build_relative_map.py "
+                f"--session {exp.pairs_dir}"
+            )
     print()
 
     show_experiment_completion_screen(

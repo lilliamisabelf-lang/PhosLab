@@ -1,11 +1,20 @@
-"""Compara N sesiones con etiquetas libres (métodos de mapeo, implantes, etc.).
+"""Compara N sesiones con etiquetas libres (métodos de mapeo, dispositivos de
+entrada, implantes, etc. — cualquier comparación de Exp2 o Exp4).
 
 Produce en --out-dir:
   1. error_comparison.png  — boxplots agrupados por excentricidad, una caja por sesión
   2. map_comparison.png    — overlay de posiciones medias (verdaderas vs medidas)
 
+El resumen de consola incluye, por cada sesión, el r de Pearson entre
+excentricidad y error con su IC95% y p-valor bootstrap por electrodo (ver
+stats_utils.py) — no por ensayo individual, ya que las repeticiones de un
+mismo electrodo no son observaciones independientes entre sí. Además, para
+cada par de sesiones, un test de Mann-Whitney y un IC95 bootstrap por
+electrodo de la diferencia de medianas (compare_pairwise), sobre todos los
+ensayos de la sesión.
+
 Uso (PowerShell):
-    cd percept_mapper; uv run python scripts/analysis/compare_sessions.py --sessions mapping_experiments/A mapping_experiments/B mapping_experiments/C --labels "Absolute" "Relative" "Forced adjustment" --out-dir comparison_results/exp4_mapping_method
+    cd percept_mapper; uv run python scripts/analysis/compare_mapmethod.py --sessions mapping_experiments/A mapping_experiments/B mapping_experiments/C --labels "Absolute" "Relative" "Forced adjustment" --out-dir comparison_results/exp4_mapping_method
 """
 
 from __future__ import annotations
@@ -20,6 +29,12 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+
+from stats_utils import (
+    report_r, format_r_report, collect_electrode_data, mannwhitney_compare,
+    N_BOOT_DEFAULT, SEED_DEFAULT,
+)
+from map_plot_utils import plot_split_maps
 
 # ---------------------------------------------------------------------------
 # Estilo global (coherente con el resto de scripts de análisis)
@@ -51,6 +66,35 @@ SESSION_COLORS = [
     "#937860",  # marrón
 ]
 SESSION_MARKERS = ["o", "s", "D", "^", "v", "P"]
+
+# Paleta fija por nombre de sesión para Exp4 (coincide con el caption ya
+# escrito en la memoria: "marcadores rojos/granate (absoluto), verdes
+# (relativo) y morados (ajuste forzado)"). Cualquier label no listado aquí
+# (p.ej. las condiciones de Exp2) recurre a SESSION_COLORS por posición.
+LABEL_COLORS = {
+    "Absoluto": "#C44E52",
+    "Relativo": "#55A868",
+    "Ajuste forzado": "#8172B2",
+}
+
+
+def _color_for_label(label: str, index: int) -> str:
+    return LABEL_COLORS.get(label, SESSION_COLORS[index % len(SESSION_COLORS)])
+
+
+# Nombres de archivo ya referenciados en la memoria (en inglés, heredados de
+# una convención anterior) — se mantienen aquí para que map_<label>_split.png
+# siga coincidiendo con \includegraphics sin tener que editar el LaTeX.
+FILENAME_SLUGS = {
+    "Absoluto": "absolute",
+    "Relativo": "relative",
+    "Ajuste forzado": "forced_adjustment",
+}
+
+
+def _filename_for_label(label: str) -> str:
+    slug = FILENAME_SLUGS.get(label, label.lower().replace(" ", "_"))
+    return f"map_{slug}_split"
 
 
 # ---------------------------------------------------------------------------
@@ -118,7 +162,7 @@ def plot_error_comparison(
     rng = np.random.default_rng(42)
 
     for i, (label, groups) in enumerate(sessions):
-        color = SESSION_COLORS[i % len(SESSION_COLORS)]
+        color = _color_for_label(label, i)
         positions = [ecc_to_cat[e] + offsets[i] for e in eccs]
         data = [groups.get(e, []) for e in eccs]
 
@@ -157,7 +201,7 @@ def plot_error_comparison(
     ax.set_xticklabels([_n_label(e) for e in eccs])
     ax.set_xlabel("Excentricidad del electrodo (°)", labelpad=8)
     ax.set_ylabel("Error de localizacion (°)")
-    y_cap = 4.0
+    y_cap = 6.0
     ax.set_ylim(0, y_cap)
 
     # Indicar cuántos valores quedan fuera de escala
@@ -170,7 +214,7 @@ def plot_error_comparison(
                 bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="#cccccc", alpha=0.8))
 
     legend_handles = [
-        Line2D([], [], color=SESSION_COLORS[i % len(SESSION_COLORS)],
+        Line2D([], [], color=_color_for_label(label, i),
                lw=8, alpha=0.45, label=label)
         for i, (label, _) in enumerate(sessions)
     ]
@@ -212,7 +256,7 @@ def plot_map_comparison(
         first_true = False
 
     for i, (label, results) in enumerate(sessions):
-        color = SESSION_COLORS[i % len(SESSION_COLORS)]
+        color = _color_for_label(label, i)
         marker = SESSION_MARKERS[i % len(SESSION_MARKERS)]
         first = True
         for k, rec in results["electrodes"].items():
@@ -248,6 +292,35 @@ def plot_map_comparison(
     fig.savefig(out)
     plt.close(fig)
     print(f"[OK] Guardado: {out}")
+
+
+# ---------------------------------------------------------------------------
+# Comparación formal entre cada par de sesiones (todos los ensayos)
+# ---------------------------------------------------------------------------
+
+def compare_pairwise(
+    sessions: list[tuple[str, dict]],
+    n_boot: int = N_BOOT_DEFAULT,
+    seed: int = SEED_DEFAULT,
+) -> None:
+    """Para cada par de sesiones, test de Mann-Whitney (por ensayo) y un IC95
+    bootstrap por electrodo de la diferencia de medianas, usando todos los
+    ensayos de la sesión (no restringido a una excentricidad concreta) —
+    responde directamente a si las diferencias entre métodos/dispositivos que
+    se ven en error_comparison.png son estadísticamente sólidas o podrían
+    deberse al azar."""
+    per_session = {label: collect_electrode_data(results)[1] for label, results in sessions}
+    labels = list(per_session.keys())
+    print("Comparación global entre sesiones (todos los ensayos):")
+    for i in range(len(labels)):
+        for j in range(i + 1, len(labels)):
+            label_a, label_b = labels[i], labels[j]
+            cmp = mannwhitney_compare(label_a, per_session[label_a], label_b, per_session[label_b], n_boot, seed)
+            print(f"  {label_a} (n_el={cmp['n_el_a']}, Md={cmp['md_a']:.3f}°) vs "
+                  f"{label_b} (n_el={cmp['n_el_b']}, Md={cmp['md_b']:.3f}°): "
+                  f"diff={cmp['diff']:.3f}°, Mann-Whitney U={cmp['u']:.1f} p={cmp['p_mannwhitney']:.4f}, "
+                  f"IC95 bootstrap por electrodo=[{cmp['ci_lo']:.3f}, {cmp['ci_hi']:.3f}]")
+    print()
 
 
 # ---------------------------------------------------------------------------
@@ -299,12 +372,22 @@ def main() -> None:
         print()
     print()
 
+    print("Correlación excentricidad-error (bootstrap por electrodo):")
+    for label, results in loaded_results:
+        rep = report_r(results)
+        print(f"  {format_r_report(label, rep)}")
+    print("IC y p calculados remuestreando electrodos completos (no ensayos), "
+          "porque las repeticiones de un mismo electrodo no son independientes entre sí.\n")
+
+    compare_pairwise(loaded_results)
+
     plot_error_comparison(error_sessions, eccs,
                           out_dir / "error_comparison.png")
     plot_map_comparison(loaded_results,
                         out_dir / "map_comparison.png")
+    plot_split_maps(loaded_results, out_dir, color_fn=_color_for_label, filename_fn=_filename_for_label)
 
-    print("\n[OK] Exp 4 completado.")
+    print("\n[OK] Comparación completada.")
 
 
 if __name__ == "__main__":

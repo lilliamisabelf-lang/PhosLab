@@ -8,12 +8,14 @@ Todos los scripts de análisis viven en `scripts/analysis/`. Se ejecutan desde e
 
 | Script | Experimento | Descripción |
 |--------|-------------|-------------|
-| [`scripts/analysis/compare_experiments.py`](scripts/analysis/compare_experiments.py) | Exp 2 | Compara hasta 4 modalidades de entrada (mouse / gaze / pupil / wacom) |
-| [`scripts/analysis/plot_error_vs_ecc.py`](scripts/analysis/plot_error_vs_ecc.py) | Exp 1 | Scatter + boxplot de error vs excentricidad en una sola sesión |
-| [`scripts/analysis/compare_sessions.py`](scripts/analysis/compare_sessions.py) | Exp 3, 4 | Compara N sesiones con etiquetas libres (implantes, métodos de mapeo) |
+| [`scripts/analysis/plot_error_vs_ecc.py`](scripts/analysis/plot_error_vs_ecc.py) | Exp 1 | Scatter + boxplot de error vs excentricidad en una sola sesión, con r/IC95%/p bootstrap por electrodo |
+| [`scripts/analysis/compare_mapmethod.py`](scripts/analysis/compare_mapmethod.py) | Exp 2, 4 | Compara N sesiones con etiquetas libres (dispositivos de entrada, métodos de mapeo) |
+| [`scripts/analysis/compare_implants.py`](scripts/analysis/compare_implants.py) | Exp 3 | Compara N implantes: cobertura, error por anillo de excentricidad, r/IC/p y test Mann-Whitney |
 | [`scripts/analysis/plot_learning_curve.py`](scripts/analysis/plot_learning_curve.py) | Exp 5 | Curva de convergencia del sesgo estimado por el modelo Bayesiano |
+| [`scripts/analysis/stats_utils.py`](scripts/analysis/stats_utils.py) | — | Módulo compartido (no se ejecuta): bootstrap por electrodo, r, IC95%, p-valor, Mann-Whitney |
+| [`scripts/analysis/map_plot_utils.py`](scripts/analysis/map_plot_utils.py) | — | Módulo compartido (no se ejecuta): figura de 3 paneles estímulo/percepción/superposición |
 
-> Los scripts marcados como "nuevo" se crean cuando haya datos reales con los que probarlos.
+> `compare_experiments.py` (Exp2 con categorías fijas mouse/gaze/pupil/wacom) se eliminó por no usarse: la comparación real de Exp2 (WACOM vs Pupil Core vs Pupil Neon) usa `compare_mapmethod.py`, que admite etiquetas libres.
 
 ---
 
@@ -151,15 +153,18 @@ uv run python main.py   # sesión pupil+saccade
 
 ```powershell
 cd percept_mapper
-uv run python scripts/analysis/compare_experiments.py `
-    --mouse  mapping_experiments/<sesion_mouse> `
-    --pupil  mapping_experiments/<sesion_pupil> `
-    --out-dir comparison_results/exp2_input_mode
+uv run python scripts/analysis/compare_mapmethod.py `
+    --sessions mapping_experiments/<sesion_mouse> `
+               mapping_experiments/<sesion_pupil> `
+    --labels   "Mouse" "Pupil" `
+    --out-dir  comparison_results/exp2_input_mode
 ```
 
 Produce en `comparison_results/exp2_input_mode/`:
-- `error_vs_ecc_comparison.png` — boxplots agrupados por excentricidad, una caja por condición
+- `error_comparison.png` — boxplots agrupados por excentricidad, una caja por condición
 - `map_comparison.png` — overlay de posiciones verdaderas vs medidas para cada condición
+- `map_<condición>_split.png` — un archivo por condición (estímulo / percepción media ± std / superposición)
+- r de Pearson + IC95% + p-valor (bootstrap por electrodo) por condición, impreso en consola
 
 ---
 
@@ -230,17 +235,21 @@ uv run python main.py   # sesión Thread
 
 ```powershell
 cd percept_mapper
-uv run python scripts/analysis/compare_sessions.py `
+uv run python scripts/analysis/compare_implants.py `
     --sessions mapping_experiments/<sesion_utah> `
                mapping_experiments/<sesion_comb> `
                mapping_experiments/<sesion_thread> `
-    --labels   "4x Utah" "Comb 10x10" "Thread-1024" `
-    --out-dir  comparison_results/exp3_implants
+    --labels   "Utah Array" "Comb 10x10" "Thread-1024" `
+    --out-dir  comparison_results/exp3_implants `
+    --compare-ring 4
 ```
 
 Produce en `comparison_results/exp3_implants/`:
+- `coverage_map.png` — mapa polar de cobertura del campo visual por implante
 - `error_comparison.png` — boxplots side-by-side de error por configuración
-- `map_comparison.png` — overlay de cobertura del campo visual por configuración
+- `error_vs_ecc_exp3.png` — error por anillo de excentricidad, con recta de regresión (r) por implante
+- `map_<implante>_split.png` — un archivo por implante (estímulo / percepción media ± std / superposición)
+- r/IC95%/p por implante y, con `--compare-ring`, test de Mann-Whitney entre pares de implantes en esa excentricidad — todo impreso en consola
 
 ---
 
@@ -281,17 +290,19 @@ uv run python main.py   # sesión forced_adjustment
 
 ```powershell
 cd percept_mapper
-uv run python scripts/analysis/compare_sessions.py `
+uv run python scripts/analysis/compare_mapmethod.py `
     --sessions mapping_experiments/<sesion_absolute> `
                mapping_experiments/<sesion_relative> `
                mapping_experiments/<sesion_forced> `
-    --labels   "Absolute" "Relative" "Forced adjustment" `
+    --labels   "Absoluto" "Relativo" "Ajuste forzado" `
     --out-dir  comparison_results/exp4_mapping_method
 ```
 
 Produce en `comparison_results/exp4_mapping_method/`:
 - `error_comparison.png` — boxplots side-by-side de error por método
 - `map_comparison.png` — overlay de posiciones medidas por método
+- `map_absolute_split.png`, `map_relative_split.png`, `map_forced_adjustment_split.png` — un archivo por método (estímulo / percepción media ± std / superposición)
+- r/IC95%/p por método (bootstrap por electrodo), impreso en consola
 
 ### Resultado esperado en los boxplots
 
@@ -392,10 +403,12 @@ El sesgo estimado converge hacia `[2.0, 1.0]` con más ensayos. Si no converge, 
 |------|-----|
 | [`config/params.yaml`](config/params.yaml) | Configuración de cada sesión |
 | [`config/synthetic_4ecc_4el.csv`](config/synthetic_4ecc_4el.csv) | CSV baseline (4 excentricidades) |
-| [`scripts/analysis/compare_experiments.py`](scripts/analysis/compare_experiments.py) | Comparación input_mode (Exp 2) |
-| [`scripts/analysis/plot_error_vs_ecc.py`](scripts/analysis/plot_error_vs_ecc.py) | Error vs excentricidad (Exp 1) — por crear |
-| [`scripts/analysis/compare_sessions.py`](scripts/analysis/compare_sessions.py) | Comparación N sesiones genérica (Exp 3, 4) — por crear |
-| [`scripts/analysis/plot_learning_curve.py`](scripts/analysis/plot_learning_curve.py) | Curva de aprendizaje (Exp 5) — por crear |
+| [`scripts/analysis/plot_error_vs_ecc.py`](scripts/analysis/plot_error_vs_ecc.py) | Error vs excentricidad (Exp 1) |
+| [`scripts/analysis/compare_mapmethod.py`](scripts/analysis/compare_mapmethod.py) | Comparación N sesiones genérica (Exp 2, 4) |
+| [`scripts/analysis/compare_implants.py`](scripts/analysis/compare_implants.py) | Comparación de implantes (Exp 3) |
+| [`scripts/analysis/plot_learning_curve.py`](scripts/analysis/plot_learning_curve.py) | Curva de aprendizaje (Exp 5) |
+| [`scripts/analysis/stats_utils.py`](scripts/analysis/stats_utils.py) | Módulo compartido: r, IC95%, p-valor, Mann-Whitney (bootstrap por electrodo) |
+| [`scripts/analysis/map_plot_utils.py`](scripts/analysis/map_plot_utils.py) | Módulo compartido: figura de 3 paneles estímulo/percepción/superposición |
 | [`scripts/mapping_analyzer.py`](scripts/mapping_analyzer.py) | Análisis de una sesión individual |
 | [`scripts/learning/bayesian_model.py`](scripts/learning/bayesian_model.py) | Modelo Bayesiano (Exp 5) |
 | [`scripts/learning/neural_model.py`](scripts/learning/neural_model.py) | Red neuronal (Exp 5) |

@@ -1,0 +1,101 @@
+======================================================================
+EXPERIMENTO DE MAPEO DE FOSFENOS
+======================================================================
+
+Nombre: mapeo_electrodo_7
+ID Experimento: 20260626_165130
+Inicio: 2026-06-26T16:51:30.491009
+Fin: 2026-06-26T17:06:37.982257
+Electrodo: 7
+Repeticiones: 10
+
+TIEMPOS:
+  - Prestimulation: 193ms
+  - Stimulation: 400ms
+  - Poststimulation: 100ms
+  - Interstimulation: 500ms
+
+======================================================================
+DETALLES DE CADA REPETICIÓN
+======================================================================
+
+REPETICIÓN 10:
+  Posición: (850, 409)
+  Inicio: 2026-06-26T16:52:07.248708
+  Fin: 2026-06-26T16:52:10.792106
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: repetition_010.png
+
+REPETICIÓN 9:
+  Posición: (850, 409)
+  Inicio: 2026-06-26T16:53:04.483580
+  Fin: 2026-06-26T16:53:07.487810
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: repetition_009.png
+
+REPETICIÓN 5:
+  Posición: (850, 409)
+  Inicio: 2026-06-26T16:55:52.595668
+  Fin: 2026-06-26T16:56:00.993301
+  Pérdidas de fijación: 1
+  Intentos: 2
+  Archivo respuesta: repetition_005.png
+
+REPETICIÓN 6:
+  Posición: (850, 409)
+  Inicio: 2026-06-26T16:57:28.944159
+  Fin: 2026-06-26T16:57:31.521436
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: repetition_006.png
+
+REPETICIÓN 4:
+  Posición: (850, 409)
+  Inicio: 2026-06-26T16:59:10.076005
+  Fin: 2026-06-26T16:59:13.719075
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: repetition_004.png
+
+REPETICIÓN 2:
+  Posición: (850, 409)
+  Inicio: 2026-06-26T17:00:55.484106
+  Fin: 2026-06-26T17:00:58.501264
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: repetition_002.png
+
+REPETICIÓN 3:
+  Posición: (850, 409)
+  Inicio: 2026-06-26T17:01:57.809710
+  Fin: 2026-06-26T17:02:00.789926
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: repetition_003.png
+
+REPETICIÓN 8:
+  Posición: (850, 409)
+  Inicio: 2026-06-26T17:03:00.712935
+  Fin: 2026-06-26T17:03:03.803270
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: repetition_008.png
+
+REPETICIÓN 7:
+  Posición: (850, 409)
+  Inicio: 2026-06-26T17:03:51.299312
+  Fin: 2026-06-26T17:03:54.855541
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: repetition_007.png
+
+REPETICIÓN 1:
+  Posición: (850, 409)
+  Inicio: 2026-06-26T17:05:38.944207
+  Fin: 2026-06-26T17:05:41.867716
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: repetition_001.png
+

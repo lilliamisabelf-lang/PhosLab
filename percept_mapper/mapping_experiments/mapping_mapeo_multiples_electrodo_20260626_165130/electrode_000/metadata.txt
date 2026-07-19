@@ -1,0 +1,341 @@
+======================================================================
+EXPERIMENTO DE MAPEO DE FOSFENOS
+======================================================================
+
+Nombre: mapeo_electrodo_0
+ID Experimento: 20260626_165130
+Inicio: 2026-06-26T16:51:30.425739
+Fin: 2026-06-26T17:06:37.667613
+Electrodo: 0
+Repeticiones: 10
+
+TIEMPOS:
+  - Prestimulation: 193ms
+  - Stimulation: 400ms
+  - Poststimulation: 100ms
+  - Interstimulation: 500ms
+
+======================================================================
+DETALLES DE CADA REPETICIÓN
+======================================================================
+
+REPETICIÓN 11:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T16:52:11.292551
+  Fin: 2026-06-26T16:52:14.665990
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_011.png
+
+REPETICIÓN 7:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T16:53:01.705371
+  Fin: 2026-06-26T16:53:04.094246
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: repetition_007.png
+
+REPETICIÓN 6:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T16:53:35.059606
+  Fin: 2026-06-26T16:53:37.339259
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: repetition_006.png
+
+REPETICIÓN 34:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T16:53:41.053528
+  Fin: 2026-06-26T16:53:42.959323
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_034.png
+
+REPETICIÓN 38:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T16:53:56.104360
+  Fin: 2026-06-26T16:53:59.336767
+  Pérdidas de fijación: 2
+  Intentos: 2
+  Archivo respuesta: catch_038.png
+
+REPETICIÓN 44:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T16:54:19.213196
+  Fin: 2026-06-26T16:54:20.917053
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_044.png
+
+REPETICIÓN 47:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T16:54:55.357410
+  Fin: 2026-06-26T16:54:57.736259
+  Pérdidas de fijación: 1
+  Intentos: 1
+  Archivo respuesta: catch_047.png
+
+REPETICIÓN 51:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T16:55:09.379944
+  Fin: 2026-06-26T16:55:10.676921
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_051.png
+
+REPETICIÓN 61:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T16:55:44.810536
+  Fin: 2026-06-26T16:55:46.412989
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_061.png
+
+REPETICIÓN 65:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T16:56:08.518397
+  Fin: 2026-06-26T16:56:10.004501
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_065.png
+
+REPETICIÓN 4:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T16:56:14.137146
+  Fin: 2026-06-26T16:56:17.624754
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: repetition_004.png
+
+REPETICIÓN 68:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T16:56:18.149065
+  Fin: 2026-06-26T16:56:19.398464
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_068.png
+
+REPETICIÓN 3:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T16:57:03.543626
+  Fin: 2026-06-26T16:57:06.461514
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: repetition_003.png
+
+REPETICIÓN 83:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T16:57:22.133931
+  Fin: 2026-06-26T16:57:23.565554
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_083.png
+
+REPETICIÓN 85:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T16:57:27.357019
+  Fin: 2026-06-26T16:57:28.543147
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_085.png
+
+REPETICIÓN 87:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T16:57:32.083927
+  Fin: 2026-06-26T16:57:33.293166
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_087.png
+
+REPETICIÓN 96:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T16:58:07.922878
+  Fin: 2026-06-26T16:58:10.690613
+  Pérdidas de fijación: 1
+  Intentos: 1
+  Archivo respuesta: catch_096.png
+
+REPETICIÓN 1:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T16:58:16.565605
+  Fin: 2026-06-26T16:58:19.244979
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: repetition_001.png
+
+REPETICIÓN 101:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T16:58:27.860065
+  Fin: 2026-06-26T16:58:29.234090
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_101.png
+
+REPETICIÓN 109:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T16:58:57.517235
+  Fin: 2026-06-26T16:58:58.703340
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_109.png
+
+REPETICIÓN 118:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T16:59:30.042311
+  Fin: 2026-06-26T16:59:31.568565
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_118.png
+
+REPETICIÓN 120:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T16:59:38.522898
+  Fin: 2026-06-26T16:59:40.314897
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_120.png
+
+REPETICIÓN 130:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T17:00:16.495128
+  Fin: 2026-06-26T17:00:17.681423
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_130.png
+
+REPETICIÓN 10:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T17:00:36.252090
+  Fin: 2026-06-26T17:00:38.568385
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: repetition_010.png
+
+REPETICIÓN 148:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T17:01:28.614055
+  Fin: 2026-06-26T17:01:29.967710
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_148.png
+
+REPETICIÓN 152:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T17:01:45.186602
+  Fin: 2026-06-26T17:01:46.536920
+  Pérdidas de fijación: 1
+  Intentos: 1
+  Archivo respuesta: catch_152.png
+
+REPETICIÓN 8:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T17:02:01.504579
+  Fin: 2026-06-26T17:02:04.195654
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: repetition_008.png
+
+REPETICIÓN 2:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T17:02:23.253975
+  Fin: 2026-06-26T17:02:26.833217
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: repetition_002.png
+
+REPETICIÓN 164:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T17:02:27.392028
+  Fin: 2026-06-26T17:02:28.683229
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_164.png
+
+REPETICIÓN 167:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T17:02:37.862141
+  Fin: 2026-06-26T17:02:39.371972
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_167.png
+
+REPETICIÓN 176:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T17:03:11.581881
+  Fin: 2026-06-26T17:03:12.888173
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_176.png
+
+REPETICIÓN 188:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T17:04:03.908221
+  Fin: 2026-06-26T17:04:06.369612
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_188.png
+
+REPETICIÓN 196:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T17:04:31.786275
+  Fin: 2026-06-26T17:04:33.197852
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_196.png
+
+REPETICIÓN 5:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T17:04:37.550499
+  Fin: 2026-06-26T17:04:40.911424
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: repetition_005.png
+
+REPETICIÓN 205:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T17:05:06.546554
+  Fin: 2026-06-26T17:05:07.941778
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_205.png
+
+REPETICIÓN 206:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T17:05:08.408917
+  Fin: 2026-06-26T17:05:09.713195
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_206.png
+
+REPETICIÓN 209:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T17:05:17.698701
+  Fin: 2026-06-26T17:05:19.040858
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_209.png
+
+REPETICIÓN 213:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T17:05:30.388417
+  Fin: 2026-06-26T17:05:32.120777
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_213.png
+
+REPETICIÓN 9:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T17:05:35.980370
+  Fin: 2026-06-26T17:05:38.451640
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: repetition_009.png
+
+REPETICIÓN 226:
+  Posición: (989, 459)
+  Inicio: 2026-06-26T17:06:13.042661
+  Fin: 2026-06-26T17:06:14.325577
+  Pérdidas de fijación: 0
+  Intentos: 1
+  Archivo respuesta: catch_226.png
+
